@@ -2,10 +2,10 @@
 Github repo for CMU 11-785 project on multimodal transparent object manipulation.
 
 **MuJoCo Simulation Setup**
-- Requirements:
-    Python 3.11 recommended
-    OS: Linux (Ubuntu 22.04/24.04) or macOS recommended
-    Packages: see sim/requirements.txt
+Requirements:
+    - Python 3.11 recommended
+    - OS: Linux (Ubuntu 22.04/24.04) or macOS recommended
+    - Packages: see sim/requirements.txt & below
     | Package | Version | Used for |
     |---|---|---|
     | `mujoco` | ≥ 3.13, < 4 | Physics and rendering (3.13+ needed so the gripper fingers stay linked) |
