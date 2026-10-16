@@ -2,7 +2,7 @@
 Github repo for CMU 11-785 project on multimodal transparent object manipulation.
 
 **MuJoCo Simulation Setup**
-*Requirements*:
+***Requirements***:
 1. Python 3.11 recommended
 2. OS: Linux (Ubuntu 22.04/24.04) or macOS recommended
 3. Packages: see sim/requirements.txt & below
@@ -18,8 +18,18 @@ To setup the virtual environment:
 ```bash
 git clone https://github.com/s-kumar72/multimodal-transparent-object-manipulation.git
 cd multimodal-transparent-object-manipulation
+```
+***Using a Python venv:***
+```bash
 python3.11 -m venv .venv
 source .venv/bin/activate          
 pip install --upgrade pip
-pip install -r requirements.txt
+pip install -r sim/requirements.txt
+```
+
+***Using conda/ miniconda:***
+```bash
+conda create -n transparent-sim python=3.11 -y
+conda activate transparent-sim
+pip install -r sim/requirements.txt
 ```
