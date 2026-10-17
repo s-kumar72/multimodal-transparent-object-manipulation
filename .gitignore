@@ -2,3 +2,4 @@
 sim/out/
 __pycache__/
 data/
+MUJOCO_LOG.TXT
