@@ -34,7 +34,7 @@ for label, t_glass in [("glass 55 C", 55.0), ("crossover 22 C", 22.0)]:
     row = Image.new("RGB", (960, 240))
     for i, t in enumerate(tiles):
         row.paste(t, (320 * i, 0))
-    ImageDraw.draw(row).text((8, 8), label, fill=(255, 255, 0))
+    ImageDraw.Draw(row).text((8, 8), label, fill=(255, 255, 0))
     rows.append(row)
 
 Path("sim/out").mkdir(exist_ok=True)

@@ -47,9 +47,9 @@ class ScriptedTeacher:
     def act(self):
         target, grip = self.plan[self.t]
         self.t += 1
-        self.task.set_target(mink.SE3.from_rotation_and_translation(mink.S03.from_matrix[DOWN], target))
+        self.task.set_target(mink.SE3.from_rotation_and_translation(mink.SO3.from_matrix(DOWN), target))
         for _ in range(30):
             vel = mink.solve_ik(self.config, [self.task, self.posture], 0.05, "daqp", 1e-3, limits=self.limits)
             self.config.integrate_inplace(vel, 0.05)
-            
+
         return np.append(self.config.q[:6], grip).astype(np.float32)

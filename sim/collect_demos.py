@@ -16,7 +16,7 @@ from teacher import ScriptedTeacher
 KEYS = ["rgb", "depth", "thermal", "joints", "action"]
 
 p = argparse.ArgumentParser()
-p.add_argument("--n", type=int, default=200, helps="number of successful demos to save")
+p.add_argument("--n", type=int, default=200, help="number of successful demos to save")
 p.add_argument("--out", default="data/sim_demos.zarr")
 p.add_argument("--seed", type=int, default=0)
 args = p.parse_args()

@@ -19,7 +19,7 @@ class Sensors:
         self.r = mujoco.Renderer(model, height, width)
         self.thermal_size = thermal_size
         glass_id = model.body(glass_body).id
-        self.glass_geoms = np.flatnonzero(model.geom_body_id == glass_id)
+        self.glass_geoms = np.flatnonzero(model.geom_bodyid == glass_id)
         self.geom_body = model.geom_bodyid.copy()
         model.geom_group[self.glass_geoms] = 5
         self.show_all = mujoco.MjvOption()
