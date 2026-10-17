@@ -8,19 +8,22 @@
     </visual>
 
     <worldbody>
-        <light pos="0.5 0 2" dir="0 0 -1" directional="true"/>
-        <geom name="floor" type="plane" size="2 2 0.1" rgba="0.8 0.8 0.8 1"/>
+        <light pos="0.5 0 2" dir="0 0 -1" directional="true" castshadow="false"/>
+        <geom name="floor" type="plane" size="2 2 0.1" rgba="0.55 0.55 0.55 1"/>
 
+        <!--Table in front of the arm-->
         <body name="table" pos="0.45 0 0.01">
             <geom type="box" size="0.25 0.35 0.01" rgba="0.6 0.4 0.3 1"/>
         </body>
 
+        <!--Transparent glass-->
         <body name="glass" pos="0.4 0 0.7">
             <freejoint/>
             <geom name="glass" type="cylinder" size="0.03 0.05" rgba="0.8 0.9 1 0.2" mass="0.15"/>
         </body>
 
-        <camera name="front_cam" pos="1.2 0 0.6" xyaxes="0 1 0 -0.45 0 1"/>
+        <!--Fixed camera looking at table-->
+        <camera name="front_cam" mode="targetbody" target="table" pos="1.0 -0.55 0.9" fovy="60"/>
     </worldbody>
 
     <actuator>
