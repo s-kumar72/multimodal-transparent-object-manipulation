@@ -4,3 +4,6 @@ mujoco>=3.13,<4
 robot_descriptions>=1.12,<4
 numpy>=1.24,<3
 pillow>=10,<13
+mink>=1.0
+zarr>=2.16,<3
+numcodecs<0.16
