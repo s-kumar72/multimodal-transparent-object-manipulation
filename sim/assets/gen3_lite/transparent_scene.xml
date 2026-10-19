@@ -1,0 +1,40 @@
+<mujoco model="gen3_lite transparent scene">
+    <include file="gen3_lite.xml"/>
+
+    <option timestep="0.002" integrator="implicitfast"/>
+
+    <visual>
+        <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3"/>
+    </visual>
+
+    <worldbody>
+        <light pos="0.5 0 2" dir="0 0 -1" directional="true" castshadow="false"/>
+        <geom name="floor" type="plane" size="2 2 0.1" rgba="0.55 0.55 0.55 1"/>
+
+        <!--Table in front of the arm-->
+        <body name="table" pos="0.45 0 0.01">
+            <geom type="box" size="0.25 0.35 0.01" rgba="0.6 0.4 0.3 1"/>
+        </body>
+
+        <!--Transparent glass-->
+        <body name="glass" pos="0.4 0 0.7">
+            <freejoint/>
+            <geom name="glass" type="cylinder" size="0.03 0.05" rgba="0.8 0.9 1 0.2" mass="0.15"/>
+        </body>
+
+        <!--Fixed camera looking at table-->
+        <camera name="front_cam" mode="targetbody" target="table" pos="1.0 -0.55 0.9" fovy="60"/>
+    </worldbody>
+
+    <actuator>
+        <position name="a1" joint="joint_1" kp="100" kv="10" ctrlrange="-2.69 2.69"/>
+        <position name="a2" joint="joint_2" kp="100" kv="10" ctrlrange="-2.69 2.69"/>
+        <position name="a3" joint="joint_3" kp="100" kv="10" ctrlrange="-2.69 2.69"/>
+        <position name="a4" joint="joint_4" kp="50" kv="5" ctrlrange="-2.59 2.59"/>
+        <position name="a5" joint="joint_5" kp="50" kv="5" ctrlrange="-2.57 2.57"/>
+        <position name="a6" joint="joint_6" kp="50" kv="5" ctrlrange="-2.59 2.59"/>
+        <position name="gripper" joint="right_finger_bottom_joint" kp="10" kv="1" ctrlrange="0 0.85"/>
+    </actuator>
+</mujoco>
+
+
