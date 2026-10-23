@@ -14,6 +14,7 @@ SCENE = "sim/assets/gen3_lite/transparent_scene.xml"
 READY = np.array([-0.118, -0.575, 0.968, 1.571, 1.599, -1.689])
 IMG = 96 # image size for Diffusion Policy
 CTRL_DT = 0.1 # 10 Hz, same as Diffusion Policy
+GLASS_Z = 0.072 # table top (0.02) + glass half height (0.05) + 2 mm, so the glass starts upright
 
 def _resize(img):
     return np.asarray(Image.fromarray(img).resize((IMG, IMG), Image.BILINEAR))
@@ -34,7 +35,7 @@ class GlassPickEnv:
         mujoco.mj_resetData(m, d)
         d.qpos[:6] = READY
         d.ctrl[:6] = READY
-        d.qpos[self.glass_q:self.glass_q + 2] = [r.uniform(0.32, 0.48), r.uniform(-0.15, 0.15)]
+        d.qpos[self.glass_q:self.glass_q + 3] = [r.uniform(0.32, 0.48), r.uniform(-0.15, 0.15), GLASS_Z]
 
         # Thermal conditions
         self.t_env = r.uniform(18, 26)

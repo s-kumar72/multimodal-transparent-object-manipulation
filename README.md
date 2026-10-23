@@ -62,6 +62,26 @@ Zarr stores in Diffusion Policy's layout; loads with `ReplayBuffer.copy_from_pat
 | `data/action` | (N, 7) float32 | Teacher's 6 absolute joint targets (rad) + gripper target |
 | `meta/episode_ends` | (episodes,) int64 | Index one past the last step of each episode |
 
+### Training Diffusion Policy on the sim data
+
+Uses the original [Diffusion Policy](https://github.com/real-stanford/diffusion_policy) code (CNN U-Net, ResNet18 image encoders) with our own dataset, eval env, and config in `policy/`.
+Depth and thermal are repeated to 3 channels so each modality gets its own ResNet18 encoder; joint angles are always included.
+
+1. Clone Diffusion Policy next to this repo and install its dependencies into the sim environment (`gym==0.21.0`, `diffusers==0.11.1`, `hydra-core`, `einops`, `pymunk`, `wandb`, ...). gym 0.21 needs `pip<24.1` and `setuptools<66` to install.
+```bash
+git clone https://github.com/real-stanford/diffusion_policy.git ../diffusion_policy
+pip install -e ../diffusion_policy --no-deps
+```
+2. Generate demos (`--workers` runs episodes in parallel; rendering is the bottleneck)
+```bash
+python sim/collect_demos.py --n 200 --workers 16 --out data/sim_demos.zarr
+```
+3. Train one modality combination (`rgb`, `rgbd`, `rgbt`, or `rgbdt`). Every 25 epochs the policy is rolled out in 30 unseen test scenes; `test/mean_score` is the success rate.
+```bash
+CUDA_VISIBLE_DEVICES=0 policy/train.sh rgbdt data/sim_demos.zarr
+```
+On a headless Linux server set `MUJOCO_GL=egl` (or `osmesa`). Logs, checkpoints, and rollout videos go to `data/outputs/`.
+
 <!-- 
 To setup the virtual environment:
 ```bash

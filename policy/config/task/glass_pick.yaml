@@ -1,0 +1,49 @@
+# Sim glass-pick task (sim/env.py). Drop modalities with hydra deletion, e.g. ~task.shape_meta.obs.thermal
+name: glass_pick
+
+zarr_path: data/sim_demos.zarr
+
+shape_meta:
+  obs:
+    rgb:
+      shape: [3, 96, 96]
+      type: rgb
+    depth:
+      shape: [3, 96, 96]   # 1-channel depth repeated to 3 channels
+      type: rgb
+    thermal:
+      shape: [3, 96, 96]   # 1-channel thermal repeated to 3 channels
+      type: rgb
+    joints:
+      shape: [7]
+      type: low_dim
+  action:
+    shape: [7]
+
+env_runner:
+  _target_: policy.glass_runner.GlassPickRunner
+  shape_meta: ${task.shape_meta}
+  n_train: 4
+  n_train_vis: 1
+  train_start_seed: 0
+  n_test: 30
+  n_test_vis: 3
+  test_start_seed: 100000
+  max_steps: 120
+  n_obs_steps: ${n_obs_steps}
+  n_action_steps: ${n_action_steps}
+  fps: 10
+  past_action: ${past_action_visible}
+  n_envs: null
+
+dataset:
+  _target_: policy.glass_dataset.GlassImageDataset
+  zarr_path: ${task.zarr_path}
+  shape_meta: ${task.shape_meta}
+  horizon: ${horizon}
+  pad_before: ${eval:'${n_obs_steps}-1'}
+  pad_after: ${eval:'${n_action_steps}-1'}
+  n_obs_steps: ${dataset_obs_steps}
+  seed: 42
+  val_ratio: 0.05
+  max_train_episodes: null
