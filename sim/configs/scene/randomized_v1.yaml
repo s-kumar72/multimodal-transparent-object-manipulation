@@ -1,0 +1,16 @@
+# Scene randomization v1: train pools for demos, disjoint test pools for held-out evaluation
+name: randomized_v1
+background:
+  train: [plain_brown, plain_gray, checker_bw, stripes_a, wood_light, noise_fine, glasslike_blue]
+  test: [checker_color, stripes_b, wood_dark, noise_coarse, glasslike_white]
+  color_jitter: 0.08
+lighting:
+  train: [normal, dim, bright]
+  test: [backlight, spot]
+  jitter: {dir_deg: 25, diffuse: 0.2, ambient: 0.1, headlight: 0.2}
+liquid:
+  fill_levels: [0, 0.33, 0.5, 0.67]
+distractors:
+  train: [mug, box, can]
+  test: [bowl, bottle, opaque_cup]
+  max_count: 3

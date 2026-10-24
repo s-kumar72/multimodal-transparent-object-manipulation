@@ -49,6 +49,29 @@ python sim/collect_demos.py --n 200 --out data/sim_demos.zarr
 python sim/inspect_dataset.py data/sim_demos.zarr
 ```
 
+### Scene randomization
+
+`GlassPickEnv(config=..., split="train" | "test")` randomizes the table background, lighting, liquid in the glass, and opaque distractor objects.
+Configs live in `sim/configs/scene/` and only list what they change from `DEFAULT_SCENE` in `sim/config.py`; the default config is the original fixed scene (same physics and images for the same seed).
+Each factor has a `train` pool and a disjoint `test` pool (held-out values), and the same `(seed, config, split)` always gives the same scene.
+
+| Factor | Train pool (`randomized_v1`) | Test pool | Thermal |
+|---|---|---|---|
+| Table background | plain brown / gray, B&W checker, stripes, light wood, fine noise, glass-like blue | color checker, red stripes, dark wood, coarse noise, glass-like white | own temperature; emissivity varies a little by material |
+| Lighting | normal, dim, bright (+ random direction / intensity) | backlight, spot | none (thermal ignores lighting) |
+| Liquid | fill 0 / 0.33 / 0.5 / 0.67 of the glass, cold (5–12 C), room (t_env ± 1), warm (40–60 C) | same | glass wall below the surface is 0.8 · liquid + 0.2 · glass temperature, so a level line shows |
+| Distractors (0–3) | mug, box, can | bowl, bottle, opaque cup | mostly near t_env, 30% hot (35–60 C) or cold (5–12 C) |
+
+MuJoCo has no fluids or refraction: the liquid is a fixed cylinder inside the glass (a "glass of water" to pick, not pouring), and it is transparent in depth like the glass.
+The textures in `sim/assets/gen3_lite/textures/` are made by `python sim/make_textures.py` (fixed seed).
+
+Check that the teacher still succeeds (physics only, no rendering or GPU; aim for >= 80%):
+```bash
+python sim/teacher_check.py --config randomized_v1 --split train --n 100 --workers 4
+python sim/teacher_check.py --config randomized_v1 --split test --n 100 --seed 100000 --workers 4
+```
+On a shared login node CPU time is throttled, so run longer checks on a compute node.
+
 ### Dataset format
 
 Zarr stores in Diffusion Policy's layout; loads with `ReplayBuffer.copy_from_path(path, keys=[...]). There is one row per timestep at **10 Hz** with all episodes back to back.
