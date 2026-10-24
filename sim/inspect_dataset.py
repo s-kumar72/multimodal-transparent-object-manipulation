@@ -12,6 +12,8 @@ import numpy as np
 import zarr
 from PIL import Image
 
+from dataset_meta import load_episode_meta
+
 path = sys.argv[1] if len(sys.argv) > 1 else "data/sim_demos.zarr"
 root = zarr.open(path, mode="r")
 ends = root["meta/episode_ends"][:]
@@ -23,6 +25,14 @@ print(f"{path}: {len(ends)} episodes, {ends[-1]} steps "
 for k, a in root["data"].items():
     print(f" data/{k:8s} shape {str(a.shape):18s} dtype {a.dtype}")
     assert a.shape[0] == ends[-1], f"data/{k} length does not match episode_ends"
+
+ep_meta = load_episode_meta(root)
+if ep_meta is None:
+    print(" no per-episode metadata (older dataset)")
+else:
+    print(f" per-episode metadata: {len(ep_meta)} fields, split {sorted(set(map(str, ep_meta['split'])))}, "
+          f"thermal config {sorted(set(map(str, ep_meta['thermal_config'])))}, norm {sorted(set(map(str, ep_meta['thermal_norm'])))}")
+    assert all(len(v) == len(ends) for v in ep_meta.values()), "episode metadata length does not match episode_ends"
 
 act = root["data/action"][:]
 print(" action min", np.round(act.min(0), 2))

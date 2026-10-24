@@ -65,6 +65,11 @@ Each factor has a `train` pool and a disjoint `test` pool (held-out values), and
 MuJoCo has no fluids or refraction: the liquid is a fixed cylinder inside the glass (a "glass of water" to pick, not pouring), and it is transparent in depth like the glass.
 The textures in `sim/assets/gen3_lite/textures/` are made by `python sim/make_textures.py` (fixed seed).
 
+Collect randomized demos (train pools) with per-episode conditions in `meta/ep_*`:
+```bash
+python sim/collect_demos.py --n 200 --config randomized_v1 --split train --workers 5 --out data/sim_demos_rand.zarr
+```
+
 Check that the teacher still succeeds (physics only, no rendering or GPU; aim for >= 80%):
 ```bash
 python sim/teacher_check.py --config randomized_v1 --split train --n 100 --workers 4
@@ -91,6 +96,21 @@ Zarr stores in Diffusion Policy's layout; loads with `ReplayBuffer.copy_from_pat
 | `data/joints` | (N, 7) float32 | 6 arm joint angles (rad) + gripper (0 open – 0.85 closed) |
 | `data/action` | (N, 7) float32 | Teacher's 6 absolute joint targets (rad) + gripper target |
 | `meta/episode_ends` | (episodes,) int64 | Index one past the last step of each episode |
+
+Datasets made with this branch also store per-episode conditions as flat arrays `meta/ep_<field>` (length = episodes; DP's `ReplayBuffer` loads them as extra meta and ignores them otherwise). Read them with `load_episode_meta(root)` from `sim/dataset_meta.py`, which decodes names and returns `None` for older datasets.
+
+| Key | Shape · dtype | Meaning |
+|---|---|---|
+| `meta/ep_split`, `ep_background`, `ep_lighting`, `ep_thermal_config`, `ep_thermal_norm` | (E,) int16 | ids; names in `meta.attrs["id_maps"]` |
+| `meta/ep_seed` | (E,) int64 | env seed (with the config and split it rebuilds the exact scene) |
+| `meta/ep_n_distractors`, `ep_distractors` | (E,) int8, (E, max_count) int16 | distractor count and ids (-1 = none) |
+| `meta/ep_distractor_temps`, `ep_emis_distractors` | (E, max_count) float32 | per distractor, NaN = none |
+| `meta/ep_fill_level`, `ep_liquid_temp` | (E,) float32 | liquid fill (0 = empty) and temperature (°C, NaN if empty) |
+| `meta/ep_t_env`, `ep_glass_temp`, `ep_table_temp`, `ep_thermal_gap` | (E,) float32 | °C; gap = glass − t_env |
+| `meta/ep_is_crossover` | (E,) bool | \|gap\| < 2 °C |
+| `meta/ep_emis_glass`, `ep_emis_table` | (E,) float32 | emissivities |
+
+`meta.attrs` also keeps the full scene config, thermal config, and split used.
 
 `data/thermal` is now min-max normalized from the integer raw counts, so it can differ from datasets made before `data/thermal_raw` existed by at most 1 gray level (about 10% of pixels).
 
