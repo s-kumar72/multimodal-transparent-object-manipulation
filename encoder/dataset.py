@@ -41,16 +41,22 @@ def load_frame(frame):
     return raw, mask
 
 
-def compute_cnr(raw, mask, ring=8):
-    """Glass-vs-background contrast-to-noise ratio on raw counts: |mean_glass - mean_bg| / std_bg.
-    Background = `ring`-px band around the glass (local contrast). NaN when there is no glass."""
+def ring_mask(mask, ring=8):
+    """`ring`-px band around the glass (bool tensor)."""
+    m = torch.as_tensor(mask).bool()
+    return F.max_pool2d(m[None, None].float(), 2 * ring + 1, stride=1, padding=ring)[0, 0].bool() & ~m
+
+
+def compute_cnr(raw, mask, ring=8, signed=False):
+    """Glass-vs-background contrast-to-noise ratio on raw counts: |mean_glass - mean_bg| / std_bg
+    (without abs if signed). Background = ring around the glass (local contrast). NaN when there is no glass."""
     raw = torch.as_tensor(raw, dtype=torch.float32)
     m = torch.as_tensor(mask).bool()
-    grown = F.max_pool2d(m[None, None].float(), 2 * ring + 1, stride=1, padding=ring)[0, 0].bool()
-    bg = raw[grown & ~m]
+    bg = raw[ring_mask(m, ring)]
     if not m.any() or bg.numel() < 2:
         return float("nan")
-    return ((raw[m].mean() - bg.mean()).abs() / (bg.std() + 1e-6)).item()
+    cnr = ((raw[m].mean() - bg.mean()) / (bg.std() + 1e-6)).item()
+    return cnr if signed else abs(cnr)
 
 
 def resize_frame(raw, mask, size=96):

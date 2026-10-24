@@ -88,6 +88,15 @@ class TestModelAndData(unittest.TestCase):
             self.assertEqual((raw96.shape, mask96.shape, cnr.shape), ((1, 16, 16), (1, 16, 16), (1,)))
             self.assertTrue(os.path.exists(os.path.join(cache, "seq_all_01_16.npz")))
 
+    def test_fit_centered_range(self):
+        from encoder.thermal_stats import CENTERS, clipped, fit_centered_range
+        hist = np.zeros(len(CENTERS))
+        hist[(CENTERS >= -10) & (CENTERS <= 10)] = 1  # 21 counts of mass
+        hist[CENTERS == 500] = 0.2  # a far-off hot spot (< 1% of mass)
+        lo, hi = fit_centered_range(hist, clip=0.01)
+        self.assertEqual((lo, hi), (-10.0, 10.0))
+        self.assertLessEqual(clipped(hist, lo, hi), 0.01)
+
     def test_sequence_split_is_disjoint(self):
         tr, va = split_sequences([f"seq_{i:02d}" for i in range(7)], 0.2, seed=1)
         self.assertEqual(len(va), 1)
