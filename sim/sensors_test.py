@@ -14,16 +14,16 @@ data = mujoco.MjData(model)
 READY = [-0.118, -0.575, 0.968, 1.571, 1.599, -1.689]
 data.qpos[:6] = READY
 data.ctrl[:6] = READY
-gq = model.jnt_qposadr[model.body("glass").jntadr[0]]
-data.qpos[gq:gq + 2] = [0.40, 0.0]
+gq = model.jnt_qposadr[model.body("tumbler").jntadr[0]]
+data.qpos[gq:gq + 3] = [0.40, 0.0, 0.022]
 for _ in range(500):
     mujoco.mj_step(model, data)
 
 sens = Sensors(model)
-emis = {"glass": 0.92, "table": 0.95}
+emis = {"tumbler": 0.92, "table": 0.95}
 rows = []
 for label, t_glass in [("glass 55 C", 55.0), ("crossover 22 C", 22.0)]:
-    temps = {"glass": t_glass, "table": 22.0}
+    temps = {"tumbler": t_glass, "table": 22.0}
     temps.update({model.body(i).name: 30.0 for i in range(model.nbody) if "link" in model.body(i).name})
     rgb, depth, th = sens.render(data, temps, emis, t_env=22.0, rng=np.random.default_rng(0))
     d = np.clip(depth, 0, 2.0) / 2.0
