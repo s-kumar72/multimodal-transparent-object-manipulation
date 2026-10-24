@@ -24,6 +24,11 @@ for k, a in root["data"].items():
     print(f" data/{k:8s} shape {str(a.shape):18s} dtype {a.dtype}")
     assert a.shape[0] == ends[-1], f"data/{k} length does not match episode_ends"
 
+if "object_id" in root["meta"]:
+    names = root["meta"].attrs.get("object_names", [])
+    ids, counts = np.unique(root["meta/object_id"][:], return_counts=True)
+    print(" episodes per object", {names[i] if i < len(names) else int(i): int(c) for i, c in zip(ids, counts)})
+
 act = root["data/action"][:]
 print(" action min", np.round(act.min(0), 2))
 print(" action max", np.round(act.max(0), 2))

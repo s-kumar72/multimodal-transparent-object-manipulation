@@ -16,10 +16,36 @@
             <geom type="box" size="0.25 0.35 0.01" rgba="0.6 0.4 0.3 1"/>
         </body>
 
-        <!--Transparent glass-->
-        <body name="glass" pos="0.4 0 0.7">
+        <!--Transparent objects. Every body's origin is at its base and every geom is in group 5, which is how
+            sensors.py knows a geom is transparent. env.py puts one object on the table per episode and parks the
+            others on the floor behind the camera (PARK in env.py). Here the tumbler starts on the table so the
+            scene can be checked in the viewer; the other positions are the parking spots.-->
+        <body name="tumbler" pos="0.4 0 0.022">
             <freejoint/>
-            <geom name="glass" type="cylinder" size="0.03 0.05" rgba="0.8 0.9 1 0.2" mass="0.15"/>
+            <geom type="cylinder" size="0.03 0.05" pos="0 0 0.05" rgba="0.8 0.9 1 0.2" mass="0.15" group="5"/>
+        </body>
+        <body name="bottle" pos="1.85 -1.0 0.002">
+            <freejoint/>
+            <geom type="cylinder" size="0.03 0.05" pos="0 0 0.05" rgba="0.8 0.9 1 0.2" mass="0.2" group="5"/>
+            <geom type="cylinder" size="0.013 0.035" pos="0 0 0.135" rgba="0.8 0.9 1 0.2" mass="0.03" group="5"/>
+            <geom type="cylinder" size="0.017 0.004" pos="0 0 0.166" rgba="0.8 0.9 1 0.2" mass="0.005" group="5"/>
+        </body>
+        <body name="wineglass" pos="2.1 -1.0 0.002">
+            <freejoint/>
+            <geom type="cylinder" size="0.03 0.004" pos="0 0 0.004" rgba="0.8 0.9 1 0.2" mass="0.03" group="5"/>
+            <geom type="cylinder" size="0.006 0.035" pos="0 0 0.043" rgba="0.8 0.9 1 0.2" mass="0.01" group="5"/>
+            <geom type="ellipsoid" size="0.03 0.03 0.04" pos="0 0 0.118" rgba="0.8 0.9 1 0.2" mass="0.1" group="5"/>
+        </body>
+        <body name="jar" pos="2.35 -1.0 0.002">
+            <freejoint/>
+            <geom type="box" size="0.025 0.025 0.04" pos="0 0 0.04" rgba="0.8 0.9 1 0.2" mass="0.15" group="5"/>
+        </body>
+        <body name="flask" pos="2.6 -1.0 0.002">
+            <freejoint/>
+            <geom type="cylinder" size="0.035 0.012" pos="0 0 0.012" rgba="0.8 0.9 1 0.2" mass="0.03" group="5"/>
+            <geom type="sphere" size="0.035" pos="0 0 0.055" rgba="0.8 0.9 1 0.2" mass="0.15" group="5"/>
+            <geom type="cylinder" size="0.013 0.03" pos="0 0 0.115" rgba="0.8 0.9 1 0.2" mass="0.02" group="5"/>
+            <geom type="cylinder" size="0.017 0.004" pos="0 0 0.141" rgba="0.8 0.9 1 0.2" mass="0.005" group="5"/>
         </body>
 
         <!--Fixed camera looking at table-->
@@ -36,5 +62,3 @@
         <position name="gripper" joint="right_finger_bottom_joint" kp="10" kv="1" ctrlrange="0 0.85"/>
     </actuator>
 </mujoco>
-
-
