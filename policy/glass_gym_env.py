@@ -6,7 +6,7 @@ import gym
 import numpy as np
 from gym import spaces
 
-from env import GlassPickEnv
+from env import GlassPickEnv, OBJECT_NAMES
 from policy.obs_util import to_policy_obs
 
 CTRL_HIGH = np.array([2.69, 2.69, 2.69, 2.59, 2.57, 2.59, 0.85], np.float32)
@@ -34,7 +34,9 @@ class GlassPickGymEnv(gym.Env):
     def reset(self):
         if self._env is None:
             self._env = GlassPickEnv(max_steps=self.max_steps)
-        raw = self._env.reset(self._seed)
+        # The object cycles with the seed, so an evaluation over 5k consecutive seeds has k episodes per object
+        obj = OBJECT_NAMES[self._seed % len(OBJECT_NAMES)] if self._seed is not None else None
+        raw = self._env.reset(self._seed, obj=obj)
         self._frame = raw["rgb"]
         return to_policy_obs(raw, self.obs_meta)
 
@@ -46,6 +48,11 @@ class GlassPickGymEnv(gym.Env):
 
     def render(self, mode="rgb_array"):
         return self._frame
+
+    @property
+    def obj(self):
+        """Name of the object on the table in the current episode (for per-object success rates)."""
+        return self._env.obj if self._env is not None else None
 
     def close(self):
         if self._env is not None:
