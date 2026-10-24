@@ -69,7 +69,12 @@ Pretrains a 1-channel ResNet-18 thermal encoder (GroupNorm, same layout as Diffu
 - `common/thermal.py`: `normalize_thermal_raw(raw, mode, params)` shared by real and sim thermal (`fixed` default, `percentile`, `minmax`).
 - `encoder/`: `model.py` (encoder + seg head, BCE + Dice), `dataset.py` (loading, CNR, augmentation), `train.py` (training + evaluation), `export.py` (DP export), `configs/transpose_seg.yaml`.
 
-***Status***: the TRansPose readers in `encoder/dataset.py` (`list_sequences`, `list_frames`, `load_frame`) are stubs until the dataset layout has been inspected, and `THERMAL_RAW_RANGE` is a placeholder (full 14-bit range). Everything else runs on synthetic data (`data.name=random`).
+***Data***: `data.root` is a folder of TRansPose sequences (e.g. `seq_all_01/`). Only the thermal camera files are read:
+- `cam_T/14bit/*.png`: raw frames, uint16, 640×512
+- `cam_T/pose/*.json`: object names
+- `cam_T/mask/*.png`: per-object visible masks
+
+The glass mask is the union of the masks of all transparent objects (categories C/H/T; category N is excluded). `THERMAL_RAW_RANGE` is still a placeholder (full 14-bit range) until enough train sequences are available. `data.name=random` runs everything on synthetic data.
 
 ***Requirements***: Python 3.11, `torch`, `torchvision`, `numpy`, `omegaconf`. The DP tests also need the [Diffusion Policy](https://github.com/real-stanford/diffusion_policy) repo at `../diffusion_policy` (or set `DP_ROOT`); otherwise they are skipped.
 
