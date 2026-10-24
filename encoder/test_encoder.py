@@ -88,14 +88,16 @@ class TestModelAndData(unittest.TestCase):
             self.assertEqual((raw96.shape, mask96.shape, cnr.shape), ((1, 16, 16), (1, 16, 16), (1,)))
             self.assertTrue(os.path.exists(os.path.join(cache, "seq_all_01_16.npz")))
 
-    def test_fit_centered_range(self):
-        from encoder.thermal_stats import CENTERS, clipped, fit_centered_range
-        hist = np.zeros(len(CENTERS))
-        hist[(CENTERS >= -10) & (CENTERS <= 10)] = 1  # 21 counts of mass
-        hist[CENTERS == 500] = 0.2  # a far-off hot spot (< 1% of mass)
-        lo, hi = fit_centered_range(hist, clip=0.01)
-        self.assertEqual((lo, hi), (-10.0, 10.0))
-        self.assertLessEqual(clipped(hist, lo, hi), 0.01)
+    def test_fit_centered_ranges(self):
+        from encoder.thermal_stats import CENTERS, fit_narrow_range, frame_clipped, percentile_range
+        hist = np.zeros((20, len(CENTERS)))
+        hist[:, (CENTERS >= -10) & (CENTERS <= 10)] = 100
+        hist[0, CENTERS == 300] = 1000  # one frame (5%) with a big off-range blob
+        lo, hi = fit_narrow_range(hist, clip=0.01, frame_frac=0.95)
+        self.assertEqual((lo, hi), (-10.0, 10.0))  # the outlier frame may clip
+        self.assertEqual(np.mean(frame_clipped(hist, lo, hi) < 0.01), 0.95)
+        self.assertEqual(fit_narrow_range(hist, 0.01, 1.0), (-10.0, 300.0))
+        self.assertEqual(percentile_range(hist.sum(0), 0.0, 100.0), (-10.0, 300.0))
 
     def test_sequence_split_is_disjoint(self):
         tr, va = split_sequences([f"seq_{i:02d}" for i in range(7)], 0.2, seed=1)
