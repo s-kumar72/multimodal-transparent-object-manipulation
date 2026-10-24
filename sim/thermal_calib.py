@@ -3,9 +3,9 @@ Calibrates simulated thermal against real TRansPose 14-bit raw thermal by image 
 temperature). Same metric code (thermal_metrics.py) for both, at native resolution and after the same resize to 96x96.
 
 Compare only:  python sim/thermal_calib.py --real-root $PROJECT/transparent/transpose --thermal v0
-Fit + report:  python sim/thermal_calib.py --real-root $PROJECT/transparent/transpose --fit --save calibrated_v1
+Fit + report:  python sim/thermal_calib.py --real-root $PROJECT/transparent/transpose --fit --blur 1.0 --save calibrated_v1
 
---fit matches only the camera model (raw gain/offset, noise, blur). The task's temperature design (glass gap,
+--fit matches only the camera model (raw gain/offset, noise, and blur unless --blur fixes it). The task's temperature design (glass gap,
 crossover) is kept, so the fit uses "realistic" sim frames (glass slightly colder than t_env, no liquid, like
 TRansPose) and fits that realistic gap together with the camera; the gap is saved as the (off) realistic option.
 Output: sim/out/thermal_calib/ (per-frame CSVs, summary table, histograms, image grid, unmatched effects).
@@ -92,7 +92,7 @@ def w1(a, b):
     q = np.linspace(0, 1, 101)
     return np.mean(np.abs(np.quantile(a, q) - np.quantile(b, q)))
 
-def distance(real, sim, keys=TARGETS):
+def distance(real, sim, keys=tuple(TARGETS)):
     """Sum over metrics of W1(sim, real) / IQR(real) on the 96x96 metrics."""
     out = {}
     for k in keys:
@@ -134,30 +134,34 @@ def fit_eval(sens, cache, real, p, m_real):
     th["raw"]["offset"] += shift
     return rows, th
 
-def fit(sens, cache, real, n_trials, seed=0):
-    """Seeded random search, then local refinement around the best 5."""
+def fit(sens, cache, real, n_trials, blur=None, seed=0):
+    """Seeded random search, then local refinement around the best 5. blur: fixed sigma (px), else searched;
+    with a fixed blur the edge sharpness cannot be fitted and is only reported."""
     rng = np.random.default_rng(seed)
     m_real = np.median(column(real, "median_96"))
+    keys = [k for k in TARGETS if blur is None or k != "sharpness"]
     def sample():
         return {"gain": np.exp(rng.uniform(np.log(10), np.log(150))), "noise": np.exp(rng.uniform(np.log(0.2), np.log(8))),
-                "blur": rng.uniform(0.3, 2.0), "c": rng.uniform(0, 8), "w": rng.uniform(0, 3)}
+                "blur": rng.uniform(0.3, 2.0) if blur is None else blur, "c": rng.uniform(0, 8), "w": rng.uniform(0, 3)}
     def perturb(p):
         q = {k: v * np.exp(rng.normal(0, 0.15)) for k, v in p.items()}
-        q["blur"] = float(np.clip(q["blur"], 0.3, 2.5))
+        q["blur"] = float(np.clip(q["blur"], 0.3, 2.5)) if blur is None else blur
         return q
     trials = []
     for i in range(n_trials):
         p = sample() if i < int(0.6 * n_trials) else perturb(sorted(trials, key=lambda t: t[0])[i % 5][1])
         rows, th = fit_eval(sens, cache, real, p, m_real)
-        d, parts = distance(real, rows)
+        d, parts = distance(real, rows, keys)
         trials.append((d, p, th, parts))
         if i % 50 == 0:
             print(f"trial {i}: best distance {min(t[0] for t in trials):.3f}", flush=True)
-    return sorted(trials, key=lambda t: t[0])
+    return sorted(trials, key=lambda t: t[0]), keys
 
-def save_config(name, th, p, best, seqs):
+def save_config(name, th, p, best, seqs, keys, blur):
     lines = [f"# Camera model fitted to TRansPose {', '.join(seqs)} 14-bit raw by sim/thermal_calib.py --fit (seed 0).",
-             f"# Temperatures keep the v0 task design. Fit distance {best:.3f} (sum of W1 / real IQR over {', '.join(TARGETS)}).",
+             f"# Temperatures keep the v0 task design. Fit distance {best:.3f} (sum of W1 / real IQR over {', '.join(keys)}).",
+             "# Blur fixed (not fitted): the sim glass is much smaller than TRansPose objects, so a fitted blur absorbs that;"
+             " refit it once the camera is decided." if blur is not None else "# Blur fitted.",
              f"name: {name}",
              f"raw: {{gain: {th['raw']['gain']:.4g}, offset: {th['raw']['offset']:.5g}}}",
              f"noise: {{rel: 0.0, counts: {p['noise']:.3g}}}",
@@ -176,12 +180,12 @@ def write_csv(path, rows):
         w.writeheader()
         w.writerows(rows)
 
-def report(out, real, sims, seqs):
-    """sims: {name: rows}. Table, low-contrast fractions, histograms, image grid."""
+def report(out, real, sims, seqs, keys=tuple(TARGETS)):
+    """sims: {name: rows}; keys: metrics the fit used. Table, low-contrast fractions, histograms, image grid."""
     names = ["real"] + list(sims)
     sets = [real] + list(sims.values())
     lines = [f"# Real ({', '.join(seqs)}, {len(real)} frames) vs sim", "",
-             "median [p10, p90]; *_noise / *_range ratios do not depend on counts per degree; fit targets: " + ", ".join(TARGETS), "",
+             "median [p10, p90]; *_noise / *_range ratios do not depend on counts per degree; fit targets: " + ", ".join(keys), "",
              "| metric | " + " | ".join(f"{n} (n={len(s)})" for n, s in zip(names, sets)) + " |", "|---" * (len(names) + 1) + "|"]
     for res in ["96", "native"]:
         for m in METRICS:
@@ -248,6 +252,7 @@ if __name__ == "__main__":
     p.add_argument("--fit", action="store_true")
     p.add_argument("--n-fit", type=int, default=100, help="realistic sim scenes used by the fit")
     p.add_argument("--n-trials", type=int, default=500)
+    p.add_argument("--blur", type=float, default=None, help="fix the Gaussian blur sigma (thermal px) instead of fitting it")
     p.add_argument("--save", default="calibrated_v1")
     p.add_argument("--out", default="sim/out/thermal_calib")
     args = p.parse_args()
@@ -256,14 +261,14 @@ if __name__ == "__main__":
     out.mkdir(parents=True, exist_ok=True)
     real = [r for s in args.seq for r in stats(real_frames(args.real_root, s, args.every), "real")]
     write_csv(out / "frames_real.csv", real)
-    names = list(args.thermal)
+    names, keys = list(args.thermal), TARGETS
     if args.fit:
         assert args.save != "v0", "v0 is kept unchanged"
         sens, cache = fit_cache(args.scene, args.split, args.n_fit)
-        trials = fit(sens, cache, real, args.n_trials)
+        trials, keys = fit(sens, cache, real, args.n_trials, args.blur)
         best, bp, bth, parts = trials[0]
         print(f"best distance {best:.3f}: " + ", ".join(f"{k} {v:.3g}" for k, v in bp.items()))
-        print(f"saved {save_config(args.save, bth, bp, best, args.seq)}")
+        print(f"saved {save_config(args.save, bth, bp, best, args.seq, keys, args.blur)}")
         sens.r.close()
         names = ["v0", args.save, f"{args.save}+realistic"]
 
@@ -275,5 +280,5 @@ if __name__ == "__main__":
         rows = list(stats(sim_frames(scene_config(args.scene, th, liquid=not name.endswith("+realistic")), args.split, args.n_sim), "sim"))
         write_csv(out / f"frames_sim_{name}.csv", rows)
         sims[f"sim {name}"] = rows
-    report(out, real, sims, args.seq)
+    report(out, real, sims, args.seq, keys)
     print("saved", out)

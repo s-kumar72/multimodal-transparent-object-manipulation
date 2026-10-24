@@ -104,12 +104,12 @@ The scene config names a thermal config (`thermal: v0`) in `sim/configs/thermal/
 It holds every thermal parameter: t_env range, glass − t_env gap and crossover probability, table / robot / distractor temperatures, emissivity ranges (glass, table, distractors), liquid mix, raw gain/offset, thermal resolution, blur, and noise in raw counts.
 `v0` is the original hand-picked model and is kept unchanged; calibrated models get their own files.
 
-`calibrated_v1` fits only the camera model (raw gain/offset, noise in counts, blur) to TRansPose 14-bit raw thermal (seq_all_01); the glass temperature gap and crossover design stay as in v0.
+`calibrated_v1` fits only the camera model (raw gain/offset, noise in counts) to TRansPose 14-bit raw thermal (seq_all_01); the glass temperature gap and crossover design stay as in v0. Blur is fixed at σ = 1 px: a fitted blur ran to the search limit (2.5 px) because it absorbed the glass size difference, so it will be refit once the camera is decided.
 The fit compares image statistics on raw counts after the same 96×96 resize (count levels, |Δ|/range, |Δ|/noise, noise/range, noise, edge sharpness; CNR is reported only). It runs on "realistic" sim frames (glass slightly colder than t_env, no liquid, like TRansPose), fitting that gap together with the camera. The gap is stored as the `realistic` option, off by default (`realistic.p`, separate RNG stream).
 ```bash
 # compare thermal configs with real data, or fit (seeded random search) and write sim/configs/thermal/calibrated_v1.yaml
 python sim/thermal_calib.py --real-root $PROJECT/transparent/transpose --thermal v0 calibrated_v1
-python sim/thermal_calib.py --real-root $PROJECT/transparent/transpose --fit --save calibrated_v1
+python sim/thermal_calib.py --real-root $PROJECT/transparent/transpose --fit --blur 1.0 --save calibrated_v1
 ```
 Reports (summary table, histograms, real vs sim image grid on one fixed count range) go to `sim/out/thermal_calib/`.
 

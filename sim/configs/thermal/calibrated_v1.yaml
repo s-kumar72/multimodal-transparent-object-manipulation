@@ -1,8 +1,9 @@
 # Camera model fitted to TRansPose seq_all_01 14-bit raw by sim/thermal_calib.py --fit (seed 0).
-# Temperatures keep the v0 task design. Fit distance 3.347 (sum of W1 / real IQR over median, p1, p99, delta_range, delta_noise, noise_range, noise, sharpness).
+# Temperatures keep the v0 task design. Fit distance 4.082 (sum of W1 / real IQR over median, p1, p99, delta_range, delta_noise, noise_range, noise).
+# Blur fixed (not fitted): the sim glass is much smaller than TRansPose objects, so a fitted blur absorbs that; refit it once the camera is decided.
 name: calibrated_v1
-raw: {gain: 45.15, offset: 683.72}
-noise: {rel: 0.0, counts: 2.66}
-blur_sigma_px: 2.5
+raw: {gain: 42.67, offset: 811.22}
+noise: {rel: 0.0, counts: 2.73}
+blur_sigma_px: 1
 # Realistic glass (fitted with the camera, glass colder than t_env); off until the ratio is decided
-realistic: {p: 0.0, gap: [-2.6, -0.979]}
+realistic: {p: 0.0, gap: [-1.25, -0.761]}
