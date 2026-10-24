@@ -74,7 +74,13 @@ Pretrains a 1-channel ResNet-18 thermal encoder (GroupNorm, same layout as Diffu
 - `cam_T/pose/*.json`: object names
 - `cam_T/mask/*.png`: per-object visible masks
 
-The glass mask is the union of the masks of all transparent objects (categories C/H/T; category N is excluded). `THERMAL_RAW_RANGE` is still a placeholder (full 14-bit range) until enough train sequences are available. `data.name=random` runs everything on synthetic data.
+The glass mask is the union of the masks of all transparent objects (categories C/H/T; category N is excluded). `THERMAL_RAW_RANGE` is still a placeholder (full 14-bit range), and `THERMAL_CENTERED_RANGE` is provisional, until enough train sequences are available. `data.name=random` runs everything on synthetic data.
+
+Contrast statistics and range fitting (reads native-resolution frames; per-frame stats are cached in `--cache_dir`):
+```bash
+python -m encoder.thermal_stats --root /path/to/TRansPose --sequences <train sequences> --clip 0.01
+```
+For each sequence the tool prints the sign and size of the glass-vs-ring contrast and the share of frames with |CNR| < 0.5. It also prints the narrowest `centered` range that clips at most 1% of glass + ring pixels.
 
 ***Requirements***: Python 3.11, `torch`, `torchvision`, `numpy`, `omegaconf`. The DP tests also need the [Diffusion Policy](https://github.com/real-stanford/diffusion_policy) repo at `../diffusion_policy` (or set `DP_ROOT`); otherwise they are skipped.
 
