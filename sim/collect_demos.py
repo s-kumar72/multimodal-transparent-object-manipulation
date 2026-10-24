@@ -20,6 +20,7 @@ from env import GlassPickEnv
 from teacher import ScriptedTeacher
 
 KEYS = ["rgb", "depth", "thermal", "thermal_raw", "joints", "action"]
+IMAGE_CHUNK = 100 # frames per zarr chunk for image keys (one file per frame made ~110k files for 450 demos)
 THERMAL_NORM = "minmax" # data/thermal is per-frame min-max for now (becomes a config choice with common/thermal.py)
 
 def init_worker(config=None, split="train"):
@@ -67,7 +68,7 @@ def collect(out, cfg, split, seeds, n, workers=1):
         for k in KEYS:
             x = ep[k]
             if k not in arrays:
-                chunks = (1,) + x.shape[1:] if x.ndim > 2 else (1024,) + x.shape[1:]
+                chunks = (IMAGE_CHUNK if x.ndim > 2 else 1024,) + x.shape[1:]
                 arrays[k] = data.zeros(k, shape=(0,) + x.shape[1:], chunks=chunks, dtype=x.dtype)
             arrays[k].append(x)
 
