@@ -41,32 +41,25 @@ def run_episode(seed):
         return seed, None, None
     return seed, {k: np.stack(v) for k, v in ep.items()}, dict(env.episode_meta(), thermal_norm=THERMAL_NORM)
 
-if __name__ == "__main__":
-    p = argparse.ArgumentParser()
-    p.add_argument("--n", type=int, default=200, help="number of successful demos to save")
-    p.add_argument("--out", default="data/sim_demos.zarr")
-    p.add_argument("--seed", type=int, default=0)
-    p.add_argument("--workers", type=int, default=1)
-    p.add_argument("--config", default=None, help="scene config name in sim/configs/scene/ or YAML path (default: original scene)")
-    p.add_argument("--split", default="train", choices=["train", "test"])
-    args = p.parse_args()
-    cfg = load_scene_config(args.config)
-
+def collect(out, cfg, split, seeds, n, workers=1):
+    """Runs the teacher on seeds (in order) until n demos succeed and saves them to out.
+    Returns [(seed, success)] for every tried seed."""
     # Results come back in seed order, so the saved dataset is the same for any number of workers
-    if args.workers > 1:
-        pool = mp.get_context("fork").Pool(args.workers, init_worker, (cfg, args.split))
-        results = pool.imap(run_episode, range(args.seed, args.seed + 3 * args.n + 50))
+    if workers > 1:
+        pool = mp.get_context("fork").Pool(workers, init_worker, (cfg, split))
+        results = pool.imap(run_episode, seeds)
     else:
         pool = None
-        init_worker(cfg, args.split)
-        results = map(run_episode, itertools.count(args.seed))
+        init_worker(cfg, split)
+        results = map(run_episode, seeds)
 
-    root = zarr.open(args.out, mode="w")
+    root = zarr.open(out, mode="w")
     data, meta = root.create_group("data"), root.create_group("meta")
-    arrays, ends, episodes, total, saved = {}, [], [], 0, 0
+    arrays, ends, episodes, tried, total, saved = {}, [], [], [], 0, 0
     t0 = time.time()
 
     for seed, ep, ep_meta in results:
+        tried.append((seed, ep is not None))
         if ep is None:
             print(f"seed {seed}: teacher failed, skipping")
             continue
@@ -82,16 +75,30 @@ if __name__ == "__main__":
         ends.append(total)
         episodes.append(ep_meta)
         saved += 1
-        print(f"demo {saved}/{args.n}: {len(ep['action'])} steps ({time.time() - t0:.0f}s)", flush=True)
-        if saved >= args.n:
+        print(f"demo {saved}/{n}: {len(ep['action'])} steps ({time.time() - t0:.0f}s)", flush=True)
+        if saved >= n:
             break
 
-    if saved < args.n:
-        print(f"only {saved}/{args.n} demos succeeded")
+    if saved < n:
+        print(f"only {saved}/{n} demos succeeded")
     meta.array("episode_ends", np.array(ends, dtype=np.int64))
     write_episode_meta(meta, episodes, cfg["distractors"]["max_count"],
-                       {"scene_config": cfg, "thermal_config": load_thermal_config(cfg["thermal"]), "split": args.split})
+                       {"scene_config": cfg, "thermal_config": load_thermal_config(cfg["thermal"]), "split": split})
     if pool is not None:
         pool.terminate()
     else:
         env.close()
+    return tried
+
+if __name__ == "__main__":
+    p = argparse.ArgumentParser()
+    p.add_argument("--n", type=int, default=200, help="number of successful demos to save")
+    p.add_argument("--out", default="data/sim_demos.zarr")
+    p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--workers", type=int, default=1)
+    p.add_argument("--config", default=None, help="scene config name in sim/configs/scene/ or YAML path (default: original scene)")
+    p.add_argument("--split", default="train", choices=["train", "test"])
+    args = p.parse_args()
+
+    seeds = range(args.seed, args.seed + 3 * args.n + 50) if args.workers > 1 else itertools.count(args.seed)
+    collect(args.out, load_scene_config(args.config), args.split, seeds, args.n, args.workers)

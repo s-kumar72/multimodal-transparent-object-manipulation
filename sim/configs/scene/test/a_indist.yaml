@@ -1,0 +1,3 @@
+# (a) In-distribution: randomized_v1 train pools, on seeds not used for training (use split train)
+base: randomized_v1
+name: a_indist

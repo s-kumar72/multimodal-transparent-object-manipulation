@@ -1,0 +1,5 @@
+# (d) Held-out distractors only: bowl / bottle / opaque cup, train backgrounds / lighting (use split test)
+base: randomized_v1
+name: d_heldout_distractors
+background: {test: [plain_brown, plain_gray, checker_bw, stripes_a, wood_light, noise_fine, glasslike_blue]}
+lighting: {test: [normal, dim, bright]}

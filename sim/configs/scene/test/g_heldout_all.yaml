@@ -1,0 +1,3 @@
+# (g) Everything held out: test backgrounds, lighting and distractors (use split test)
+base: randomized_v1
+name: g_heldout_all

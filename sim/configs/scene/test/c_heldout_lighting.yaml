@@ -1,0 +1,5 @@
+# (c) Held-out lighting only: backlight / spot, train backgrounds / distractors (use split test)
+base: randomized_v1
+name: c_heldout_lighting
+background: {test: [plain_brown, plain_gray, checker_bw, stripes_a, wood_light, noise_fine, glasslike_blue]}
+distractors: {test: [mug, box, can]}

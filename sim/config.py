@@ -76,11 +76,15 @@ def _merge(base, new, path=""):
     return base
 
 def load_scene_config(path=None):
-    """path: YAML file, a name in sim/configs/scene/, or None for DEFAULT_SCENE."""
+    """path: YAML file, a name in sim/configs/scene/ (e.g. "randomized_v1", "test/b_heldout_background"),
+    or None for DEFAULT_SCENE. A YAML file may start from another config with "base: <name>"."""
     cfg = copy.deepcopy(DEFAULT_SCENE)
     if path is not None:
         p = Path(path) if str(path).endswith(".yaml") else CONFIG_DIR / f"{path}.yaml"
-        _merge(cfg, yaml.safe_load(p.read_text()) or {})
+        new = yaml.safe_load(p.read_text()) or {}
+        if "base" in new:
+            cfg = load_scene_config(new.pop("base"))
+        _merge(cfg, new)
     for factor, names in [("background", BACKGROUNDS), ("lighting", LIGHTING), ("distractors", DISTRACTORS)]:
         train, test = cfg[factor]["train"], cfg[factor]["test"]
         unknown = set(train + test) - set(names)

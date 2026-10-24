@@ -77,6 +77,27 @@ python sim/teacher_check.py --config randomized_v1 --split test --n 100 --seed 1
 ```
 On a shared login node CPU time is throttled, so run longer checks on a compute node.
 
+### Test sets
+
+A test set is (scene config, split, seeds); `GlassPickEnv(config, split).reset(seed)` rebuilds exactly the same scene, so every modality is evaluated on the same scenes.
+All sets use seeds 100000.. (training uses seeds from 0), so with the same seed they differ only in the held-out factor.
+Configs are in `sim/configs/scene/test/` (each starts from `randomized_v1` with `base:`).
+
+| Set | Config | Split | Condition |
+|---|---|---|---|
+| a | `test/a_indist` | train | in-distribution (train pools, unseen seeds) |
+| b | `test/b_heldout_background` | test | held-out backgrounds only |
+| c | `test/c_heldout_lighting` | test | held-out lighting only (backlight, spot) |
+| d | `test/d_heldout_distractors` | test | held-out distractors only (bowl, bottle, opaque cup) |
+| e | `test/e_liquid` | train | liquid in every glass (fill 0.33 / 0.5 / 0.67 × cold / room / warm, sampled) |
+| f | `test/f_crossover` | train | forced thermal crossover, \|glass − t_env\| ≤ 1 °C (thermal config `v0_crossover`) |
+| g | `test/g_heldout_all` | test | all held-out factors together |
+
+```bash
+python sim/make_test_sets.py --sets a b c d g --n 50 --out data/test_sets --demos --workers 5
+```
+This writes `<out>/<set>/manifest.json` (config, split, seeds, teacher success per seed) and, with `--demos`, `<out>/<set>/demos.zarr` with the teacher's episodes.
+
 ### Thermal model
 
 The scene config names a thermal config (`thermal: v0`) in `sim/configs/thermal/`; YAML files there override `DEFAULT_THERMAL` in `sim/config.py`.

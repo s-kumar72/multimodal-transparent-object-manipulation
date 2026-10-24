@@ -1,0 +1,4 @@
+# (e) Liquid: every glass has liquid (fill 0.33 / 0.5 / 0.67 x cold / room / warm), train pools otherwise (use split train)
+base: randomized_v1
+name: e_liquid
+liquid: {fill_levels: [0.33, 0.5, 0.67]}

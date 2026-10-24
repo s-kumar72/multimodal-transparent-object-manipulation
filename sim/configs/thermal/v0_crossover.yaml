@@ -1,0 +1,3 @@
+# v0 with every episode at thermal crossover (|glass - t_env| < 1 C), for test set (f)
+name: v0_crossover
+crossover_p: 1.0

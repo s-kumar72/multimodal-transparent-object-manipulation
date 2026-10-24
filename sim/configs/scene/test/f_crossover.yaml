@@ -1,0 +1,4 @@
+# (f) Forced thermal crossover: |glass - t_env| < 1 C in every episode, train pools otherwise (use split train)
+base: randomized_v1
+name: f_crossover
+thermal: v0_crossover
