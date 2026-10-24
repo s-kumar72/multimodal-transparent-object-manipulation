@@ -3,3 +3,6 @@ sim/out/
 __pycache__/
 data/
 MUJOCO_LOG.TXT
+# Slurm writes job logs here; the folder must exist before sbatch, so it is kept in git
+logs/*
+!logs/.gitkeep

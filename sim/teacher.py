@@ -1,5 +1,5 @@
 """
-Scripted teacher for diffusion policy: knows glass position and plans pick using mink IK.
+Scripted teacher for diffusion policy: knows the object position and plans a top-down pick using mink IK.
 Author: Sadhana Kumar
 """
 import mujoco
@@ -11,6 +11,8 @@ from env import READY
 ARM = "sim/assets/gen3_lite/gen3_lite.xml"
 DOWN = np.array([[0, 1, 0], [1, 0, 0], [0, 0, -1]], float)
 OPEN, CLOSED = 0.0, 0.85
+LIFT = 0.16 # pre-grasp / lift height above the grasp
+PRE_Z_MAX = 0.30 # the top-down IK cannot reach higher at the far edge of the spawn region, so tall objects lift less
 
 class ScriptedTeacher:
     def __init__(self):
@@ -27,9 +29,9 @@ class ScriptedTeacher:
     def reset(self, env, rng=None):
         rng = rng or np.random.default_rng()
         self.config.update(self._full(env.data.qpos[:6]))
-        glass, tool = env.glass_position(), env.tool_position()
-        pre = glass + [0, 0, 0.18]
-        grasp = glass + [0, 0, 0.02]
+        obj, tool = env.object_position(), env.tool_position()
+        grasp = obj + [0, 0, env.grasp_height()]
+        pre = grasp + [0, 0, min(LIFT, PRE_Z_MAX - grasp[2])]
         plan = []
 
         def segment(a, b, n, grip):

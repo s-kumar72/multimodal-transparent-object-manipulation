@@ -14,17 +14,17 @@ def band_radiance(temp_c):
     return spec.sum(axis=-1) * (_WAVE[1] - _WAVE[0])
 
 class Sensors:
-    def __init__(self, model, camera="front_cam", height=240, width=320, thermal_size=(120, 160), glass_body="glass"):
+    TRANSPARENT_GROUP = 5 # geom group of transparent geoms in the scene XML (hidden by default MjvOption)
+
+    def __init__(self, model, camera="front_cam", height=240, width=320, thermal_size=(120, 160)):
         self.model, self.camera = model, camera
         self.r = mujoco.Renderer(model, height, width)
         self.thermal_size = thermal_size
-        glass_id = model.body(glass_body).id
-        self.glass_geoms = np.flatnonzero(model.geom_bodyid == glass_id)
+        self.transparent_geoms = np.flatnonzero(model.geom_group == self.TRANSPARENT_GROUP)
         self.geom_body = model.geom_bodyid.copy()
-        model.geom_group[self.glass_geoms] = 5
         self.show_all = mujoco.MjvOption()
-        self.show_all.geomgroup[5] = 1
-        self.hide_glass = mujoco.MjvOption()
+        self.show_all.geomgroup[self.TRANSPARENT_GROUP] = 1
+        self.hide_transparent = mujoco.MjvOption()
 
     def render(self, data, temps, emissivity, t_env=22.0, rng=None):
         rng = rng or np.random.default_rng()
@@ -36,7 +36,7 @@ class Sensors:
         r.enable_depth_rendering()
         r.update_scene(data, camera=cam, scene_option=self.show_all)
         depth_true = r.render().copy()
-        r.update_scene(data, camera=cam, scene_option=self.hide_glass)
+        r.update_scene(data, camera=cam, scene_option=self.hide_transparent)
         depth_behind = r.render().copy()
         r.disable_depth_rendering()
 
@@ -45,8 +45,8 @@ class Sensors:
         seg = r.render()[..., 0].copy()
         r.disable_segmentation_rendering()
 
-        # Depth on glass
-        on_glass = np.isin(seg, self.glass_geoms)
+        # Depth on transparent objects: sees through them, 40% of the pixels are holes
+        on_glass = np.isin(seg, self.transparent_geoms)
         depth = depth_true.copy()
         depth[on_glass] = depth_behind[on_glass]
         depth[on_glass & (rng.random(depth.shape) < 0.4)] = 0.0
