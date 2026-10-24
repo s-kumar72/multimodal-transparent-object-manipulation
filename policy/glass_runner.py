@@ -1,17 +1,18 @@
 """
-Rolls out a policy in parallel GlassPickEnv copies and reports success rate (test/mean_score).
+Rolls out a policy in parallel GlassPickEnv copies and reports success rate (test/mean_score),
+plus the success rate per object (test/mean_score_<object>).
 Adapted from diffusion_policy/env_runner/pusht_image_runner.py.
 """
 import collections
 import math
 import pathlib
+import uuid
 
 import dill
 import numpy as np
 import torch
 import tqdm
 import wandb
-import wandb.sdk.data_types.video as wv
 from omegaconf import OmegaConf
 
 from diffusion_policy.common.pytorch_util import dict_apply
@@ -55,7 +56,7 @@ class GlassPickRunner(BaseImageRunner):
                     env.env.video_recoder.stop()
                     env.env.file_path = None
                     if enable_render:
-                        filename = pathlib.Path(output_dir).joinpath("media", wv.util.generate_id() + ".mp4")
+                        filename = pathlib.Path(output_dir).joinpath("media", uuid.uuid4().hex[:12] + ".mp4")  # wandb.util.generate_id is gone in new wandb
                         filename.parent.mkdir(parents=False, exist_ok=True)
                         env.env.file_path = str(filename)
                     env.seed(seed)
@@ -81,6 +82,7 @@ class GlassPickRunner(BaseImageRunner):
         n_inits = len(self.env_init_fn_dills)
         all_video_paths = [None] * n_inits
         all_rewards = [None] * n_inits
+        all_objs = [None] * n_inits
 
         for chunk_idx in range(math.ceil(n_inits / n_envs)):
             start = chunk_idx * n_envs
@@ -113,17 +115,25 @@ class GlassPickRunner(BaseImageRunner):
             n_active = end - start
             all_video_paths[start:end] = env.render()[:n_active]
             all_rewards[start:end] = env.call("get_attr", "reward")[:n_active]
+            all_objs[start:end] = env.call("get_attr", "obj")[:n_active]
         _ = env.reset()
 
         max_rewards = collections.defaultdict(list)
+        obj_rewards = collections.defaultdict(list)
         log_data = dict()
         for i in range(n_inits):
             seed, prefix = self.env_seeds[i], self.env_prefixs[i]
             max_reward = np.max(all_rewards[i]) if len(all_rewards[i]) > 0 else 0.0
             max_rewards[prefix].append(max_reward)
+            obj_rewards[(prefix, all_objs[i])].append(max_reward)
             log_data[prefix + f"sim_max_reward_{seed}"] = max_reward
             if all_video_paths[i] is not None:
                 log_data[prefix + f"sim_video_{seed}"] = wandb.Video(all_video_paths[i])
         for prefix, value in max_rewards.items():
             log_data[prefix + "mean_score"] = np.mean(value)    # = success rate
+        for (prefix, obj), value in sorted(obj_rewards.items()):
+            log_data[prefix + f"mean_score_{obj}"] = np.mean(value)   # success rate on the episodes with this object
+            log_data[prefix + f"n_{obj}"] = len(value)
+        summary = {obj: f"{int(sum(v))}/{len(v)}" for (prefix, obj), v in sorted(obj_rewards.items()) if prefix == "test/"}
+        print(f"test/mean_score {log_data.get('test/mean_score', float('nan')):.3f}  per object {summary}", flush=True)
         return log_data
