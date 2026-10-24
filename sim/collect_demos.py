@@ -16,7 +16,7 @@ import zarr
 from env import GlassPickEnv
 from teacher import ScriptedTeacher
 
-KEYS = ["rgb", "depth", "thermal", "joints", "action"]
+KEYS = ["rgb", "depth", "thermal", "thermal_raw", "joints", "action"]
 
 def init_worker():
     global env, teacher

@@ -8,6 +8,9 @@ import numpy as np
 H_PLANCK, C_LIGHT, K_B = 6.626e-34, 2.998e8, 1.381e-23
 _WAVE = np.linspace(8e-6, 14e-6, 200) # low wave IR range of most thermal cameras
 LIQUID_MIX = 0.8 # glass wall below the liquid surface: 0.8 * liquid + 0.2 * glass temperature
+# Raw counts = RAW_GAIN * band radiance + RAW_OFFSET (14-bit). v0 placeholder: 0 C -> ~6830, 100 C -> ~15010, ~65 counts/C near 22 C
+RAW_GAIN, RAW_OFFSET, RAW_MAX = 80.0, 4000.0, 16383
+NOISE_REL = 0.002 # v0 noise std = 0.2% of the mean signal above offset (same as the original 0.2% of mean radiance)
 
 def band_radiance(temp_c):
     t = np.asarray(temp_c, float)[..., None] + 273.15
@@ -43,7 +46,8 @@ class Sensors:
         return out
 
     def render(self, data, temps, emissivity, t_env=22.0, rng=None, liquid=None):
-        """liquid: None or (fill_level, liquid_temp). LWIR does not pass glass, so liquid shows only through the wall temperature."""
+        """liquid: None or (fill_level, liquid_temp). LWIR does not pass glass, so liquid shows only through the wall temperature.
+        Returns rgb, depth (m), thermal (per-frame min-max, [0, 1]) and thermal raw counts (uint16) at thermal_size."""
         rng = rng or np.random.default_rng()
         r, cam = self.r, self.camera
 
@@ -80,17 +84,23 @@ class Sensors:
             fill, t_liquid = liquid
             below = self.below_liquid(data, depth_true, on_glass, fill)
             temp[below] = LIQUID_MIX * t_liquid + (1 - LIQUID_MIX) * temps.get("glass", t_env)
-        rad = eta * band_radiance(temp) + (1 - eta) * band_radiance(t_env)
+        # Planck integral only for the few distinct temperatures in the frame (same values, much faster)
+        temp_u, inv = np.unique(temp, return_inverse=True)
+        rad = eta * band_radiance(temp_u)[inv].reshape(temp.shape) + (1 - eta) * band_radiance(t_env)
 
-        # Camera effects
+        # Camera effects, in raw counts like a radiometric thermal camera
+        counts = RAW_GAIN * rad + RAW_OFFSET
         th, tw = self.thermal_size
-        ys = np.linspace(0, rad.shape[0] - 1, th).astype(int)
-        xs = np.linspace(0, rad.shape[1] - 1, tw).astype(int)
-        small = rad[np.ix_(ys, xs)]
+        ys = np.linspace(0, counts.shape[0] - 1, th).astype(int)
+        xs = np.linspace(0, counts.shape[1] - 1, tw).astype(int)
+        small = counts[np.ix_(ys, xs)]
         pad = np.pad(small, 1, mode="edge")
 
         small = (pad[:-2, :-2] + 2 * pad[:-2, 1:-1] + pad[:-2, 2:] + 2 * pad[1:-1, :-2] + 4 * pad[1:-1, 1:-1] + 2 * pad[1:-1, 2:] + pad[2:, :-2] + 2 * pad[2:, 1:-1] + pad[2:, 2:]) / 16
-        small = small + rng.normal(0, 0.002 * small.mean(), small.shape)
-        thermal = (small - small.min()) / (np.ptp(small) + 1e-9)
-        
-        return rgb, depth, thermal
+        small = small + rng.normal(0, NOISE_REL * (small.mean() - RAW_OFFSET), small.shape)
+        raw = np.clip(np.round(small), 0, RAW_MAX).astype(np.uint16)
+
+        # Per-frame min-max (v0 behavior), kept until the shared normalization replaces it
+        thermal = (raw - raw.min()) / (float(np.ptp(raw)) + 1e-9)
+
+        return rgb, depth, thermal, raw

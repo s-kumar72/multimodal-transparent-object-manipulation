@@ -25,6 +25,11 @@ COLORS = np.array([[0.8, 0.2, 0.2], [0.2, 0.3, 0.8], [0.2, 0.6, 0.3], [0.9, 0.8,
 def _resize(img):
     return np.asarray(Image.fromarray(img).resize((IMG, IMG), Image.BILINEAR))
 
+def _resize_raw(raw):
+    """uint16 raw thermal counts -> IMG x IMG with the same bilinear filter, kept as counts."""
+    small = np.asarray(Image.fromarray(raw.astype(np.float32)).resize((IMG, IMG), Image.BILINEAR))
+    return np.round(small).astype(np.uint16)
+
 def _footprint(m, body):
     """Radius in xy and height of the body origin above its lowest point (box / cylinder geoms)."""
     radius, low = 0.0, 0.0
@@ -201,12 +206,13 @@ class GlassPickEnv:
         joints = np.append(d.qpos[:6], d.joint("right_finger_bottom_joint").qpos[0]).astype(np.float32)
         if self.sensors is None:
             return {"joints": joints}
-        rgb, depth, thermal = self.sensors.render(d, self.temps, self.emis, self.t_env, self.rng, self.liquid)
+        rgb, depth, thermal, raw = self.sensors.render(d, self.temps, self.emis, self.t_env, self.rng, self.liquid)
         depth8 = (255 * np.clip(depth, 0, 2.0) / 2.0).astype(np.uint8)
         thermal8 = (255 * thermal).astype(np.uint8)
         return {"rgb": _resize(rgb),
                 "depth": _resize(depth8)[..., None],
                 "thermal": _resize(thermal8)[..., None],
+                "thermal_raw": _resize_raw(raw)[..., None],
                 "joints": joints}
 
     def close(self):

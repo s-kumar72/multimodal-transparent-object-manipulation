@@ -81,9 +81,12 @@ Zarr stores in Diffusion Policy's layout; loads with `ReplayBuffer.copy_from_pat
 | `data/rgb` | (N, 96, 96, 3) uint8 | Color image from `front_cam` |
 | `data/depth` | (N, 96, 96, 1) uint8 | 0–2 m mapped to 0–255; 0 = no reading (holes on glass) |
 | `data/thermal` | (N, 96, 96, 1) uint8 | Simulated thermal, normalized per frame (relative, not °C) |
+| `data/thermal_raw` | (N, 96, 96, 1) uint16 | Raw-like 14-bit counts (0–16383) before normalization: `80 · band radiance + 4000` (v0 placeholder, ~65 counts/°C near 22 °C), with blur and noise applied in counts |
 | `data/joints` | (N, 7) float32 | 6 arm joint angles (rad) + gripper (0 open – 0.85 closed) |
 | `data/action` | (N, 7) float32 | Teacher's 6 absolute joint targets (rad) + gripper target |
 | `meta/episode_ends` | (episodes,) int64 | Index one past the last step of each episode |
+
+`data/thermal` is now min-max normalized from the integer raw counts, so it can differ from datasets made before `data/thermal_raw` existed by at most 1 gray level (about 10% of pixels).
 
 <!-- 
 To setup the virtual environment:
