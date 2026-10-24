@@ -1,6 +1,7 @@
 """
 python -m unittest encoder.test_encoder   (DP checks use $DP_ROOT, default ../diffusion_policy; skipped if missing)
 """
+import json
 import os
 import sys
 import tempfile
@@ -9,7 +10,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 from omegaconf import OmegaConf
-from encoder.dataset import ThermalSegDataset, compute_cnr, random_arrays, split_sequences
+from PIL import Image
+from encoder.dataset import (ThermalSegDataset, compute_cnr, list_frames, list_sequences, load_frame, load_transpose,
+                             random_arrays, split_sequences)
 from encoder.export import encoder_state_dict, load_into_dp_obs_encoder, load_thermal_encoder
 from encoder.model import ThermalSegNet, make_thermal_resnet18, seg_loss
 
@@ -61,6 +64,29 @@ class TestModelAndData(unittest.TestCase):
         m[20:40, 20:40] = True
         self.assertAlmostEqual(compute_cnr(img + 10 * m, m), 5.0, delta=1.0)
         self.assertTrue(np.isnan(compute_cnr(img, np.zeros_like(m))))
+
+    def test_transpose_reader_and_cache(self):
+        with tempfile.TemporaryDirectory() as root:
+            cam = os.path.join(root, "seq_all_01", "cam_T")
+            for d in ("14bit", "pose", "mask"):
+                os.makedirs(os.path.join(cam, d))
+            Image.fromarray(np.full((32, 40), 3000, np.uint16)).save(os.path.join(cam, "14bit", "000001.png"))
+            objs = {}
+            for k, (name, rows) in enumerate([("obj_H_09_01_G", slice(0, 8)), ("obj_N_03_01_P", slice(20, 28))], 1):
+                m = np.zeros((32, 40), np.uint8)
+                m[rows, :10] = 60
+                Image.fromarray(m).save(os.path.join(cam, "mask", f"000001_00000{k}.png"))
+                objs[str(k)] = {"obj_name": name, "mask_img": f"000001_00000{k}.png"}
+            with open(os.path.join(cam, "pose", "000001.json"), "w") as f:
+                json.dump(objs, f)
+            self.assertEqual(list_sequences(root), ["seq_all_01"])
+            raw, mask = load_frame(list_frames(root, "seq_all_01")[0])
+            self.assertEqual((raw.dtype, raw.max()), (np.uint16, 3000))
+            self.assertEqual(mask.sum(), 80)  # glass only; the non-transparent (N) object is excluded
+            cache = os.path.join(root, "cache")
+            raw96, mask96, cnr = load_transpose(root, ["seq_all_01"], 16, cache)
+            self.assertEqual((raw96.shape, mask96.shape, cnr.shape), ((1, 16, 16), (1, 16, 16), (1,)))
+            self.assertTrue(os.path.exists(os.path.join(cache, "seq_all_01_16.npz")))
 
     def test_sequence_split_is_disjoint(self):
         tr, va = split_sequences([f"seq_{i:02d}" for i in range(7)], 0.2, seed=1)

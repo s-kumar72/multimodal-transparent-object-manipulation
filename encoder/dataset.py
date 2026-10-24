@@ -1,27 +1,44 @@
 """
 Thermal glass-segmentation data: TRansPose frame loading, resize + CNR caching, thermal-safe augmentation.
-The TRansPose-specific readers are stubs until the dataset layout has been inspected.
+
+TRansPose thermal layout per sequence: <seq>/cam_T/14bit/<frame>.png (uint16 raw, 640x512),
+cam_T/pose/<frame>.json (objects: obj_name, mask_img), cam_T/mask/<frame>_<obj>.png (visible mask, > 0).
 """
+import json
 import os
 import numpy as np
 import torch
 import torch.nn.functional as F
+from PIL import Image
 from torch.utils.data import Dataset
+
+# obj_<category>_...: C = chemical lab, H = household, T = recyclable trash (all transparent); N = non-transparent
+TRANSPARENT_CATEGORIES = ("C", "H", "T")
 
 
 def list_sequences(root):
-    """Sequence ids under a TRansPose root."""
-    raise NotImplementedError("TRansPose layout not inspected yet")
+    """Sequence ids (folder names) under a TRansPose sequences root."""
+    return sorted(d for d in os.listdir(root) if os.path.isdir(os.path.join(root, d, "cam_T", "14bit")))
 
 
 def list_frames(root, seq):
-    """Per thermal frame of one sequence: whatever load_frame needs (e.g. raw thermal + label paths)."""
-    raise NotImplementedError("TRansPose layout not inspected yet")
+    """(cam_T dir, frame id) per thermal frame of one sequence."""
+    cam = os.path.join(root, seq, "cam_T")
+    return [(cam, f[:-4]) for f in sorted(os.listdir(os.path.join(cam, "14bit"))) if f.endswith(".png")]
 
 
 def load_frame(frame):
-    """-> raw (H, W) 14-bit counts, mask (H, W) bool in the thermal view (all transparent objects = 1)."""
-    raise NotImplementedError("TRansPose layout not inspected yet")
+    """-> raw (H, W) uint16 14-bit counts, mask (H, W) bool in the thermal view (all transparent objects = 1)."""
+    cam, idx = frame
+    raw = np.array(Image.open(os.path.join(cam, "14bit", f"{idx}.png")))
+    with open(os.path.join(cam, "pose", f"{idx}.json")) as f:
+        objs = json.load(f).values()
+    mask = np.zeros(raw.shape, bool)
+    for o in objs:
+        path = os.path.join(cam, "mask", o["mask_img"])
+        if o["obj_name"].split("_")[1] in TRANSPARENT_CATEGORIES and os.path.exists(path):
+            mask |= np.array(Image.open(path)) > 0
+    return raw, mask
 
 
 def compute_cnr(raw, mask, ring=8):
@@ -59,7 +76,7 @@ def load_transpose(root, sequences, size=96, cache_dir=None):
         part = tuple(np.stack(a) for a in zip(*frames))
         if path:
             os.makedirs(cache_dir, exist_ok=True)
-            np.savez(path, raw=part[0], mask=part[1], cnr=part[2])
+            np.savez_compressed(path, raw=part[0], mask=part[1], cnr=part[2])
         parts.append(part)
     return tuple(np.concatenate(a) for a in zip(*parts))
 
