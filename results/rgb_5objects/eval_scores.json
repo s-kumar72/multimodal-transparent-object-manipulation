@@ -1,0 +1,90 @@
+{
+  "run": "rgb, 5 objects, 500 demos, seed 42, V100-16GB, Bridges-2 job 49664965",
+  "test_seeds": "100000-100049 (10 per object)",
+  "evaluations": [
+    {
+      "epoch": 0,
+      "global_step": 409,
+      "success_rate": 0.0,
+      "per_object": {
+        "tumbler": 0.0,
+        "bottle": 0.0,
+        "wineglass": 0.0,
+        "jar": 0.0,
+        "flask": 0.0
+      },
+      "train_loss": 0.27979,
+      "val_loss": 0.06839
+    },
+    {
+      "epoch": 25,
+      "global_step": 10659,
+      "success_rate": 0.4,
+      "per_object": {
+        "tumbler": 0.5,
+        "bottle": 0.2,
+        "wineglass": 0.5,
+        "jar": 0.3,
+        "flask": 0.5
+      },
+      "train_loss": 0.00982,
+      "val_loss": 0.00839
+    },
+    {
+      "epoch": 50,
+      "global_step": 20909,
+      "success_rate": 0.66,
+      "per_object": {
+        "tumbler": 0.3,
+        "bottle": 0.6,
+        "wineglass": 0.7,
+        "jar": 0.8,
+        "flask": 0.9
+      },
+      "train_loss": 0.00584,
+      "val_loss": 0.0044
+    },
+    {
+      "epoch": 75,
+      "global_step": 31159,
+      "success_rate": 0.9,
+      "per_object": {
+        "tumbler": 0.8,
+        "bottle": 0.8,
+        "wineglass": 0.9,
+        "jar": 1.0,
+        "flask": 1.0
+      },
+      "train_loss": 0.00402,
+      "val_loss": 0.00391
+    },
+    {
+      "epoch": 100,
+      "global_step": 41409,
+      "success_rate": 0.96,
+      "per_object": {
+        "tumbler": 0.9,
+        "bottle": 1.0,
+        "wineglass": 1.0,
+        "jar": 1.0,
+        "flask": 0.9
+      },
+      "train_loss": 0.00246,
+      "val_loss": 0.00222
+    },
+    {
+      "epoch": 125,
+      "global_step": 51659,
+      "success_rate": 0.94,
+      "per_object": {
+        "tumbler": 0.8,
+        "bottle": 0.9,
+        "wineglass": 1.0,
+        "jar": 1.0,
+        "flask": 1.0
+      },
+      "train_loss": 0.00139,
+      "val_loss": 0.00129
+    }
+  ]
+}
