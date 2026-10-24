@@ -88,6 +88,12 @@ Zarr stores in Diffusion Policy's layout; loads with `ReplayBuffer.copy_from_pat
 
 `data/thermal` is now min-max normalized from the integer raw counts, so it can differ from datasets made before `data/thermal_raw` existed by at most 1 gray level (about 10% of pixels).
 
+### Known limitations
+
+- **Liquid level line is tiny at 96×96.** The glass covers only about 21–27 pixels (7–8 rows × 3–4 columns; default scene, seeds 0–9). When the liquid and glass temperatures differ, thermal shows a horizontal level line, but fill levels 0.33 / 0.5 / 0.67 differ by only 1–2 rows, and the 3×3 blur at 120×160 before resizing softens the edge further. Treat it as "the lower part of the glass shifts toward the liquid temperature", not as a readable fill level. Fixing this would need a different camera pose / field of view or image size, which are out of scope.
+- **The top of a filled glass shows the glass temperature.** The MuJoCo glass is a closed cylinder, so its top face (seen at an angle from above) is rendered at the glass temperature. A real open glass would show the liquid surface (water emissivity ≈ 0.96, liquid temperature).
+- **No refraction or fluids.** MuJoCo renders the glass as a tinted, alpha-blended cylinder and the liquid as a fixed cylinder inside it (picking a glass of water, not pouring).
+
 <!-- 
 To setup the virtual environment:
 ```bash
