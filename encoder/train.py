@@ -161,9 +161,9 @@ def run_eval(ckpt_path, overrides):
     model = make_model(cfg, device)
     model.load_state_dict(ckpt["model"])
     loader = DataLoader(ds, cfg.train.batch_size, num_workers=cfg.train.num_workers)
-    metrics = {"epoch": ckpt["epoch"], "cnr_edges": ckpt["cnr_edges"],
-               **evaluate(model, loader, cfg.data.crop_size, ckpt["cnr_edges"], device)}
-    out = os.path.splitext(ckpt_path)[0]
+    edges = list(cfg.eval.cnr_edges or ckpt["cnr_edges"])  # eval.cnr_edges=[a,b] overrides the train tertiles
+    metrics = {"epoch": ckpt["epoch"], "cnr_edges": edges, **evaluate(model, loader, cfg.data.crop_size, edges, device)}
+    out = os.path.splitext(ckpt_path)[0] + ("_cnr" + "-".join(f"{e:g}" for e in edges) if cfg.eval.cnr_edges else "")
     with open(out + "_eval.json", "w") as f:
         json.dump(metrics, f, indent=1)
     save_grid(model, ds, cfg.data.crop_size, cfg.eval.n_vis, out + "_val_grid.png", device)
