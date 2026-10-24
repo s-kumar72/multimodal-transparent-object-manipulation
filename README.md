@@ -66,7 +66,7 @@ Zarr stores in Diffusion Policy's layout; loads with `ReplayBuffer.copy_from_pat
 
 Pretrains a 1-channel ResNet-18 thermal encoder (GroupNorm, same layout as Diffusion Policy's image encoder) by glass segmentation on TRansPose 14-bit raw thermal. Only the encoder is exported; the FPN segmentation head is dropped.
 
-- `common/thermal.py`: `normalize_thermal_raw(raw, mode, params)` shared by real and sim thermal (`fixed` default, `percentile`, `minmax`).
+- `common/thermal.py`: `normalize_thermal_raw(raw, mode, params)` shared by real and sim thermal (`fixed` default, `centered`, `percentile`, `minmax`).
 - `encoder/`: `model.py` (encoder + seg head, BCE + Dice), `dataset.py` (loading, CNR, augmentation), `train.py` (training + evaluation), `export.py` (DP export), `configs/transpose_seg.yaml`.
 
 ***Data***: `data.root` is a folder of TRansPose sequences (e.g. `seq_all_01/`). Only the thermal camera files are read:

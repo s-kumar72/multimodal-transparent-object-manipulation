@@ -13,8 +13,8 @@ data:
   val_frac: 0.2
   image_size: 96           # frames resized to the DP obs size
   crop_size: 84            # train random crop / val center crop (DP crop_shape)
-  norm_mode: fixed         # common/thermal.py: fixed | percentile | minmax
-  norm_params: null        # e.g. {range: [lo, hi]}; null = THERMAL_RAW_RANGE
+  norm_mode: fixed         # common/thermal.py: fixed | centered | percentile | minmax
+  norm_params: null        # e.g. {range: [lo, hi]}; null = the mode default in common/thermal.py
   n_random: 320            # frames when name=random
 
 aug:
