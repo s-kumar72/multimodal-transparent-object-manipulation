@@ -7,6 +7,10 @@ import numpy as np
 # radiance to the same counts so real and sim thermal share one scale.
 # TODO: placeholder = full 14-bit range; to be set from TRansPose train-split statistics.
 THERMAL_RAW_RANGE = (0, 16383)
+# Range relative to the frame's median count used by "centered" mode (removes per-frame drift).
+# Provisional: 0.5 / 99.5 percentiles of (raw - frame median) on TRansPose seq_all_01; to be reset
+# from the train split.
+THERMAL_CENTERED_RANGE = (-170, 350)
 THERMAL_PERCENTILES = (1.0, 99.0)
 
 
@@ -15,6 +19,8 @@ def normalize_thermal_raw(raw, mode="fixed", params=None):
 
     fixed:      (raw - lo) / (hi - lo) with params["range"] (default THERMAL_RAW_RANGE).
                 Keeps absolute contrast, so low-contrast scenes (thermal crossover) stay flat.
+    centered:   (raw - (median + lo)) / (hi - lo) with params["range"] relative to the per-image median
+                (default THERMAL_CENTERED_RANGE). Fixed scale like "fixed", minus per-frame level drift.
     percentile: per-image params["percentiles"] (default THERMAL_PERCENTILES) -> [0, 1].
     minmax:     per-image min/max -> [0, 1] (same as the 8-bit images; hides low contrast).
     """
@@ -22,6 +28,9 @@ def normalize_thermal_raw(raw, mode="fixed", params=None):
     raw = np.asarray(raw, dtype=np.float32)
     if mode == "fixed":
         lo, hi = params.get("range", THERMAL_RAW_RANGE)
+    elif mode == "centered":
+        med = np.median(raw, axis=(-2, -1), keepdims=True)
+        lo, hi = (med + r for r in params.get("range", THERMAL_CENTERED_RANGE))
     elif mode == "percentile":
         lo, hi = np.percentile(raw, params.get("percentiles", THERMAL_PERCENTILES), axis=(-2, -1), keepdims=True)
     elif mode == "minmax":

@@ -20,6 +20,16 @@ class TestNormalizeThermalRaw(unittest.TestCase):
             self.assertTrue(np.all(out.min(axis=(1, 2)) < 0.05) and np.all(out.max(axis=(1, 2)) > 0.95), mode)
         np.testing.assert_allclose(normalize_thermal_raw(raw, "minmax")[0], normalize_thermal_raw(raw, "minmax")[1])
 
+    def test_centered_removes_frame_offset_keeps_scale(self):
+        base = np.random.default_rng(0).normal(3000, 20, (8, 8))
+        frames = np.stack([base, base + 600])  # same scene, frame-level drift
+        out = normalize_thermal_raw(frames, "centered", {"range": (-100, 100)})
+        np.testing.assert_allclose(out[0], out[1], atol=1e-6)
+        bumped = base.copy()
+        bumped[0, 0] += 50
+        delta = normalize_thermal_raw(bumped, "centered", {"range": (-100, 100)}) - out[0]
+        self.assertAlmostEqual(float(delta[0, 0]), 0.25, places=5)  # 50 counts / 200-count scale
+
     def test_custom_range_and_bad_mode(self):
         np.testing.assert_allclose(normalize_thermal_raw([[10, 20]], params={"range": (10, 30)}), [[0.0, 0.5]])
         with self.assertRaises(ValueError):
