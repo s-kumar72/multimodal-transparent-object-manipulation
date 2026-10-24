@@ -24,12 +24,14 @@ def dilate(mask, r):
         out = np.any([np.take(pad, range(i, i + n), axis=axis) for i in range(2 * r + 1)], axis=0)
     return out
 
-def ring(mask, r):
-    return dilate(mask, r) & ~mask
+def ring(mask, r, gap=0):
+    """Background band of width r around the glass, starting gap px away from it."""
+    return dilate(mask, gap + r) & ~(dilate(mask, gap) if gap else mask)
 
-def cnr(raw, mask, r=8):
-    """|mean glass - mean background ring| / std background ring. NaN without glass."""
-    bg = raw[ring(mask, r)]
+def cnr(raw, mask, r=8, gap=0):
+    """|mean glass - mean background ring| / std background ring. NaN without glass.
+    gap=0 is the encoder definition; gap > 0 skips the blurred glass edge so the ring std is background only."""
+    bg = raw[ring(mask, r, gap)]
     if not mask.any() or bg.size < 2:
         return np.nan
     return abs(raw[mask].mean() - bg.mean()) / (bg.std(ddof=1) + 1e-6)
@@ -52,11 +54,12 @@ def edge_sharpness(raw, mask):
     edge = dilate(mask, 1) & dilate(~mask, 1)     # pixels on both sides of the boundary
     return np.hypot(gx, gy)[edge].mean() / (abs(d) + 1e-6) if mask.any() else np.nan
 
-def frame_stats(raw, mask, r):
-    """All metrics of one frame. The *_noise / *_range ratios do not depend on the camera's counts per degree."""
+def frame_stats(raw, mask, r, gap):
+    """All metrics of one frame (ring width r, cnr_gap skips gap px of blurred edge).
+    The *_noise / *_range ratios do not depend on the camera's counts per degree."""
     c, d, n = cnr(raw, mask, r), delta(raw, mask, r), noise(raw)
     p1, p99 = float(np.percentile(raw, 1)), float(np.percentile(raw, 99))
-    return {"cnr": c, "delta": d, "ring_std": abs(d) / c if c > 0 else np.nan, "noise": n,
+    return {"cnr": c, "cnr_gap": cnr(raw, mask, r, gap), "delta": d, "ring_std": abs(d) / c if c > 0 else np.nan, "noise": n,
             "delta_noise": abs(d) / n, "delta_range": abs(d) / (p99 - p1), "noise_range": n / (p99 - p1),
             "sharpness": edge_sharpness(raw, mask), "glass_frac": float(mask.mean()),
             "median": float(np.median(raw)), "p1": p1, "p99": p99}

@@ -86,6 +86,10 @@ class GlassPickEnv:
         self.temps = {"glass": self.t_env + gap, "table": self.t_env + r.uniform(*th["table_dt"])}
         self.temps.update({n: self.t_env + r.uniform(*th["link_dt"]) for n in self.link_names})
         self.emis = {"glass": r.uniform(*th["emis"]["glass"]), "table": r.uniform(*th["emis"]["table"])}
+        if th["realistic"]["p"] > 0:
+            rr = np.random.default_rng(None if seed is None else [seed, 6])
+            if rr.random() < th["realistic"]["p"]:
+                self.temps["glass"] = self.t_env + rr.uniform(*th["realistic"]["gap"])
 
         # Scene randomization: one RNG stream per factor, so the draws above and the other factors
         # stay the same when a factor is changed in the config

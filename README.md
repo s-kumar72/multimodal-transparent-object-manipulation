@@ -104,6 +104,15 @@ The scene config names a thermal config (`thermal: v0`) in `sim/configs/thermal/
 It holds every thermal parameter: t_env range, glass − t_env gap and crossover probability, table / robot / distractor temperatures, emissivity ranges (glass, table, distractors), liquid mix, raw gain/offset, thermal resolution, blur, and noise in raw counts.
 `v0` is the original hand-picked model and is kept unchanged; calibrated models get their own files.
 
+`calibrated_v1` fits only the camera model (raw gain/offset, noise in counts, blur) to TRansPose 14-bit raw thermal (seq_all_01); the glass temperature gap and crossover design stay as in v0.
+The fit compares image statistics on raw counts after the same 96×96 resize (count levels, |Δ|/range, |Δ|/noise, noise/range, noise, edge sharpness; CNR is reported only). It runs on "realistic" sim frames (glass slightly colder than t_env, no liquid, like TRansPose), fitting that gap together with the camera. The gap is stored as the `realistic` option, off by default (`realistic.p`, separate RNG stream).
+```bash
+# compare thermal configs with real data, or fit (seeded random search) and write sim/configs/thermal/calibrated_v1.yaml
+python sim/thermal_calib.py --real-root $PROJECT/transparent/transpose --thermal v0 calibrated_v1
+python sim/thermal_calib.py --real-root $PROJECT/transparent/transpose --fit --save calibrated_v1
+```
+Reports (summary table, histograms, real vs sim image grid on one fixed count range) go to `sim/out/thermal_calib/`.
+
 ### Dataset format
 
 Zarr stores in Diffusion Policy's layout; loads with `ReplayBuffer.copy_from_path(path, keys=[...]). There is one row per timestep at **10 Hz** with all episodes back to back.
@@ -139,6 +148,8 @@ Datasets made with this branch also store per-episode conditions as flat arrays 
 
 - **Liquid level line is tiny at 96×96.** The glass covers only about 21–27 pixels (7–8 rows × 3–4 columns; default scene, seeds 0–9). When the liquid and glass temperatures differ, thermal shows a horizontal level line, but fill levels 0.33 / 0.5 / 0.67 differ by only 1–2 rows, and the 3×3 blur at 120×160 before resizing softens the edge further. Treat it as "the lower part of the glass shifts toward the liquid temperature", not as a readable fill level. Fixing this would need a different camera pose / field of view or image size, which are out of scope.
 - **The top of a filled glass shows the glass temperature.** The MuJoCo glass is a closed cylinder, so its top face (seen at an angle from above) is rendered at the glass temperature. A real open glass would show the liquid surface (water emissivity ≈ 0.96, liquid temperature).
+- **The glass is much smaller in the image than in real thermal data.** It covers ~0.26% of the frame, vs ~5.8% for the transparent objects in TRansPose (seq_all_01). This comes from the camera pose / field of view, not from a thermal parameter, so the thermal calibration does not try to match it. With so few pixels, a 2 px background ring around the glass is mostly blurred edge, and the glass-vs-ring CNR saturates near 5–7 in sim; `sim/thermal_calib.py` therefore also reports a CNR with the ring moved 2 px away from the edge and fits counts-per-degree independent ratios instead.
+- **Little thermal structure in the background.** In TRansPose the background around the glass varies about 20× the sensor noise (other warm objects, temperature patterns). The sim background is a uniform-temperature table and floor; only the warm robot links and the distractors add structure.
 - **No refraction or fluids.** MuJoCo renders the glass as a tinted, alpha-blended cylinder and the liquid as a fixed cylinder inside it (picking a glass of water, not pouring).
 
 <!-- 

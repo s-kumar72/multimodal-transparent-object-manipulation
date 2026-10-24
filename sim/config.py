@@ -53,6 +53,9 @@ DEFAULT_THERMAL = {
     "t_env": [18, 26],
     # glass - t_env: crossover (|gap| <= 1) with crossover_p, otherwise +-[5, 35]
     "crossover_p": 0.3, "crossover_gap": [-1, 1], "gap_abs": [5, 35],
+    # Optional "realistic" glass (like TRansPose): slightly colder than t_env by -gap C, low contrast.
+    # With probability p it replaces the gap above (own RNG stream, so p = 0 changes nothing). Ratio not decided yet.
+    "realistic": {"p": 0.0, "gap": [-3, -1]},
     "table_dt": [-1, 1],    # table - t_env
     "link_dt": [5, 12],     # robot links - t_env (motors warm)
     # Distractors: mostly near t_env, sometimes hot or cold (absolute C), so the glass is not the only hot/cold object
@@ -94,7 +97,9 @@ def load_scene_config(path=None):
     return cfg
 
 def load_thermal_config(name=None):
-    """name: YAML file, a name in sim/configs/thermal/, or None for DEFAULT_THERMAL (v0)."""
+    """name: YAML file, a name in sim/configs/thermal/, None for DEFAULT_THERMAL (v0), or an already loaded dict."""
+    if isinstance(name, dict):
+        return copy.deepcopy(name)
     cfg = copy.deepcopy(DEFAULT_THERMAL)
     if name is not None:
         p = Path(name) if str(name).endswith(".yaml") else THERMAL_DIR / f"{name}.yaml"
