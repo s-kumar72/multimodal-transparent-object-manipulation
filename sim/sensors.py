@@ -62,22 +62,7 @@ class Sensors:
         """liquid: None or (fill_level, liquid_temp). LWIR does not pass glass, so liquid shows only through the wall temperature.
         Returns rgb, depth (m), thermal (per-frame min-max, [0, 1]) and thermal raw counts (uint16) at the thermal resolution."""
         rng = rng or np.random.default_rng()
-        r, cam = self.r, self.camera
-
-        r.update_scene(data, camera=cam, scene_option=self.show_all)
-        rgb = r.render().copy()
-
-        r.enable_depth_rendering()
-        r.update_scene(data, camera=cam, scene_option=self.show_all)
-        depth_true = r.render().copy()
-        r.update_scene(data, camera=cam, scene_option=self.hide_glass)
-        depth_behind = r.render().copy()
-        r.disable_depth_rendering()
-
-        r.enable_segmentation_rendering()
-        r.update_scene(data, camera=cam, scene_option=self.show_all)
-        seg = r.render()[..., 0].copy()
-        r.disable_segmentation_rendering()
+        rgb, depth_true, depth_behind, seg = self.geometry(data)
 
         # Depth on glass
         on_glass = np.isin(seg, self.glass_geoms)
@@ -93,6 +78,32 @@ class Sensors:
         thermal = (raw - raw.min()) / (float(np.ptp(raw)) + 1e-9)
 
         return rgb, depth, thermal, raw
+
+    def geometry(self, data):
+        """rgb, depth with glass, depth behind the glass, segmentation (geom ids) at render size."""
+        r, cam = self.r, self.camera
+        r.update_scene(data, camera=cam, scene_option=self.show_all)
+        rgb = r.render().copy()
+
+        r.enable_depth_rendering()
+        r.update_scene(data, camera=cam, scene_option=self.show_all)
+        depth_true = r.render().copy()
+        r.update_scene(data, camera=cam, scene_option=self.hide_glass)
+        depth_behind = r.render().copy()
+        r.disable_depth_rendering()
+
+        r.enable_segmentation_rendering()
+        r.update_scene(data, camera=cam, scene_option=self.show_all)
+        seg = r.render()[..., 0].copy()
+        r.disable_segmentation_rendering()
+        return rgb, depth_true, depth_behind, seg
+
+    def to_thermal_res(self, img):
+        """Render-size image -> thermal resolution, sampled like the thermal image (e.g. the glass mask)."""
+        h, w = self.th["resolution"]
+        ys = np.linspace(0, img.shape[0] - 1, h).astype(int)
+        xs = np.linspace(0, img.shape[1] - 1, w).astype(int)
+        return img[np.ix_(ys, xs)]
 
     def thermal_raw(self, seg, temps, emissivity, t_env, rng, below=None, t_liquid=None):
         """Raw thermal counts (uint16) from a segmentation image, so thermal can be re-made for new parameters
@@ -114,9 +125,6 @@ class Sensors:
         # Camera effects, in raw counts like a radiometric thermal camera
         gain, offset = th["raw"]["gain"], th["raw"]["offset"]
         counts = gain * rad + offset
-        h, w = th["resolution"]
-        ys = np.linspace(0, counts.shape[0] - 1, h).astype(int)
-        xs = np.linspace(0, counts.shape[1] - 1, w).astype(int)
-        small = blur(counts[np.ix_(ys, xs)], th["blur_sigma_px"])
+        small = blur(self.to_thermal_res(counts), th["blur_sigma_px"])
         small = small + rng.normal(0, th["noise"]["rel"] * (small.mean() - offset) + th["noise"]["counts"], small.shape)
         return np.clip(np.round(small), 0, RAW_MAX).astype(np.uint16)
