@@ -72,6 +72,12 @@ python sim/teacher_check.py --config randomized_v1 --split test --n 100 --seed 1
 ```
 On a shared login node CPU time is throttled, so run longer checks on a compute node.
 
+### Thermal model
+
+The scene config names a thermal config (`thermal: v0`) in `sim/configs/thermal/`; YAML files there override `DEFAULT_THERMAL` in `sim/config.py`.
+It holds every thermal parameter: t_env range, glass − t_env gap and crossover probability, table / robot / distractor temperatures, emissivity ranges (glass, table, distractors), liquid mix, raw gain/offset, thermal resolution, blur, and noise in raw counts.
+`v0` is the original hand-picked model and is kept unchanged; calibrated models get their own files.
+
 ### Dataset format
 
 Zarr stores in Diffusion Policy's layout; loads with `ReplayBuffer.copy_from_path(path, keys=[...]). There is one row per timestep at **10 Hz** with all episodes back to back.

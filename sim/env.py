@@ -1,13 +1,14 @@
 """
 Glass-picking environment with randomized scene.
-Scene randomization (background, lighting, liquid, distractors) is set by a scene config (sim/config.py) and a split.
+Scene randomization (background, lighting, liquid, distractors) is set by a scene config (sim/config.py) and a split;
+the scene config names the thermal config (temperatures, emissivities, camera model).
 Author: Sadhana Kumar
 """
 import mujoco
 import numpy as np
 from PIL import Image
 
-from config import BACKGROUNDS, LIGHTING, load_scene_config
+from config import BACKGROUNDS, LIGHTING, load_scene_config, load_thermal_config
 from sensors import Sensors
 
 SCENE = "sim/assets/gen3_lite/transparent_scene.xml"
@@ -44,10 +45,11 @@ class GlassPickEnv:
     def __init__(self, max_steps=120, config=None, split="train", render=True):
         assert split in ("train", "test")
         self.cfg = config if isinstance(config, dict) else load_scene_config(config)
+        self.th = load_thermal_config(self.cfg["thermal"])
         self.split = split
         self.model = mujoco.MjModel.from_xml_path(SCENE)
         self.data = mujoco.MjData(self.model)
-        self.sensors = Sensors(self.model) if render else None   # render=False: physics only (teacher checks)
+        self.sensors = Sensors(self.model, thermal=self.th) if render else None   # render=False: physics only (teacher checks)
         self.n_sub = int(round(CTRL_DT / self.model.opt.timestep))
         self.glass_q = self.model.jnt_qposadr[self.model.body("glass").jntadr[0]]
         self.link_names = [self.model.body(i).name for i in range(self.model.nbody) if "link" in self.model.body(i).name]
@@ -69,6 +71,7 @@ class GlassPickEnv:
                                                     radius=radius, low=low)
 
     def reset(self, seed=None):
+        self.seed = seed
         self.rng = np.random.default_rng(seed)
         r, m, d = self.rng, self.model, self.data
         mujoco.mj_resetData(m, d)
@@ -76,12 +79,13 @@ class GlassPickEnv:
         d.ctrl[:6] = READY
         d.qpos[self.glass_q:self.glass_q + 3] = [r.uniform(0.32, 0.48), r.uniform(-0.15, 0.15), GLASS_Z]
 
-        # Thermal conditions
-        self.t_env = r.uniform(18, 26)
-        gap = r.uniform(-1, 1) if r.random() < 0.3 else r.choice([-1, 1]) * r.uniform(5, 35)
-        self.temps = {"glass": self.t_env + gap, "table": self.t_env + r.uniform(-1, 1)}
-        self.temps.update({n: self.t_env + r.uniform(5, 12) for n in self.link_names})
-        self.emis = {"glass": r.uniform(0.85, 0.95), "table": r.uniform(0.90, 0.97)}
+        # Thermal conditions (thermal config; draw order kept so v0 gives the original values)
+        th = self.th
+        self.t_env = r.uniform(*th["t_env"])
+        gap = r.uniform(*th["crossover_gap"]) if r.random() < th["crossover_p"] else r.choice([-1, 1]) * r.uniform(*th["gap_abs"])
+        self.temps = {"glass": self.t_env + gap, "table": self.t_env + r.uniform(*th["table_dt"])}
+        self.temps.update({n: self.t_env + r.uniform(*th["link_dt"]) for n in self.link_names})
+        self.emis = {"glass": r.uniform(*th["emis"]["glass"]), "table": r.uniform(*th["emis"]["table"])}
 
         # Scene randomization: one RNG stream per factor, so the draws above and the other factors
         # stay the same when a factor is changed in the config
@@ -175,11 +179,12 @@ class GlassPickEnv:
                 m.geom_rgba[g, :3] = color * (0.6 if m.geom(g).name.endswith("_inner") else 1.0)
 
             # Thermal: mostly near t_env, sometimes hot or cold, so "the only hot/cold object" is not always the glass
-            if rng.random() < cfg["p_off_ambient"]:
-                self.temps[o["body"]] = rng.uniform(*cfg["hot"] if rng.random() < 0.5 else cfg["cold"])
+            th = self.th["distractor"]
+            if rng.random() < th["p_off_ambient"]:
+                self.temps[o["body"]] = rng.uniform(*th["hot"] if rng.random() < 0.5 else th["cold"])
             else:
-                self.temps[o["body"]] = self.t_env + rng.uniform(*cfg["ambient"])
-            self.emis[o["body"]] = rng.uniform(*cfg["emis"])
+                self.temps[o["body"]] = self.t_env + rng.uniform(*th["ambient_dt"])
+            self.emis[o["body"]] = rng.uniform(*self.th["emis"]["distractor"])
         self.cond.update(distractors=names)
 
     def _glass_appearance(self, rng):
@@ -218,6 +223,16 @@ class GlassPickEnv:
     def close(self):
         if self.sensors is not None:
             self.sensors.r.close()
+
+    def episode_meta(self):
+        """Conditions of the current episode, saved per episode by collect_demos.py (sim/dataset_meta.py)."""
+        c, t, names = self.cond, self.temps, self.cond["distractors"]
+        gap = t["glass"] - self.t_env
+        return dict(split=self.split, seed=self.seed, thermal_config=self.th["name"], background=c["background"],
+                    lighting=c["lighting"], distractors=names, fill_level=c["fill_level"], liquid_temp=c["liquid_temp"],
+                    t_env=self.t_env, glass_temp=t["glass"], table_temp=t["table"], thermal_gap=gap, is_crossover=abs(gap) < 2,
+                    emis_glass=self.emis["glass"], emis_table=self.emis["table"],
+                    distractor_temps=[t[f"dist_{n}"] for n in names], emis_distractors=[self.emis[f"dist_{n}"] for n in names])
 
     # ONLY FOR TEACHER (NOT FOR POLICY)
     def glass_position(self):

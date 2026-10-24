@@ -1,0 +1,3 @@
+# Original hand-picked thermal model: every value comes from DEFAULT_THERMAL in sim/config.py.
+# Do not edit; calibrated models go in their own files (e.g. calibrated_v1.yaml).
+name: v0

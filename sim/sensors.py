@@ -1,27 +1,40 @@
 """
 Renders RGB, depth, and simulated thermal using MuJoCo camera.
+Thermal parameters (emissivity default, liquid mix, raw gain/offset, resolution, blur, noise) come from a thermal config.
 Author: Sadhana Kumar
 """
 import mujoco
 import numpy as np
 
+from config import load_thermal_config
+
 H_PLANCK, C_LIGHT, K_B = 6.626e-34, 2.998e8, 1.381e-23
 _WAVE = np.linspace(8e-6, 14e-6, 200) # low wave IR range of most thermal cameras
-LIQUID_MIX = 0.8 # glass wall below the liquid surface: 0.8 * liquid + 0.2 * glass temperature
-# Raw counts = RAW_GAIN * band radiance + RAW_OFFSET (14-bit). v0 placeholder: 0 C -> ~6830, 100 C -> ~15010, ~65 counts/C near 22 C
-RAW_GAIN, RAW_OFFSET, RAW_MAX = 80.0, 4000.0, 16383
-NOISE_REL = 0.002 # v0 noise std = 0.2% of the mean signal above offset (same as the original 0.2% of mean radiance)
+RAW_MAX = 16383 # 14-bit raw counts
 
 def band_radiance(temp_c):
     t = np.asarray(temp_c, float)[..., None] + 273.15
     spec = 2 * H_PLANCK * C_LIGHT**2 / _WAVE**5 / np.expm1(H_PLANCK * C_LIGHT / (_WAVE * K_B * t))
     return spec.sum(axis=-1) * (_WAVE[1] - _WAVE[0])
 
+def blur(img, sigma=None):
+    """sigma None: the original 3x3 binomial blur, else Gaussian blur (sigma in pixels). Edges are padded."""
+    if sigma is None:
+        pad = np.pad(img, 1, mode="edge")
+        return (pad[:-2, :-2] + 2 * pad[:-2, 1:-1] + pad[:-2, 2:] + 2 * pad[1:-1, :-2] + 4 * pad[1:-1, 1:-1] + 2 * pad[1:-1, 2:] + pad[2:, :-2] + 2 * pad[2:, 1:-1] + pad[2:, 2:]) / 16
+    r = max(1, int(np.ceil(3 * sigma)))
+    k = np.exp(-0.5 * (np.arange(-r, r + 1) / sigma) ** 2)
+    k /= k.sum()
+    h, w = img.shape
+    pad = np.pad(img, r, mode="edge")
+    rows = sum(k[i] * pad[:, i:i + w] for i in range(len(k)))
+    return sum(k[i] * rows[i:i + h] for i in range(len(k)))
+
 class Sensors:
-    def __init__(self, model, camera="front_cam", height=240, width=320, thermal_size=(120, 160), glass_body="glass"):
+    def __init__(self, model, camera="front_cam", height=240, width=320, glass_body="glass", thermal=None):
         self.model, self.camera = model, camera
         self.r = mujoco.Renderer(model, height, width)
-        self.thermal_size = thermal_size
+        self.th = thermal or load_thermal_config()
         self.glass_id = model.body(glass_body).id
         self.glass_geoms = np.flatnonzero(model.geom_bodyid == self.glass_id)  # glass + liquid
         self.glass_half = model.geom(glass_body).size[1]
@@ -47,7 +60,7 @@ class Sensors:
 
     def render(self, data, temps, emissivity, t_env=22.0, rng=None, liquid=None):
         """liquid: None or (fill_level, liquid_temp). LWIR does not pass glass, so liquid shows only through the wall temperature.
-        Returns rgb, depth (m), thermal (per-frame min-max, [0, 1]) and thermal raw counts (uint16) at thermal_size."""
+        Returns rgb, depth (m), thermal (per-frame min-max, [0, 1]) and thermal raw counts (uint16) at the thermal resolution."""
         rng = rng or np.random.default_rng()
         r, cam = self.r, self.camera
 
@@ -73,34 +86,37 @@ class Sensors:
         depth[on_glass & (rng.random(depth.shape) < 0.4)] = 0.0
 
         # Thermal rendering
+        below = self.below_liquid(data, depth_true, on_glass, liquid[0]) if liquid is not None else None
+        raw = self.thermal_raw(seg, temps, emissivity, t_env, rng, below, liquid[1] if liquid is not None else None)
+
+        # Per-frame min-max (v0 behavior), kept until the shared normalization replaces it
+        thermal = (raw - raw.min()) / (float(np.ptp(raw)) + 1e-9)
+
+        return rgb, depth, thermal, raw
+
+    def thermal_raw(self, seg, temps, emissivity, t_env, rng, below=None, t_liquid=None):
+        """Raw thermal counts (uint16) from a segmentation image, so thermal can be re-made for new parameters
+        without rendering again (calibration). below: glass pixels under the liquid surface."""
+        th = self.th
         temp = np.full(seg.shape, t_env, float)
         eta = np.ones(seg.shape)
         for gid in np.unique(seg[seg >= 0]):
             name = self.model.body(self.geom_body[gid]).name
             mask = seg == gid
             temp[mask] = temps.get(name, t_env)
-            eta[mask] = emissivity.get(name, 0.95)
-        if liquid is not None:
-            fill, t_liquid = liquid
-            below = self.below_liquid(data, depth_true, on_glass, fill)
-            temp[below] = LIQUID_MIX * t_liquid + (1 - LIQUID_MIX) * temps.get("glass", t_env)
+            eta[mask] = emissivity.get(name, th["emis"]["other"])
+        if below is not None:
+            temp[below] = th["liquid_mix"] * t_liquid + (1 - th["liquid_mix"]) * temps.get("glass", t_env)
         # Planck integral only for the few distinct temperatures in the frame (same values, much faster)
         temp_u, inv = np.unique(temp, return_inverse=True)
         rad = eta * band_radiance(temp_u)[inv].reshape(temp.shape) + (1 - eta) * band_radiance(t_env)
 
         # Camera effects, in raw counts like a radiometric thermal camera
-        counts = RAW_GAIN * rad + RAW_OFFSET
-        th, tw = self.thermal_size
-        ys = np.linspace(0, counts.shape[0] - 1, th).astype(int)
-        xs = np.linspace(0, counts.shape[1] - 1, tw).astype(int)
-        small = counts[np.ix_(ys, xs)]
-        pad = np.pad(small, 1, mode="edge")
-
-        small = (pad[:-2, :-2] + 2 * pad[:-2, 1:-1] + pad[:-2, 2:] + 2 * pad[1:-1, :-2] + 4 * pad[1:-1, 1:-1] + 2 * pad[1:-1, 2:] + pad[2:, :-2] + 2 * pad[2:, 1:-1] + pad[2:, 2:]) / 16
-        small = small + rng.normal(0, NOISE_REL * (small.mean() - RAW_OFFSET), small.shape)
-        raw = np.clip(np.round(small), 0, RAW_MAX).astype(np.uint16)
-
-        # Per-frame min-max (v0 behavior), kept until the shared normalization replaces it
-        thermal = (raw - raw.min()) / (float(np.ptp(raw)) + 1e-9)
-
-        return rgb, depth, thermal, raw
+        gain, offset = th["raw"]["gain"], th["raw"]["offset"]
+        counts = gain * rad + offset
+        h, w = th["resolution"]
+        ys = np.linspace(0, counts.shape[0] - 1, h).astype(int)
+        xs = np.linspace(0, counts.shape[1] - 1, w).astype(int)
+        small = blur(counts[np.ix_(ys, xs)], th["blur_sigma_px"])
+        small = small + rng.normal(0, th["noise"]["rel"] * (small.mean() - offset) + th["noise"]["counts"], small.shape)
+        return np.clip(np.round(small), 0, RAW_MAX).astype(np.uint16)
