@@ -12,7 +12,7 @@
 set -e
 module load anaconda3
 source activate dp311
-cd ${REPO:-/jet/home/klee30/Project_team/mtom-encoder}
+cd ${REPO:-$SLURM_SUBMIT_DIR}  # submit from the repo root
 export OMP_NUM_THREADS=4
 time python -m encoder.train --config encoder/configs/transpose_seg.yaml \
     data.root=$PROJECT/transparent/transpose data.cache_dir=$PROJECT/transparent/data/transpose_cache $ARGS
