@@ -1,0 +1,10 @@
+# real_data/: dataset conversion + PyTorch loader (Python 3.11)
+numpy>=1.24,<3
+pillow>=10,<14
+pandas>=2.0
+pyarrow>=14
+torch>=2.1
+gdown>=5            # download.sh (Google Drive files)
+trimesh>=4          # convert.py T-ROBI / TRansPose mask rendering
+embreex>=2.17       # fast ray casting for trimesh (T-ROBI, TRansPose)
+opencv-python-headless>=4.8  # convert.py TRansPose mask clean-up
