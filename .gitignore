@@ -1,9 +1,11 @@
 .venv/
 sim/out/
 __pycache__/
-data/
+/data/
 MUJOCO_LOG.TXT
 # Slurm writes job logs here; the folder must exist before sbatch, so it is kept in git
 logs/*
 !logs/.gitkeep
 real_data/out/
+# Trained checkpoints (GBs each); kept out of git
+results/checkpoint/
