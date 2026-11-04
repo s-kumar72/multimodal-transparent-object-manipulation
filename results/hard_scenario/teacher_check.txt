@@ -1,0 +1,10 @@
+L0 train teacher 100/100  tumbler 22/22 bottle 8/8 wineglass 20/20 jar 24/24 flask 26/26  | episodes that moved a distractor > 2 cm: 0
+L0 test  teacher 50/50  tumbler 10/10 bottle 10/10 wineglass 10/10 jar 10/10 flask 10/10  | episodes that moved a distractor > 2 cm: 0
+L1 train teacher 100/100  tumbler 22/22 bottle 8/8 wineglass 20/20 jar 24/24 flask 26/26  | episodes that moved a distractor > 2 cm: 0
+L1 test  teacher 50/50  tumbler 10/10 bottle 10/10 wineglass 10/10 jar 10/10 flask 10/10  | episodes that moved a distractor > 2 cm: 0
+L2 train teacher 100/100  tumbler 22/22 bottle 8/8 wineglass 20/20 jar 24/24 flask 26/26  | episodes that moved a distractor > 2 cm: 0
+L2 test  teacher 50/50  tumbler 10/10 bottle 10/10 wineglass 10/10 jar 10/10 flask 10/10  | episodes that moved a distractor > 2 cm: 0
+L3 train teacher 100/100  tumbler 22/22 bottle 8/8 wineglass 20/20 jar 24/24 flask 26/26  | episodes that moved a distractor > 2 cm: 0
+L3 test  teacher 50/50  tumbler 10/10 bottle 10/10 wineglass 10/10 jar 10/10 flask 10/10  | episodes that moved a distractor > 2 cm: 0
+L4 train teacher 100/100  tumbler 22/22 bottle 8/8 wineglass 20/20 jar 24/24 flask 26/26  | episodes that moved a distractor > 2 cm: 0
+L4 test  teacher 50/50  tumbler 10/10 bottle 10/10 wineglass 10/10 jar 10/10 flask 10/10  | episodes that moved a distractor > 2 cm: 0

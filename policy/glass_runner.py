@@ -1,6 +1,7 @@
 """
 Rolls out a policy in parallel GlassPickEnv copies and reports success rate (test/mean_score),
-plus the success rate per object (test/mean_score_<object>).
+plus the success rate per object (test/mean_score_<object>) and the share of each failure type (test/outcome_<type>).
+level / test_set pick the scene (sim/configs/manifest.json); level None is main's scene.
 Adapted from diffusion_policy/env_runner/pusht_image_runner.py.
 """
 import collections
@@ -27,7 +28,7 @@ class GlassPickRunner(BaseImageRunner):
     def __init__(self, output_dir, shape_meta, n_train=4, n_train_vis=1, train_start_seed=0,
                  n_test=30, n_test_vis=3, test_start_seed=100000, max_steps=120,
                  n_obs_steps=2, n_action_steps=8, fps=10, crf=22, past_action=False,
-                 tqdm_interval_sec=5.0, n_envs=None):
+                 tqdm_interval_sec=5.0, n_envs=None, level=None, test_set="a_in_distribution"):
         super().__init__(output_dir)
         if OmegaConf.is_config(shape_meta):
             shape_meta = OmegaConf.to_container(shape_meta, resolve=True)
@@ -38,7 +39,7 @@ class GlassPickRunner(BaseImageRunner):
         def env_fn():
             return MultiStepWrapper(
                 VideoRecordingWrapper(
-                    GlassPickGymEnv(obs_meta, max_steps=max_steps),
+                    GlassPickGymEnv(obs_meta, max_steps=max_steps, level=level, test_set_name=test_set),
                     video_recoder=VideoRecorder.create_h264(fps=fps, codec="h264", input_pix_fmt="rgb24",
                                                             crf=crf, thread_type="FRAME", thread_count=1),
                     file_path=None),
@@ -52,7 +53,8 @@ class GlassPickRunner(BaseImageRunner):
             for i in range(n):
                 seed = start_seed + i
 
-                def init_fn(env, seed=seed, enable_render=i < n_vis):
+                def init_fn(env, seed=seed, enable_render=i < n_vis, split=prefix[:-1]):
+                    env.env.env.set_split(split)
                     env.env.video_recoder.stop()
                     env.env.file_path = None
                     if enable_render:
@@ -83,6 +85,7 @@ class GlassPickRunner(BaseImageRunner):
         all_video_paths = [None] * n_inits
         all_rewards = [None] * n_inits
         all_objs = [None] * n_inits
+        all_records = [None] * n_inits
 
         for chunk_idx in range(math.ceil(n_inits / n_envs)):
             start = chunk_idx * n_envs
@@ -116,6 +119,7 @@ class GlassPickRunner(BaseImageRunner):
             all_video_paths[start:end] = env.render()[:n_active]
             all_rewards[start:end] = env.call("get_attr", "reward")[:n_active]
             all_objs[start:end] = env.call("get_attr", "obj")[:n_active]
+            all_records[start:end] = env.call("get_attr", "episode_record")[:n_active]
         _ = env.reset()
 
         max_rewards = collections.defaultdict(list)
@@ -131,6 +135,12 @@ class GlassPickRunner(BaseImageRunner):
                 log_data[prefix + f"sim_video_{seed}"] = wandb.Video(all_video_paths[i])
         for prefix, value in max_rewards.items():
             log_data[prefix + "mean_score"] = np.mean(value)    # = success rate
+            outcomes = collections.Counter(r["outcome"] for r, p in zip(all_records, self.env_prefixs) if p == prefix)
+            for name, count in outcomes.items():
+                log_data[prefix + f"outcome_{name}"] = count / len(value)
+        # Per-episode scene conditions and outcomes, read by policy/eval.py (not logged: not a number)
+        self.last_records = [dict(r, seed=s, prefix=p, reward=float(np.max(w)) if len(w) else 0.0)
+                             for r, s, p, w in zip(all_records, self.env_seeds, self.env_prefixs, all_rewards)]
         for (prefix, obj), value in sorted(obj_rewards.items()):
             log_data[prefix + f"mean_score_{obj}"] = np.mean(value)   # success rate on the episodes with this object
             log_data[prefix + f"n_{obj}"] = len(value)

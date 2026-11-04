@@ -1,4 +1,5 @@
 # Sim glass-pick task (sim/env.py). Drop modalities with hydra deletion, e.g. ~task.shape_meta.obs.thermal
+# Train on a hard-scenario level with task.zarr_path=<its demos> task.env_runner.level=L3
 name: glass_pick
 
 zarr_path: data/sim_demos.zarr
@@ -35,6 +36,8 @@ env_runner:
   fps: 10
   past_action: ${past_action_visible}
   n_envs: null
+  level: null                 # scene level from sim/configs/manifest.json (null = main's scene)
+  test_set: a_in_distribution # test set evaluated during training (only with a level)
 
 dataset:
   _target_: policy.glass_dataset.GlassImageDataset
