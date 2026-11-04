@@ -20,6 +20,8 @@ CONFIG_DIR = Path(__file__).parent / "configs"
 FACTORS = {"background": 1, "lighting": 2, "transparent": 3, "liquid": 4, "distractors": 5,
            "thermal": 6, "sensor": 7}
 HELDOUT_ALL = ["background", "lighting", "distractors"]
+# Thermal config names stored as ids in meta/ep_thermal_config (append only)
+THERMAL_NAMES = ["v0", "calibrated_v1", "calibrated_v1_narrow", "calibrated_v1_fixed"]
 
 @dataclass
 class ThermalConfig:
@@ -97,16 +99,20 @@ def _merge(a, b):
         out[k] = _merge(out[k], v) if isinstance(v, dict) and isinstance(out.get(k), dict) else v
     return out
 
-def _load_yaml(path):
-    path = Path(path)
-    if not path.is_absolute() and not path.exists():
-        path = CONFIG_DIR / path
+def _find(path, rel_to=None):
+    """A config path: as given, next to the file that names it, or under sim/configs."""
+    for p in [Path(path)] + ([Path(rel_to) / path] if rel_to else []) + [CONFIG_DIR / path]:
+        if p.exists():
+            return p
+    raise FileNotFoundError(path)
+
+def _load_yaml(path, rel_to=None):
+    path = _find(path, rel_to)
     d = yaml.safe_load(path.read_text()) or {}
     if "base" in d:
-        d = _merge(_load_yaml(path.parent / d.pop("base")), d)
-    for k in ("thermal",):
-        if isinstance(d.get(k), str):
-            d[k] = _load_yaml(path.parent / d[k])
+        d = _merge(_load_yaml(d.pop("base"), path.parent), d)
+    if isinstance(d.get("thermal"), str):
+        d["thermal"] = _load_yaml(d["thermal"], path.parent)
     return d
 
 def _tuples(cls, d):
