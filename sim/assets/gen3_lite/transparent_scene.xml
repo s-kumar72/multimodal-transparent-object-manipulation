@@ -1,6 +1,27 @@
 <mujoco model="gen3_lite transparent scene">
     <include file="gen3_lite.xml"/>
 
+
+    <!--Table looks for the background factor (env.py BACKGROUNDS). The table keeps its own rgba unless a material is
+        set per episode. Textures come from sim/make_textures.py.-->
+    <asset>
+        <texture name="tex_checker" type="2d" file="../textures/checker.png"/>
+        <texture name="tex_stripes" type="2d" file="../textures/stripes.png"/>
+        <texture name="tex_wood" type="2d" file="../textures/wood.png"/>
+        <texture name="tex_noise" type="2d" file="../textures/noise.png"/>
+        <texture name="tex_marble" type="2d" file="../textures/marble.png"/>
+        <material name="bg_solid" rgba="0.6 0.4 0.3 1" specular="0.2"/>
+        <material name="bg_checker" texture="tex_checker" texrepeat="3 3" texuniform="true" specular="0.2"/>
+        <material name="bg_stripes" texture="tex_stripes" texrepeat="3 3" texuniform="true" specular="0.2"/>
+        <material name="bg_wood" texture="tex_wood" texrepeat="2 2" texuniform="true" specular="0.2"/>
+        <material name="bg_noise" texture="tex_noise" texrepeat="3 3" texuniform="true" specular="0.2"/>
+        <material name="bg_marble" texture="tex_marble" texrepeat="2 2" texuniform="true" specular="0.3"/>
+        <material name="bg_skyblue" rgba="0.75 0.87 0.95 1" specular="0.3"/>
+        <material name="bg_white" rgba="0.92 0.92 0.92 1" specular="0.3"/>
+        <material name="matte_black" rgba="0.03 0.03 0.03 1" specular="0" shininess="0"/>
+        <material name="metal" rgba="0.72 0.72 0.75 1" specular="1" shininess="0.9" reflectance="0.3"/>
+    </asset>
+
     <option timestep="0.002" integrator="implicitfast"/>
 
     <visual>
@@ -9,6 +30,9 @@
 
     <worldbody>
         <light pos="0.5 0 2" dir="0 0 -1" directional="true" castshadow="false"/>
+        <!--Extra lights for the lighting factor (env.py LIGHTING), off unless an episode turns them on-->
+        <light name="backlight" pos="-0.5 0.6 0.8" dir="1 -0.6 -0.5" directional="true" castshadow="false" active="false"/>
+        <light name="spot" pos="0.4 0 1.0" dir="0 0 -1" cutoff="20" exponent="10" castshadow="false" active="false"/>
         <geom name="floor" type="plane" size="2 2 0.1" rgba="0.55 0.55 0.55 1"/>
 
         <!--Table in front of the arm-->
@@ -23,12 +47,14 @@
         <body name="tumbler" pos="0.4 0 0.022">
             <freejoint/>
             <geom type="cylinder" size="0.03 0.05" pos="0 0 0.05" rgba="0.8 0.9 1 0.2" mass="0.15" group="5"/>
+            <geom name="liquid_tumbler" type="cylinder" size="0.027 0.001" pos="0 0 0.003" rgba="0.55 0.75 0.9 0" contype="0" conaffinity="0" mass="0" group="5"/>
         </body>
         <body name="bottle" pos="1.85 -1.0 0.002">
             <freejoint/>
             <geom type="cylinder" size="0.03 0.05" pos="0 0 0.05" rgba="0.8 0.9 1 0.2" mass="0.2" group="5"/>
             <geom type="cylinder" size="0.013 0.035" pos="0 0 0.135" rgba="0.8 0.9 1 0.2" mass="0.03" group="5"/>
             <geom type="cylinder" size="0.017 0.004" pos="0 0 0.166" rgba="0.8 0.9 1 0.2" mass="0.005" group="5"/>
+            <geom name="liquid_bottle" type="cylinder" size="0.027 0.001" pos="0 0 0.003" rgba="0.55 0.75 0.9 0" contype="0" conaffinity="0" mass="0" group="5"/>
         </body>
         <body name="wineglass" pos="2.1 -1.0 0.002">
             <freejoint/>
@@ -39,6 +65,7 @@
         <body name="jar" pos="2.35 -1.0 0.002">
             <freejoint/>
             <geom type="box" size="0.025 0.025 0.04" pos="0 0 0.04" rgba="0.8 0.9 1 0.2" mass="0.15" group="5"/>
+            <geom name="liquid_jar" type="box" size="0.022 0.022 0.001" pos="0 0 0.003" rgba="0.55 0.75 0.9 0" contype="0" conaffinity="0" mass="0" group="5"/>
         </body>
         <body name="flask" pos="2.6 -1.0 0.002">
             <freejoint/>
@@ -48,8 +75,11 @@
             <geom type="cylinder" size="0.017 0.004" pos="0 0 0.141" rgba="0.8 0.9 1 0.2" mass="0.005" group="5"/>
         </body>
 
+
         <!--Fixed camera looking at table-->
         <camera name="front_cam" mode="targetbody" target="table" pos="1.0 -0.55 0.9" fovy="60"/>
+        <!--Optional narrow camera (config camera: front_cam_narrow): same position, 22 deg, looking at (0.40, 0, 0.12)-->
+        <camera name="front_cam_narrow" pos="1.0 -0.55 0.9" fovy="22" xyaxes="0.6757 0.7372 0 -0.51 0.4675 0.722"/>
     </worldbody>
 
     <actuator>
