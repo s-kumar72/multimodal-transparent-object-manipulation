@@ -1,0 +1,5 @@
+# calibrated_v1 with a fixed absolute count range.
+base: calibrated_v1.yaml
+name: calibrated_v1_fixed
+normalize: fixed
+norm_range: [2692, 3435]

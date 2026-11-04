@@ -1,0 +1,4 @@
+# calibrated_v1 with the narrow centered range (more contrast near ambient, warm objects clip).
+base: calibrated_v1.yaml
+name: calibrated_v1_narrow
+norm_range: [-177, 213]

@@ -1,0 +1,12 @@
+# Thermal fitted to TRansPose seq_all_01 (FLIR raw 14-bit): median ~3000 counts, noise 0.89 counts at 640x512
+# (2.73 at 160x120), |object - background| / frame range 0.083. Fixed-scale "centered" normalization, so a
+# thermal-crossover frame stays flat instead of stretching noise to full range as min-max does.
+name: calibrated_v1
+pipeline: raw
+gain: 42.67
+offset: 811.2
+noise_counts: 2.73
+blur_sigma: 1.0
+realistic_p: 0.0            # glass -1.25 to -0.76 degC below ambient (measured); 0 = off by default
+normalize: centered
+norm_range: [-174, 404]     # wide: 0.5 / 99.5 % of (raw - median) incl. warm objects

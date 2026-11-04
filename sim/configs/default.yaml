@@ -1,0 +1,5 @@
+# Default scene = main: one of five transparent objects on a plain table, normal light, no distractors or liquid.
+# Every key is optional (sim/config.py has the same defaults); this file only names them.
+name: default
+level: 0
+thermal: thermal/v0.yaml

@@ -1,0 +1,5 @@
+# Thermal as on main: Planck band radiance, 3x3 blur and relative noise at 160x120, per-frame min-max to uint8.
+# thermal_raw is gain * radiance + offset of the same noisy image (no extra random draws).
+name: v0
+pipeline: v0
+normalize: legacy
