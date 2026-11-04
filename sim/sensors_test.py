@@ -25,7 +25,7 @@ rows = []
 for label, t_glass in [("glass 55 C", 55.0), ("crossover 22 C", 22.0)]:
     temps = {"tumbler": t_glass, "table": 22.0}
     temps.update({model.body(i).name: 30.0 for i in range(model.nbody) if "link" in model.body(i).name})
-    rgb, depth, th = sens.render(data, temps, emis, t_env=22.0, rng=np.random.default_rng(0))
+    rgb, depth, th, _ = sens.render(data, temps, emis, t_env=22.0, rng=np.random.default_rng(0))
     d = np.clip(depth, 0, 2.0) / 2.0
     tiles = [Image.fromarray(rgb),
               Image.fromarray((255 * d).astype(np.uint8)).convert("RGB"),

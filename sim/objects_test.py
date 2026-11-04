@@ -23,7 +23,7 @@ rows = []
 for i, name in enumerate(OBJECT_NAMES):
     env.reset(seed=i, obj=name)
     env.temps[name] = env.t_env + 20.0 # warm object so it shows in thermal
-    rgb, depth, th = sens.render(env.data, env.temps, env.emis, env.t_env, np.random.default_rng(0))
+    rgb, depth, th, _ = sens.render(env.data, env.temps, env.emis, env.t_env, np.random.default_rng(0))
 
     # Only the object on the table may be visible among the transparent bodies
     r = sens.r

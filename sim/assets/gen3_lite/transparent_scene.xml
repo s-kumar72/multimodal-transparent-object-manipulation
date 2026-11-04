@@ -2,22 +2,22 @@
     <include file="gen3_lite.xml"/>
 
 
-    <!--Table looks for the background factor (env.py BACKGROUNDS). The table keeps its own rgba unless a material is
-        set per episode. Textures come from sim/make_textures.py.-->
+    <!--Table looks for the background factor (env.py BACKGROUNDS). The renderer colours a geom by its rgba (times the
+        texture), so env.py sets the table rgba with the material. Textures come from sim/make_textures.py.-->
     <asset>
         <texture name="tex_checker" type="2d" file="../textures/checker.png"/>
         <texture name="tex_stripes" type="2d" file="../textures/stripes.png"/>
         <texture name="tex_wood" type="2d" file="../textures/wood.png"/>
         <texture name="tex_noise" type="2d" file="../textures/noise.png"/>
         <texture name="tex_marble" type="2d" file="../textures/marble.png"/>
-        <material name="bg_solid" rgba="0.6 0.4 0.3 1" specular="0.2"/>
+        <material name="bg_solid" specular="0.2"/>
         <material name="bg_checker" texture="tex_checker" texrepeat="3 3" texuniform="true" specular="0.2"/>
         <material name="bg_stripes" texture="tex_stripes" texrepeat="3 3" texuniform="true" specular="0.2"/>
         <material name="bg_wood" texture="tex_wood" texrepeat="2 2" texuniform="true" specular="0.2"/>
         <material name="bg_noise" texture="tex_noise" texrepeat="3 3" texuniform="true" specular="0.2"/>
         <material name="bg_marble" texture="tex_marble" texrepeat="2 2" texuniform="true" specular="0.3"/>
-        <material name="bg_skyblue" rgba="0.75 0.87 0.95 1" specular="0.3"/>
-        <material name="bg_white" rgba="0.92 0.92 0.92 1" specular="0.3"/>
+        <material name="bg_skyblue" specular="0.3"/>
+        <material name="bg_white" specular="0.3"/>
         <material name="matte_black" rgba="0.03 0.03 0.03 1" specular="0" shininess="0"/>
         <material name="metal" rgba="0.72 0.72 0.75 1" specular="1" shininess="0.9" reflectance="0.3"/>
     </asset>
