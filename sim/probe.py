@@ -4,7 +4,7 @@ A small CNN sees the first frame (96x96) and predicts the target's image positio
 (the type sets the grasp height). One CNN per level x input combination; tested on the level's test set (a).
 
   python sim/probe.py collect --levels L0 L1 L2 L3 L4 --n_train 3000 --n_test 600 --workers 4
-  python sim/probe.py train --levels L0 L1 L2 L3 L4      # GPU if available, ~1 min per CNN on a T4
+  python sim/probe.py train --levels L0 L1 L2 L3 L4      # GPU if available
 Frames go to data/probe/<level>.npz; the table to results/hard_scenario/probe.md.
 """
 import argparse
@@ -66,45 +66,54 @@ def collect(args):
         print(f"{level}: {len(data['train_obj'])} train / {len(data['test_obj'])} test frames", flush=True)
 
 def make_net(c_in):
+    """Heatmap probe (CenterNet-like): 48x48 logits per object type, so the target's few pixels are not pooled away.
+    Dilated convolutions give the context needed to tell the target from distractors."""
     import torch.nn as nn
-    def block(i, o):
-        return nn.Sequential(nn.Conv2d(i, o, 3, padding=1), nn.GroupNorm(8, o), nn.ReLU(), nn.MaxPool2d(2))
-    return nn.Sequential(block(c_in, 32), block(32, 64), block(64, 128), block(128, 128),  # 96 -> 6
-                         nn.Flatten(), nn.Linear(128 * 36, 256), nn.ReLU(), nn.Linear(256, 2 + 5))
+    def conv(i, o, stride=1, dil=1):
+        return nn.Sequential(nn.Conv2d(i, o, 3, stride, padding=dil, dilation=dil), nn.GroupNorm(8, o), nn.ReLU())
+    return nn.Sequential(conv(c_in, 32), conv(32, 64, stride=2), conv(64, 64, dil=2), conv(64, 64, dil=4),
+                         conv(64, 64, dil=8), conv(64, 64, dil=16), conv(64, 64), nn.Conv2d(64, 5, 1))
 
 def stack(d, split, keys):
     x = np.concatenate([d[f"{split}_{k}"] for k in keys], -1).astype(np.float32) / 255
     return np.moveaxis(x, -1, 1)
 
 def train_one(d, keys, epochs, device, seed=0):
+    """One softmax over every (type, cell) of the 48x48 map; the label is the target's cell and type.
+    Prediction = argmax cell (position) and its type."""
     import torch
     import torch.nn.functional as F
     torch.manual_seed(seed)
+    np.random.seed(seed)
     xtr, xte = (torch.from_numpy(stack(d, s, keys)) for s in ("train", "test"))
-    ytr, yte = (torch.from_numpy(d[f"{s}_xy"] / 96) for s in ("train", "test"))
+    mean, std = xtr.mean((0, 2, 3), keepdim=True), xtr.std((0, 2, 3), keepdim=True) + 1e-3
+    xtr, xte = (xtr - mean) / std, (xte - mean) / std
+    ytr, yte = (torch.from_numpy(d[f"{s}_xy"]) for s in ("train", "test"))
     otr, ote = (torch.from_numpy(d[f"{s}_obj"]).long() for s in ("train", "test"))
     net = make_net(xtr.shape[1]).to(device)
     opt = torch.optim.AdamW(net.parameters(), 1e-3, weight_decay=1e-4)
-    sched = torch.optim.lr_scheduler.OneCycleLR(opt, 2e-3, total_steps=epochs * ((len(xtr) + 63) // 64))
+    sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, epochs * ((len(xtr) + 31) // 32))
     for _ in range(epochs):
         net.train()
-        for idx in torch.randperm(len(xtr)).split(64):
+        for idx in torch.randperm(len(xtr)).split(32):
             x, y, o = xtr[idx].to(device), ytr[idx].to(device), otr[idx].to(device)
             # shift augmentation like the policy's random crop (+-6 px), labels shifted with the image
             dx, dy = np.random.randint(-6, 7, 2)
             x = torch.roll(x, (int(dy), int(dx)), (2, 3))
-            y = y + torch.tensor([dx, dy], device=device) / 96
-            out = net(x)
-            loss = F.smooth_l1_loss(out[:, :2], y, beta=0.02) + 0.2 * F.cross_entropy(out[:, 2:], o)
+            cell = ((y + torch.tensor([dx, dy], device=device)) / 2).long().clamp(0, 47)
+            label = o * 48 * 48 + cell[:, 1] * 48 + cell[:, 0]
+            loss = F.cross_entropy(net(x).flatten(1), label)
             opt.zero_grad()
             loss.backward()
             opt.step()
             sched.step()
     net.eval()
     with torch.no_grad():
-        out = torch.cat([net(x.to(device)).cpu() for x in xte.split(256)])
-    err = ((out[:, :2] - yte) * 96).norm(dim=1).numpy()
-    acc = (out[:, 2:].argmax(1) == ote).float().mean().item()
+        out = torch.cat([net(x.to(device)).flatten(1).argmax(1).cpu() for x in xte.split(256)])
+    pred_obj, pos = out // (48 * 48), out % (48 * 48)
+    pred_xy = torch.stack([pos % 48, pos // 48], 1).float() * 2 + 1
+    err = (pred_xy - yte).norm(dim=1).numpy()
+    acc = (pred_obj == ote).float().mean().item()
     return dict(err_median=float(np.median(err)), within3=float((err < 3).mean()), obj_acc=acc)
 
 def train(args):
@@ -114,12 +123,16 @@ def train(args):
     for level in args.levels:
         d = dict(np.load(f"data/probe/{level}.npz"))
         for name in args.inputs:
-            r = train_one(d, INPUTS[name], args.epochs, device)
+            runs = [train_one(d, INPUTS[name], args.epochs, device, seed) for seed in range(args.seeds)]
+            r = {k: (np.mean([x[k] for x in runs]), np.std([x[k] for x in runs])) for k in runs[0]}
             rows.append((level, name, r))
-            print(f"{level} {name:7s} position error median {r['err_median']:.2f} px, within 3 px {r['within3']:.2f}, "
-                  f"object accuracy {r['obj_acc']:.2f}", flush=True)
-    lines = ["| level | input | position error median (px) | within 3 px | object type accuracy |", "|---|---|---|---|---|"]
-    lines += [f"| {lv} | {n} | {r['err_median']:.2f} | {r['within3']:.2f} | {r['obj_acc']:.2f} |" for lv, n, r in rows]
+            print(f"{level} {name:7s} position error median {r['err_median'][0]:.2f} px, "
+                  f"within 3 px {r['within3'][0]:.2f}+-{r['within3'][1]:.2f}, "
+                  f"object accuracy {r['obj_acc'][0]:.2f}+-{r['obj_acc'][1]:.2f}", flush=True)
+    f = lambda v: f"{v[0]:.2f} ± {v[1]:.2f}"
+    lines = [f"Mean ± std over {args.seeds} probe trainings; test = 600 first frames of test set (a). Chance object accuracy 0.20.",
+             "", "| level | input | position error median (px) | within 3 px | object type accuracy |", "|---|---|---|---|---|"]
+    lines += [f"| {lv} | {n} | {f(r['err_median'])} | {f(r['within3'])} | {f(r['obj_acc'])} |" for lv, n, r in rows]
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     Path(args.out).write_text("\n".join(lines) + "\n")
     print("Saved", args.out)
@@ -132,7 +145,8 @@ if __name__ == "__main__":
     p.add_argument("--n_train", type=int, default=3000)
     p.add_argument("--n_test", type=int, default=600)
     p.add_argument("--workers", type=int, default=4)
-    p.add_argument("--epochs", type=int, default=30)
+    p.add_argument("--epochs", type=int, default=40)
+    p.add_argument("--seeds", type=int, default=3)
     p.add_argument("--out", default="results/hard_scenario/probe.md")
     args = p.parse_args()
     collect(args) if args.stage == "collect" else train(args)
