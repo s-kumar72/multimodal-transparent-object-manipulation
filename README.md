@@ -77,11 +77,62 @@ Zarr stores in Diffusion Policy's layout; loads with `ReplayBuffer.copy_from_pat
 |---|---|---|
 | `data/rgb` | (N, 96, 96, 3) uint8 | Color image from `front_cam` |
 | `data/depth` | (N, 96, 96, 1) uint8 | 0–2 m mapped to 0–255; 0 = no reading (holes on glass) |
-| `data/thermal` | (N, 96, 96, 1) uint8 | Simulated thermal, normalized per frame (relative, not °C) |
+| `data/thermal` | (N, 96, 96, 1) uint8 | Simulated thermal, normalized as the scene config says (default: per-frame min-max, relative, not °C) |
+| `data/thermal_raw` | (N, 96, 96, 1) uint16 | Simulated 14-bit thermal counts (gain · band radiance + offset); not in zarrs made before the scene configs |
 | `data/joints` | (N, 7) float32 | 6 arm joint angles (rad) + gripper (0 open – 0.85 closed) |
 | `data/action` | (N, 7) float32 | Teacher's 6 absolute joint targets (rad) + gripper target |
 | `meta/episode_ends` | (episodes,) int64 | Index one past the last step of each episode |
 | `meta/object_id` | (episodes,) int64 | Which object the episode used; names are in the `object_names` attribute of `meta` |
+| `meta/ep_*` | (episodes, ...) numbers | Scene conditions of each episode (seed, split, level, background, lighting, distractors, liquid, temperatures, crossover, ...); names of categorical ids in `meta` attributes, the whole config as JSON in `meta.attrs["scene_config"]` |
+
+Images are stored 64 frames per zarr chunk.
+
+### Scene configs and the hard scenario
+
+`sim/env.py` takes a scene config (`GlassPickEnv(config="L3.yaml")`, `collect_demos.py --config sim/configs/L3.yaml`).
+Configs are YAML files in `sim/configs/` that can inherit (`base: other.yaml`); `sim/config.py` lists every key with
+its default. **The default config is main's scene**: `python sim/regression_test.py --check <npz>` checks that depth,
+thermal, joints and actions are bit-identical to a reference recorded on main (RGB may differ by 1 on a few pixels,
+EGL's alpha blending is not reproducible run to run). New random factors draw from their own RNG stream
+(`default_rng([seed, factor])`), so the same seed gives the same object, position and temperatures at every level.
+
+**Difficulty levels** (fixed before any policy was trained; each adds to the previous one):
+
+| Level | Config | Adds | Real-world failure it stands for |
+|---|---|---|---|
+| L0 | `L0.yaml` | main's scene | - |
+| L1 | `L1.yaml` | shared hard scene (`hard_base.yaml`) + **lever A** | Glass is hard to see in colour images. MuJoCo draws glass by alpha blending only (no refraction, caustics or Fresnel edges), so rendered glass at alpha 0.2 is easier to see than real glass: alpha 0.05-0.1, a slight tint, and glass-like sky-blue / white tables and dim / back light stand in for that. |
+| L2 | `L2.yaml` | **lever B**: an opaque look-alike of the target | Opaque cups and bottles of the same shape (ceramic, plastic) are common; in RGB they are the clearer object, while depth and thermal see a solid object. |
+| L3 | `L3.yaml` | **lever C**: depth absorbers, table hole patches, edge dropout | Active depth cameras return no depth on IR-absorbing matte black and on specular metal, drop pixels on glossy surfaces and in sunlight (IR interference), and lose pixels at depth edges ("flying pixels"). So a patch of missing depth is no longer only glass. In thermal these differ from glass: bare metal (emissivity 0.05-0.3) reflects the ambient, black paint (0.95-0.98) shows its own temperature. |
+| L4 | `L4.yaml` | low light: dim / back / spot light only, Gaussian noise (std 6) on the RGB image | A dark room or a window behind the table: underexposed images and shot / read noise. Active-IR depth and thermal do not depend on visible light. |
+
+**Lever D** (shape matters) needs no code: the five objects have different grasp heights (`OBJECTS`), so a policy that
+mistakes the object type closes at the wrong height (`wrong_height` failures). Lever A is what makes the type hard to
+see in RGB.
+
+The shared hard scene (`hard_base.yaml`) has the three properties of the main scenario: several objects (1-3 opaque
+distractors: mug, box, can, bowl; held out: opaque bottle, opaque cup), a non-uniform background (solid colours,
+checker, wood, noise, sky-blue tables; held out: stripes, marble, white) with varied light (normal, dim, bright, back
+light; held out: spot, dusk), and a transparent target that shows what is behind it. It also puts liquid in the tumbler,
+bottle and jar (fill 0 / 0.33 / 0.5 / 0.67 of the body; cold 4-10 °C, room, warm 40-60 °C; in thermal the glass wall below
+the liquid line is 0.8 · liquid + 0.2 · glass temperature; the wineglass and flask are left empty because their bowl /
+bulb cannot be filled with a primitive), and uses the calibrated thermal camera with thermal crossover in 10% of the
+episodes. Distractors keep 9 cm (edge to edge) from the target and 2 cm from each other; 70% are within ±1 °C of the
+ambient, 30% are 5-35 °C hotter or colder.
+
+**Thermal configs** (`sim/configs/thermal/`): `v0` is main's (relative noise, per-frame min-max). `calibrated_v1` is
+fitted to TRansPose `seq_all_01` raw 14-bit FLIR frames: counts = 42.67 · radiance + 811.2 (median ~3000), noise 2.73
+counts at 160×120, Gaussian blur σ 1 px, and `centered` normalization over (-174, 404) counts around the frame median
+(`calibrated_v1_narrow`: (-177, 213); `calibrated_v1_fixed`: fixed (2692, 3435)), so a crossover frame stays flat
+instead of being stretched to full range. `realistic_p` (default 0) puts the glass 1.25-0.76 °C below ambient as measured.
+
+**Test sets** (`sim/configs/manifest.json`, loaded by `sim/testsets.py`) share the seeds 100000-100049: (a) in
+distribution, (b) held-out backgrounds, (c) held-out lighting, (d) held-out distractors, (e) liquid in every episode
+(tumbler, bottle, jar), (f) thermal crossover in every episode (|gap| < 1 °C), (g) everything held out.
+
+`sim/preview_levels.py` renders every level as the policy sees it, `sim/teacher_check.py` runs the teacher on each
+level (100% everywhere), and `sim/probe.py` checks with a small CNN whether each input combination shows where the
+target is and what it is. The optional narrow camera (`camera: front_cam_narrow`, 22°, fixed direction) is off by default.
 
 ### Training Diffusion Policy on the sim data
 
@@ -117,8 +168,13 @@ CUDA_VISIBLE_DEVICES=0 policy/train.sh rgbdt data/sim_demos.zarr training.num_ep
 ```
 On a headless Linux server set `MUJOCO_GL=egl` (or `osmesa`). Logs, checkpoints, and rollout videos go to `data/outputs/`.
 
+To train on a level, collect its demos with `--config sim/configs/L<k>.yaml` and add `task.env_runner.level=L<k>` so
+the evaluation during training runs on that level's test set (a).
+
 4. Evaluate a checkpoint, e.g. the RGB policy from the release (`rgb_5obj_epoch100_ema.ckpt`). Test scene k uses seed
-   `test_start_seed + k`; other seeds give new scenes drawn the same way.
+   `test_start_seed + k`; other seeds give new scenes drawn the same way. For a level, add
+   `--level L3 --test_set a_in_distribution --test_set g_heldout_all ...`; each test set gets `eval_log.json` and
+   `episodes.json` (scene conditions and failure type of every episode).
 ```bash
 PYTHONPATH=$PWD:$PWD/sim:../diffusion_policy MUJOCO_GL=egl \
     python policy/eval.py -c data/checkpoints/rgb_5obj_epoch100_ema.ckpt -o data/eval/rgb --n_test 50 --test_start_seed 100000
