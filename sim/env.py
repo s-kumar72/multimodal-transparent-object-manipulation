@@ -305,9 +305,13 @@ class GlassPickEnv:
             mode = "minmax" if th.normalize == "legacy" else th.normalize
             params = {"range": tuple(th.norm_range)} if th.norm_range is not None else None
             thermal96 = (255 * normalize_thermal_raw(raw96, mode, params)).astype(np.uint8)
+        rgb96 = _resize(rgb)
+        if self.cfg.rgb_noise > 0:
+            noise = self.sensor_scene["rng"].normal(0, self.cfg.rgb_noise, rgb96.shape)
+            rgb96 = np.clip(np.round(rgb96 + noise), 0, 255).astype(np.uint8)
         d = self.data
         joints = np.append(d.qpos[:6], d.joint("right_finger_bottom_joint").qpos[0]).astype(np.float32)
-        return {"rgb": _resize(rgb),
+        return {"rgb": rgb96,
                 "depth": _resize(depth8)[..., None],
                 "thermal": thermal96[..., None],
                 "thermal_raw": raw96[..., None],

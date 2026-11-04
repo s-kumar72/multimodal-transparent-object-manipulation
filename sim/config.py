@@ -78,6 +78,8 @@ class SceneConfig:
     lookalike_p: float = 0.0
     n_absorbers: tuple = (0, 0)
     absorber_holes: tuple = (0.3, 0.8)   # fraction of an absorber's pixels with no depth reading
+    # RGB camera: Gaussian noise (std, 0-255) on the 96x96 image, the shot / read noise of a low-light exposure
+    rgb_noise: float = 0.0
     # Depth sensor
     glass_holes: float = 0.4
     n_table_blobs: tuple = (0, 0)        # lever C: hole patches on the table, glass-sized
@@ -111,8 +113,11 @@ def _load_yaml(path, rel_to=None):
     d = yaml.safe_load(path.read_text()) or {}
     if "base" in d:
         d = _merge(_load_yaml(d.pop("base"), path.parent), d)
-    if isinstance(d.get("thermal"), str):
-        d["thermal"] = _load_yaml(d["thermal"], path.parent)
+    th = d.get("thermal")
+    if isinstance(th, str):
+        d["thermal"] = _load_yaml(th, path.parent)
+    elif isinstance(th, dict) and "base" in th:   # thermal: {base: thermal/x.yaml, key: override}
+        d["thermal"] = _merge(_load_yaml(th.pop("base"), path.parent), th)
     return d
 
 def _tuples(cls, d):

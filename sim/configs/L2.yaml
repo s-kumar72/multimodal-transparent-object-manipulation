@@ -1,0 +1,6 @@
+# L2 = L1 + lever B: an opaque look-alike of the target (same shape and size, random colour) on the table.
+# In RGB the look-alike is the clearer object of that shape; depth and thermal see it as a solid object.
+base: L1.yaml
+name: L2
+level: 2
+lookalike_p: 1.0

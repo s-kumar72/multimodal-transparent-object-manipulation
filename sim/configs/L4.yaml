@@ -1,0 +1,8 @@
+# L4 = L3 + low light (proposed extra level, RGB-specific): only dim / back / spot light and the shot / read noise of a
+# short low-light exposure on the colour camera. Active-IR depth and thermal do not depend on visible light, so this
+# degrades RGB alone, as a dark room or a window behind the table does on a real robot.
+base: L3.yaml
+name: L4
+level: 4
+lighting: {train: [dim, backlight, spot], test: [dusk]}
+rgb_noise: 6.0

@@ -1,0 +1,4 @@
+# L0: main's task, unchanged (one transparent object on a plain table, normal light, v0 thermal).
+base: default.yaml
+name: L0
+level: 0

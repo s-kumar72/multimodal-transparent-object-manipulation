@@ -1,0 +1,15 @@
+# Scene shared by levels L1-L4 (not a level by itself). It has the three properties the main scenario needs:
+#  1. several objects: 1-3 opaque distractors on the table besides the target,
+#  2. a non-uniform background: textured / coloured tables, varied light,
+#  3. a transparent target that shows what is behind it (alpha blending; MuJoCo has no refraction).
+# Train pools vs held-out test pools: test sets (b)-(d), (g) swap in the test pools (sim/configs/manifest.json).
+thermal:
+  base: thermal/calibrated_v1.yaml
+  crossover_p: 0.1           # crossover is rare in training; test set (f) forces it
+background: {train: [solid, checker, wood, noise, skyblue], test: [stripes, marble, white]}
+background_jitter: 0.1
+lighting: {train: [normal, dim, bright, backlight], test: [spot, dusk]}
+light_jitter: 0.15
+light_dir_jitter: 15
+liquid_fill: {train: [0.0, 0.33, 0.5, 0.67], test: [0.0, 0.33, 0.5, 0.67]}
+n_distractors: [1, 3]

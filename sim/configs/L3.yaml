@@ -1,0 +1,10 @@
+# L3 = L2 + lever C (depth ambiguity): 1-2 objects real depth cameras lose (IR-absorbing matte black, specular metal)
+# with 30-80% missing pixels, 1-3 glass-sized patches of missing depth on the table (specular / sunlight IR
+# interference), and dropout at depth edges (flying pixels). "Depth hole = glass" no longer holds; in thermal these
+# look different from glass (metal: emissivity 0.05-0.3 reflects ambient; black paint: 0.95-0.98).
+base: L2.yaml
+name: L3
+level: 3
+n_absorbers: [1, 2]
+n_table_blobs: [1, 3]
+edge_dropout: 0.3
