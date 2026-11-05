@@ -1,0 +1,5 @@
+# L4b seen by the narrow camera (see L3b_narrow.yaml). meta/ep_level id 8.
+base: L4b.yaml
+name: L4b_narrow
+level: 8
+camera: front_cam_narrow

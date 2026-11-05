@@ -49,19 +49,56 @@ class Sensors:
         self.cam_id, self.focal = cam, 0.5 * height / np.tan(np.radians(model.cam_fovy[cam]) / 2)
         self.scene = None
 
-    def episode(self, seed, target, liquid, extras, data):
-        """Per-episode sensor effects: liquid in the target, absorber holes and table hole patches (lever C)."""
+    def episode(self, seed, target, liquid, extras, data, region=((0.24, 0.56), (-0.24, 0.24))):
+        """Per-episode sensor effects: liquid in the target, absorber holes and table hole patches (lever C).
+        region: (x range, y range) on the table where the hole patches may go."""
         cfg, m = self.cfg, self.model
         rng = factor_rng(seed, "sensor")
+        blob_mode = cfg.depth_defects == "blobs"
+        defects = {"glass": self._defect_params(rng)} if blob_mode else {}
         holes = {}
         for name in extras:
             if name.startswith("abs_"):
-                frac = rng.uniform(*cfg.absorber_holes)
-                holes.update({int(g): frac for g in np.flatnonzero(m.geom_bodyid == m.body(name).id)})
-        blobs = [(rng.uniform(0.24, 0.56), rng.uniform(-0.24, 0.24), rng.uniform(0.025, 0.045))
+                geoms = [int(g) for g in np.flatnonzero(m.geom_bodyid == m.body(name).id)]
+                if blob_mode:
+                    defects[name] = dict(self._defect_params(rng), geoms=geoms)
+                else:
+                    frac = rng.uniform(*cfg.absorber_holes)
+                    holes.update({g: frac for g in geoms})
+        blobs = [(rng.uniform(*region[0]), rng.uniform(*region[1]), rng.uniform(0.025, 0.045))
                  for _ in range(rng.integers(cfg.n_table_blobs[0], cfg.n_table_blobs[1] + 1))]
-        self.scene = dict(target=target, liquid=liquid, holes=holes, blobs=blobs, rng=rng)
+        if blob_mode:
+            defects.update({("patch", i): self._defect_params(rng) for i in range(len(blobs))})
+        self.scene = dict(target=target, liquid=liquid, holes=holes, blobs=blobs, defects=defects, rng=rng)
         return self.scene
+
+    def _defect_params(self, rng):
+        c = self.cfg
+        return dict(missing=rng.uniform(*c.defect_missing), size=rng.uniform(*c.defect_size),
+                    wrong=rng.uniform(*c.defect_wrong), offset=rng.uniform(*c.defect_offset))
+
+    @staticmethod
+    def _blob_defects(depth, region, ref, p, rng):
+        """Structured depth defects inside `region` (bool mask), in place: connected blobs with no reading and blobs
+        whose depth is `ref` + a smooth error of about p["offset"] m (multipath), like an active depth camera on glass,
+        IR-absorbing black or specular metal. Blobs are Gaussian-blurred white noise thresholded at a quantile, so
+        exactly p["missing"] of the region is missing whatever its shape."""
+        ys, xs = np.nonzero(region)
+        if len(ys) == 0:
+            return
+        box = np.s_[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+        sub = region[box]
+
+        def blobs(frac):
+            f = gaussian_blur(rng.normal(size=sub.shape), p["size"])
+            return sub & (f < np.quantile(f[sub], frac)) if frac > 0 else np.zeros_like(sub)
+        missing = blobs(p["missing"])
+        wrong = blobs(p["wrong"]) & ~missing
+        err = gaussian_blur(rng.normal(size=sub.shape), 2 * p["size"])
+        err *= p["offset"] / (err.std() + 1e-9)
+        view = depth[box]
+        view[wrong] = np.maximum(ref[box] + err, 0.05)[wrong]
+        view[missing] = 0.0
 
     def _world_points(self, data, depth):
         """World coordinates (H, W, 3) of every pixel from the linear depth image."""
@@ -77,7 +114,7 @@ class Sensors:
         """Returns rgb (H, W, 3) uint8, depth (H, W) m, thermal (h, w) in [0, 1] (main's min-max), raw (h, w) counts."""
         rng = rng or np.random.default_rng()
         r, cam, cfg, th = self.r, self.camera, self.cfg, self.cfg.thermal
-        scene = scene or dict(liquid=None, holes={}, blobs=[], rng=None)
+        scene = scene or dict(liquid=None, holes={}, blobs=[], defects={}, rng=None)
 
         r.update_scene(data, camera=cam, scene_option=self.show_all)
         rgb = r.render().copy()
@@ -98,7 +135,12 @@ class Sensors:
         on_glass = np.isin(seg, self.transparent_geoms)
         depth = depth_true.copy()
         depth[on_glass] = depth_behind[on_glass]
-        depth[on_glass & (rng.random(depth.shape) < cfg.glass_holes)] = 0.0
+        dots = rng.random(depth.shape) < cfg.glass_holes   # drawn in either mode, so the later draws stay the same
+        defects = scene.get("defects", {})
+        if "glass" in defects:
+            self._blob_defects(depth, on_glass, depth_behind, defects["glass"], scene["rng"])
+        else:
+            depth[on_glass & dots] = 0.0
 
         # Lever C: no reading on IR-absorbing / specular objects, glass-sized hole patches on the table, edge dropout
         need_xyz = scene["blobs"] or scene["liquid"] is not None
@@ -107,12 +149,19 @@ class Sensors:
         for g, frac in scene["holes"].items():
             mask = seg == g
             depth[mask & (srng.random(depth.shape) < frac)] = 0.0
+        for key, p in defects.items():
+            if key != "glass" and "geoms" in p:
+                self._blob_defects(depth, np.isin(seg, p["geoms"]), depth_true, p, srng)
         if scene["blobs"]:
             on_table = np.isin(seg, self.table_geoms)
             near = np.zeros_like(on_table)
-            for bx, by, br in scene["blobs"]:
-                near |= (xyz[..., 0] - bx) ** 2 + (xyz[..., 1] - by) ** 2 < br ** 2
-            depth[on_table & near & (srng.random(depth.shape) < cfg.glass_holes)] = 0.0
+            for i, (bx, by, br) in enumerate(scene["blobs"]):
+                patch = (xyz[..., 0] - bx) ** 2 + (xyz[..., 1] - by) ** 2 < br ** 2
+                if ("patch", i) in defects:
+                    self._blob_defects(depth, on_table & patch, depth_true, defects[("patch", i)], srng)
+                near |= patch
+            if not defects:
+                depth[on_table & near & (srng.random(depth.shape) < cfg.glass_holes)] = 0.0
         if cfg.edge_dropout > 0:
             edge = np.zeros(depth.shape, bool)
             edge[:, 1:] |= np.abs(np.diff(depth_true, axis=1)) > 0.03

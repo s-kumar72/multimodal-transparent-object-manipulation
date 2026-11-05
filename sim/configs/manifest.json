@@ -7,16 +7,74 @@
     "L1": "sim/configs/L1.yaml",
     "L2": "sim/configs/L2.yaml",
     "L3": "sim/configs/L3.yaml",
-    "L4": "sim/configs/L4.yaml"
+    "L4": "sim/configs/L4.yaml",
+    "L3b": "sim/configs/L3b.yaml",
+    "L4b": "sim/configs/L4b.yaml",
+    "L3b_narrow": "sim/configs/L3b_narrow.yaml",
+    "L4b_narrow": "sim/configs/L4b_narrow.yaml"
   },
   "test_sets": {
-    "a_in_distribution": {"split": "test", "heldout": []},
-    "b_heldout_background": {"split": "test", "heldout": ["background"]},
-    "c_heldout_lighting": {"split": "test", "heldout": ["lighting"]},
-    "d_heldout_distractors": {"split": "test", "heldout": ["distractors"]},
-    "e_liquid": {"split": "test", "heldout": [], "objects": ["tumbler", "bottle", "jar"],
-                 "overrides": {"liquid_fill": {"train": [0.33, 0.5, 0.67], "test": [0.33, 0.5, 0.67]}}},
-    "f_crossover": {"split": "test", "heldout": [], "overrides": {"thermal": {"crossover_p": 1.0}}},
-    "g_heldout_all": {"split": "test", "heldout": ["background", "lighting", "distractors"]}
+    "a_in_distribution": {
+      "split": "test",
+      "heldout": []
+    },
+    "b_heldout_background": {
+      "split": "test",
+      "heldout": [
+        "background"
+      ]
+    },
+    "c_heldout_lighting": {
+      "split": "test",
+      "heldout": [
+        "lighting"
+      ]
+    },
+    "d_heldout_distractors": {
+      "split": "test",
+      "heldout": [
+        "distractors"
+      ]
+    },
+    "e_liquid": {
+      "split": "test",
+      "heldout": [],
+      "objects": [
+        "tumbler",
+        "bottle",
+        "jar"
+      ],
+      "overrides": {
+        "liquid_fill": {
+          "train": [
+            0.33,
+            0.5,
+            0.67
+          ],
+          "test": [
+            0.33,
+            0.5,
+            0.67
+          ]
+        }
+      }
+    },
+    "f_crossover": {
+      "split": "test",
+      "heldout": [],
+      "overrides": {
+        "thermal": {
+          "crossover_p": 1.0
+        }
+      }
+    },
+    "g_heldout_all": {
+      "split": "test",
+      "heldout": [
+        "background",
+        "lighting",
+        "distractors"
+      ]
+    }
   }
 }

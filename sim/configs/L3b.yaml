@@ -1,0 +1,12 @@
+# L3b = L3 with structured depth defects (lever C v2). L3 punches 40% of the glass pixels independently, and that
+# dot pattern still outlines the glass. Here glass, absorbers and table patches share one defect model, drawn per
+# region and episode from the same ranges:
+#  - connected missing blobs (blurred noise thresholded), not isolated pixels: real sensors lose whole regions where
+#    the IR pattern is refracted / absorbed / mirrored away,
+#  - missing fraction 0.1-0.9, very different from episode to episode (angle, lighting, sensor),
+#  - blobs of wrong depth (neither the glass nor the surface behind it): multipath and mixed returns.
+# level 5 is the id stored in meta/ep_level.
+base: L3.yaml
+name: L3b
+level: 5
+depth_defects: blobs

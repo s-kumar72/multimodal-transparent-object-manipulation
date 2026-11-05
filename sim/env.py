@@ -158,7 +158,9 @@ class GlassPickEnv:
         info.update(self._lighting(seed))
         liquid = self._liquid(seed, info)
         extras = self._extras(seed, info) if self.uses_extras else []
-        self.sensor_scene = self.sensors.episode(seed, self.obj, liquid, extras, d)
+        narrow = cfg.camera == "front_cam_narrow"
+        self.sensor_scene = self.sensors.episode(seed, self.obj, liquid, extras, d,
+                                                 (EXTRA_X_NARROW, EXTRA_Y_NARROW) if narrow else (EXTRA_X, EXTRA_Y))
         info["n_table_blobs"] = len(self.sensor_scene["blobs"])
         self.episode_info = info
 

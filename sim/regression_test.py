@@ -4,6 +4,7 @@ actions. RGB may differ by 1 on a few pixels: EGL's alpha blending is not reprod
 
   python sim/regression_test.py --save data/regress_main.npz    # on main (or before a change)
   python sim/regression_test.py --check data/regress_main.npz   # after the change
+  --config L3.yaml checks another scene config the same way (e.g. that a change left an existing level alone)
 """
 import argparse
 
@@ -14,8 +15,8 @@ from teacher import ScriptedTeacher
 
 KEYS = ["rgb", "depth", "thermal", "joints"]
 
-def record(n_reset=20, n_episodes=5):
-    env, teacher, out = GlassPickEnv(), ScriptedTeacher(), {}
+def record(n_reset=20, n_episodes=5, config=None):
+    env, teacher, out = GlassPickEnv(config=config), ScriptedTeacher(), {}
     # First frames: random object (collect_demos) and object fixed by the seed (eval env)
     for seed in range(n_reset):
         for tag, obj in [("rand", None), ("fixed", OBJECT_NAMES[seed % len(OBJECT_NAMES)])]:
@@ -44,9 +45,10 @@ if __name__ == "__main__":
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--save")
     g.add_argument("--check")
+    p.add_argument("--config", default=None)
     args = p.parse_args()
 
-    out = record()
+    out = record(config=args.config)
     if args.save:
         np.savez_compressed(args.save, **out)
         print(f"saved {len(out)} arrays to {args.save}")

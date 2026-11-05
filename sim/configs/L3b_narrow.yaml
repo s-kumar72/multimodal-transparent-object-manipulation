@@ -1,0 +1,6 @@
+# L3b seen by the narrow camera (22 deg, fixed direction at (0.40, 0, 0.12)): the target covers ~2.3% of the image
+# instead of ~0.26%. Distractors and depth hole patches are kept inside its view. meta/ep_level id 7.
+base: L3b.yaml
+name: L3b_narrow
+level: 7
+camera: front_cam_narrow

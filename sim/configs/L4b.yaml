@@ -1,0 +1,5 @@
+# L4b = L4 (low light, RGB noise) with the structured depth defects of L3b. meta/ep_level id 6.
+base: L4.yaml
+name: L4b
+level: 6
+depth_defects: blobs

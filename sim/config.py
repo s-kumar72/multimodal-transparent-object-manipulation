@@ -84,6 +84,15 @@ class SceneConfig:
     glass_holes: float = 0.4
     n_table_blobs: tuple = (0, 0)        # lever C: hole patches on the table, glass-sized
     edge_dropout: float = 0.0            # lever C: fraction of depth-edge pixels with no reading
+    # How depth defects look. dots: every pixel of a defect region independently missing (main, L3, L4).
+    # blobs (L3b+): glass, absorbers and table patches all get the same structured defects, drawn per region and
+    # episode from the same ranges: connected missing blobs (blurred noise thresholded at the missing fraction) and
+    # blobs of wrong depth (multipath), so the shape of the holes does not tell glass apart.
+    depth_defects: str = "dots"
+    defect_missing: tuple = (0.1, 0.9)   # fraction of a region with no reading
+    defect_size: tuple = (1.5, 5.0)      # blob size: blur sigma in pixels of the 320x240 depth image
+    defect_wrong: tuple = (0.0, 0.3)     # fraction of the remaining pixels with wrong depth
+    defect_offset: tuple = (0.05, 0.3)   # typical depth error (m) of those pixels
 
     def pool(self, factor):
         """Value pool of a factor for this config's split."""
