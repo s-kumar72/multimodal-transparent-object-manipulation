@@ -19,7 +19,7 @@ $U pip install -r "$REPO/sim/requirements.txt" pyyaml
 $U pip install "pip<24.1" "setuptools<66" "wheel<0.40"
 pip install --no-build-isolation gym==0.21.0
 $U pip install diffusers==0.11.1 "huggingface_hub<0.26" hydra-core omegaconf einops dill numba av imagecodecs wandb \
-    pandas tqdm threadpoolctl termcolor psutil scikit-image imageio imageio-ffmpeg pymunk shapely cloudpickle
+    pandas tqdm threadpoolctl termcolor psutil scikit-image imageio imageio-ffmpeg pymunk shapely cloudpickle matplotlib
 [ -d $NV/diffusion_policy ] || git clone -q https://github.com/real-stanford/diffusion_policy.git $NV/diffusion_policy
 $U pip install -e $NV/diffusion_policy --no-deps
 ln -sfn $NV/diffusion_policy "$REPO/../diffusion_policy"
