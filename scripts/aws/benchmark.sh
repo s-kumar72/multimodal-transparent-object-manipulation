@@ -3,6 +3,7 @@
 # Each variant: evaluation of N_EVAL test episodes (at epoch 0, untrained policy, so every episode runs all 120 steps:
 # the worst case) and STEPS training steps. About 5 min per variant on a T4.
 #   bash scripts/aws/benchmark.sh data/sim_demos_L0.zarr [rgb rgbd rgbdt]
+# LEVEL=L4b evaluates on that level's test set (a) (rendering cost depends on the scene; training speed does not).
 # Prints one line per variant; logs go to /opt/dlami/nvme/work/bench/.
 set -e
 ZARR=$1
@@ -17,7 +18,7 @@ for v in $VARIANTS; do
     start=$(date +%s)
     policy/train.sh $v $ZARR training.num_epochs=1 training.max_train_steps=$STEPS training.max_val_steps=5 \
         task.env_runner.n_train=0 task.env_runner.n_test=$N_EVAL task.env_runner.n_test_vis=0 \
-        checkpoint.topk.k=0 checkpoint.save_last_ckpt=False \
+        checkpoint.topk.k=0 checkpoint.save_last_ckpt=False ${LEVEL:+task.env_runner.level=$LEVEL} \
         hydra.run.dir=$OUT/run_$v > $log 2>&1
     total=$(( $(date +%s) - start ))
     # tqdm's last report of the loop, e.g. "Training epoch 0:  92%|...| 300/326 [01:02<00:05,  4.8it/s]"

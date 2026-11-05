@@ -79,6 +79,10 @@ class GlassPickRunner(BaseImageRunner):
 
     def run(self, policy):
         device = policy.device
+        # The training loop leaves GBs in torch's cache; free them so the envs' EGL framebuffers fit next to the model
+        # (on a 16 GB T4 they otherwise fail with "Offscreen framebuffer is not complete")
+        if device.type == "cuda":
+            torch.cuda.empty_cache()
         env = self.env
         n_envs = self.n_envs
         n_inits = len(self.env_init_fn_dills)
