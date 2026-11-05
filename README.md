@@ -118,7 +118,7 @@ patches get the same defect model, drawn per region and episode from the same ra
 | Defect | How it is made | Real-world cause |
 |---|---|---|
 | Connected missing regions | white noise, Gaussian blur (σ 1.5-5 px at 320×240), thresholded at the missing fraction | Structured-light / stereo / ToF cameras lose whole patches where the IR pattern is refracted through glass, absorbed by black surfaces or mirrored away by metal, not isolated pixels |
-| Missing fraction 0.1-0.9 per episode | drawn per region and episode | How much a real sensor loses on the same glass changes a lot with viewing angle, background, ambient IR and the sensor model (e.g. 8-89% readings on glass in the T-ROBI / TRansPose / MJU-Glass data, `real_data/README.md`) |
+| Missing fraction 0.1-0.9 per episode | drawn per region and episode | How much a real sensor loses on the same glass changes a lot with viewing angle, background, ambient IR and the sensor model (8% of glass pixels have a reading in T-ROBI, 11% in MJU-Glass, 86% in TRansPose; `real_data/README.md`) |
 | Wrong depth (0-30% of the remaining pixels, smooth error of 5-30 cm) | a second blob mask; depth = surface behind (glass) or the surface itself (absorbers, table) + a smooth random error | Multipath and mixed returns: ToF / structured light reports depths that are neither the glass nor the surface behind it (e.g. the L515's median error of 13 cm on glass in TRansPose) |
 
 So a patch of missing or odd depth is not glass by its texture. The outline of a region can still show at high missing
