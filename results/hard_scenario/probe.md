@@ -27,3 +27,40 @@ Mean ± std over 2 probe trainings; test = 600 first frames of test set (a). Cha
 | L4 | rgbdt | 0.82 ± 0.00 | 0.98 ± 0.00 | 0.89 ± 0.01 |
 | L4 | depth | 0.83 ± 0.00 | 0.97 ± 0.01 | 0.87 ± 0.00 |
 | L4 | thermal | 0.89 ± 0.01 | 0.89 ± 0.01 | 0.82 ± 0.01 |
+| L3b | rgb | 1.05 ± 0.02 | 0.76 ± 0.01 | 0.56 ± 0.02 |
+| L3b | rgbd | 0.90 ± 0.02 | 0.91 ± 0.00 | 0.73 ± 0.00 |
+| L3b | rgbdt | 0.86 ± 0.01 | 0.94 ± 0.00 | 0.83 ± 0.01 |
+| L3b | depth | 0.91 ± 0.00 | 0.90 ± 0.01 | 0.70 ± 0.01 |
+| L3b | thermal | 0.89 ± 0.01 | 0.89 ± 0.01 | 0.81 ± 0.01 |
+| L4b | rgb | 1.19 ± 0.01 | 0.73 ± 0.00 | 0.54 ± 0.01 |
+| L4b | rgbd | 0.92 ± 0.01 | 0.90 ± 0.00 | 0.72 ± 0.01 |
+| L4b | rgbdt | 0.86 ± 0.01 | 0.94 ± 0.01 | 0.84 ± 0.01 |
+| L4b | depth | 0.90 ± 0.00 | 0.90 ± 0.00 | 0.69 ± 0.01 |
+| L4b | thermal | 0.88 ± 0.00 | 0.89 ± 0.00 | 0.81 ± 0.00 |
+| L3b_narrow | rgb | 0.88 ± 0.01 | 0.93 ± 0.00 | 0.91 ± 0.00 |
+| L3b_narrow | rgbd | 0.85 ± 0.00 | 0.97 ± 0.00 | 0.94 ± 0.01 |
+| L3b_narrow | rgbdt | 0.83 ± 0.00 | 0.98 ± 0.00 | 0.98 ± 0.00 |
+| L3b_narrow | depth | 0.86 ± 0.00 | 0.97 ± 0.00 | 0.93 ± 0.00 |
+| L3b_narrow | thermal | 0.87 ± 0.00 | 0.94 ± 0.01 | 0.96 ± 0.00 |
+| L4b_narrow | rgb | 0.89 ± 0.00 | 0.94 ± 0.00 | 0.90 ± 0.00 |
+| L4b_narrow | rgbd | 0.86 ± 0.00 | 0.97 ± 0.00 | 0.94 ± 0.00 |
+| L4b_narrow | rgbdt | 0.84 ± 0.00 | 0.98 ± 0.00 | 0.98 ± 0.00 |
+| L4b_narrow | depth | 0.85 ± 0.00 | 0.98 ± 0.00 | 0.94 ± 0.00 |
+| L4b_narrow | thermal | 0.86 ± 0.00 | 0.94 ± 0.00 | 0.96 ± 0.00 |
+
+L3b / L4b: L3 / L4 with structured depth defects (connected missing blobs, missing fraction 0.1-0.9 per episode,
+wrong-depth blobs; same model for glass, absorbers and table patches). *_narrow: the same seen by the narrow camera.
+
+Gap between RGB-D and RGB-D-T (RGB-D-T minus RGB-D), the criterion for the sweep level together with low RGB:
+
+| level | RGB within 3 px / type | gap within 3 px | gap type accuracy |
+|---|---|---|---|
+| L0 | 1.00 / 1.00 | +0.00 | +0.00 |
+| L1 | 0.82 / 0.66 | +0.00 | -0.01 |
+| L2 | 0.79 / 0.63 | +0.00 | +0.00 |
+| L3 | 0.76 / 0.56 | +0.01 | +0.05 |
+| L4 | 0.73 / 0.53 | +0.01 | +0.02 |
+| L3b | 0.76 / 0.56 | +0.03 | +0.10 |
+| L4b | 0.73 / 0.54 | +0.04 | +0.12 |
+| L3b_narrow | 0.93 / 0.91 | +0.01 | +0.04 |
+| L4b_narrow | 0.94 / 0.90 | +0.01 | +0.04 |
