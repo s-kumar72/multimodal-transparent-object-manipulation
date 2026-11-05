@@ -30,6 +30,9 @@ class GlassPickRunner(BaseImageRunner):
                  n_obs_steps=2, n_action_steps=8, fps=10, crf=22, past_action=False,
                  tqdm_interval_sec=5.0, n_envs=None, level=None, test_set="a_in_distribution"):
         super().__init__(output_dir)
+        # cuDNN's default algorithm choice for this UNet's inference on a T4 takes ~60 s and 10 GB per action chunk
+        # (batch 2); benchmarking the algorithms brings it to ~1.7 s. Same math, so results do not change.
+        torch.backends.cudnn.benchmark = True
         if OmegaConf.is_config(shape_meta):
             shape_meta = OmegaConf.to_container(shape_meta, resolve=True)
         obs_meta = shape_meta["obs"]
@@ -83,6 +86,8 @@ class GlassPickRunner(BaseImageRunner):
         # (on a 16 GB T4 they otherwise fail with "Offscreen framebuffer is not complete")
         if device.type == "cuda":
             torch.cuda.empty_cache()
+            print(f"rollout start: {torch.cuda.memory_allocated() / 2**30:.2f} GB allocated, "
+                  f"{torch.cuda.memory_reserved() / 2**30:.2f} GB reserved", flush=True)
         env = self.env
         n_envs = self.n_envs
         n_inits = len(self.env_init_fn_dills)

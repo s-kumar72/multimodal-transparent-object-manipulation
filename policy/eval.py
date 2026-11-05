@@ -36,7 +36,7 @@ def main(checkpoint, output_dir, n_test, test_start_seed, n_envs, n_vis, device,
 
     payload = torch.load(open(checkpoint, "rb"), pickle_module=dill, weights_only=False, map_location="cpu")
     cfg = payload["cfg"]
-    workspace = hydra.utils.get_class(cfg._target_)(cfg, output_dir=str(out))
+    workspace = hydra.utils.get_class(cfg._target_)(cfg, output_dir=str(output_dir))
     workspace.load_payload(payload, exclude_keys=None, include_keys=None)
     policy = workspace.ema_model if "ema_model" in payload["state_dicts"] else workspace.model
     policy.to(torch.device(device))
