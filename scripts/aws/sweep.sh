@@ -25,16 +25,27 @@ RES=${RES:-results/hard_scenario/sweep}
 CKPT_DIR=${CKPT_DIR:-results/checkpoint/sweep}
 COMMIT=${COMMIT:-1}
 
+complete() {  # a torch checkpoint is a zip whose directory is written last, so a partial file does not open
+    python -c "import sys, zipfile; zipfile.ZipFile(sys.argv[1]).close()" $1 2>/dev/null
+}
+
 backup() {  # run_dir backup_dir: copy latest.ckpt + logs once the (threaded) save has finished writing it
+    # Diffusion Policy writes latest.ckpt and the top-k checkpoint from Python threads that share the GIL with
+    # training, so a half-written file can sit unchanged for a while: check the zip, not the size or the mtime.
     local src=$1/checkpoints/latest.ckpt dst=$2
     [ -f $src ] || return 0
     [ -f $dst/latest.ckpt ] && [ ! $src -nt $dst/latest.ckpt ] && return 0
-    local size=$(stat -c %s $src)
-    sleep 20
-    [ "$(stat -c %s $src)" = "$size" ] && [ $(( $(date +%s) - $(stat -c %Y $src) )) -ge 20 ] || return 0
+    complete $src || return 0
+    local size=$(stat -c %s $src) mtime=$(stat -c %Y $src)
     mkdir -p $dst
-    rm -f $dst/latest.ckpt          # the root disk has room for one copy only
-    cp $src $dst/latest.ckpt.part && cp $1/logs.json.txt $dst/logs.json.txt && mv $dst/latest.ckpt.part $dst/latest.ckpt
+    rm -f $dst/latest.ckpt $dst/latest.ckpt.part   # the root disk has room for one copy only
+    cp -p $src $dst/latest.ckpt.part && cp $1/logs.json.txt $dst/logs.json.txt
+    # keep the copy only if the source did not change while copying and the copy is a complete zip
+    if [ "$(stat -c %s $src)" = "$size" ] && [ "$(stat -c %Y $src)" = "$mtime" ] && complete $dst/latest.ckpt.part; then
+        mv $dst/latest.ckpt.part $dst/latest.ckpt
+    else
+        rm -f $dst/latest.ckpt.part; return 0      # retried at the next poll
+    fi
     # checkpoints are saved at evaluation epochs, so the last evaluated epoch in the log is the checkpoint's
     echo "  backed up the epoch $(grep -a '"test/mean_score"' $dst/logs.json.txt | tail -1 | grep -o '"epoch": [0-9]*' | grep -o '[0-9]*$') checkpoint to $dst ($(date +%H:%M))"
 }
