@@ -68,7 +68,7 @@ def make_backbone(name, in_ch, pretrained, dilate_last):
         first = True
         for block in net.layer4:
             for m in block.modules():
-                if isinstance(m, nn.Conv2d) and m.strid == (2, 2):
+                if isinstance(m, nn.Conv2d) and m.stride == (2, 2):
                     m.stride = (1, 1)
                 if isinstance(m, nn.Conv2d) and m.kernel_size == (3, 3):
                     if first:
