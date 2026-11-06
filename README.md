@@ -198,6 +198,48 @@ PYTHONPATH=$PWD:$PWD/sim:../diffusion_policy MUJOCO_GL=egl \
     python policy/eval.py -c data/checkpoints/rgb_5obj_epoch100_ema.ckpt -o data/eval/rgb --n_test 50 --test_start_seed 100000
 ```
 
+### Running the hard-scenario sweep (single GPU machine)
+
+Planned runs: L4b and L0 × `rgb`, `rgbd`, `rgbdt`, 200 demos each, 101 epochs (evaluation on test set (a) every 25
+epochs), then the last checkpoint on test sets (a) and (g), 50 episodes each. None of these runs has been done yet;
+`results/hard_scenario/` has the pre-training checks (`probe.md`, `teacher_check.txt`, `figure_levels.png`) and the
+measured speeds (`benchmark.md`).
+
+1. Environment. `scripts/aws/setup_nvme.sh` builds the Python 3.11 env and clones Diffusion Policy on the instance's
+   NVMe disk (`/opt/dlami/nvme`, wiped when an AWS instance is stopped; rerun the script after every start, ~1 min).
+   On another machine, change the `NV` path in `setup_nvme.sh` and `WORK` in `sweep.sh`. Then
+   `source /opt/dlami/nvme/work/env.sh` sets `PYTHONPATH`, `MUJOCO_GL=egl` and the working directory.
+2. Check the sim: `python sim/regression_test.py --check results/data/regress_main.npz` (190/190 identical on T4, A10G).
+3. Demos (not in git; ~5 min each on 4 CPUs, teacher 200/200):
+```bash
+python sim/collect_demos.py --n 200 --workers 4 --config sim/configs/L4b.yaml --out results/data/sim_demos_L4b_200.zarr
+python sim/collect_demos.py --n 200 --workers 4 --config sim/configs/L0.yaml --out results/data/sim_demos_L0_200.zarr
+```
+4. Speed check (~5 min): `LEVEL=L4b bash scripts/aws/benchmark.sh results/data/sim_demos_L0_200.zarr rgb rgbdt`.
+   Measured rgb training: T4 ~2.5 it/s, L4 ~2.8 it/s, A10G ~7.3 it/s (a run takes ~55-85 min on an A10G).
+5. Sweep, detached so it survives a dropped connection:
+```bash
+setsid nohup bash scripts/aws/sweep.sh L4b "rgb rgbd rgbdt" > sweep_L4b.log 2>&1 < /dev/null &
+```
+   Each run trains to `$WORK/sweep/<level>_<variant>`, evaluates, and commits and pushes
+   `results/hard_scenario/sweep/<run>/` (training log, `curve.json`, `eval_log.json` and `episodes.json` per test set).
+   It commits to the checked-out branch, so run it on a working branch, not on main.
+   Finished runs are skipped on a rerun. Knobs: `EPOCHS`, `NTEST`, `NENVS` (envs rendered at once, default 10),
+   `EXTRA` (more hydra overrides), `COMMIT=0`.
+6. If the machine may be stopped: while training, every new `latest.ckpt` is copied (once it is a complete zip) to
+   `results/checkpoint/sweep/<run>/` on the root disk, and rerunning `sweep.sh` restores it and resumes. This restore
+   path has **not been verified end to end** yet (the instance was stopped during each test). `scripts/aws/autostart.sh`
+   can rerun the sweep at boot from a job file (opt-in: `bash scripts/aws/autostart.sh install`).
+
+Known issues:
+- **rgbdt ran out of system RAM (15 GB) on a g6.xlarge** at the first validation (training process, 8 dataloader
+  workers and 10 render envs at once). Untested mitigations: `EXTRA="dataloader.num_workers=2 val_dataloader.num_workers=2"`
+  and/or `NENVS=5` (speed only, results unchanged). It fit on a g5.xlarge.
+- `policy/glass_runner.py` turns on `torch.backends.cudnn.benchmark` (without it a T4 took ~60 s and 10 GB per action
+  chunk at inference) and empties the CUDA cache before rollouts (otherwise the render envs failed with "Offscreen
+  framebuffer is not complete").
+- A full checkpoint is 4.6 GB; the root-disk backup keeps one per run and is deleted once the run's results are pushed.
+
 <!-- 
 To setup the virtual environment:
 ```bash
