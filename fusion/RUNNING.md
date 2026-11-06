@@ -2,7 +2,7 @@
 
 ![The seven training runs](fusion_runs.png)
 
-## What you are running
+## What is being run
 
 `fusion/train.sh` trains seven glass-segmentation models and tests them all the same way. Together they answer two
 questions:
@@ -23,7 +23,7 @@ questions:
 
 ## Step 1: Set up 
 
-**1. Get the code.** Only this branch is needed because the script fetches the harder sim by itself in step 3. 
+**1. Get the code.** Only this branch is needed because the script fetches the harder sim by itself when it runs. 
 
 ```bash
 git clone https://github.com/s-kumar72/multimodal-transparent-object-manipulation.git
