@@ -201,8 +201,9 @@ PYTHONPATH=$PWD:$PWD/sim:../diffusion_policy MUJOCO_GL=egl \
 ### Running the hard-scenario sweep (single GPU machine)
 
 Planned runs: L4b and L0 × `rgb`, `rgbd`, `rgbdt`, 200 demos each, 101 epochs (evaluation on test set (a) every 25
-epochs), then the last checkpoint on test sets (a) and (g), 50 episodes each. None of these runs has been done yet;
-`results/hard_scenario/` has the pre-training checks (`probe.md`, `teacher_check.txt`, `figure_levels.png`) and the
+epochs), then the last checkpoint on test sets (a) and (g), 50 episodes each. The L4b runs are done
+(`results/hard_scenario/sweep/README.md`). The L0 runs are on hold, because L4b × `rgbdt` reached 0.14 on test set
+(a), below the 0.80 needed to go on. `results/hard_scenario/` also has the pre-training checks (`probe.md`, `teacher_check.txt`, `figure_levels.png`) and the
 measured speeds (`benchmark.md`).
 
 1. Environment. `scripts/aws/setup_nvme.sh` builds the Python 3.11 env and clones Diffusion Policy on the instance's
