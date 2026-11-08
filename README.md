@@ -197,6 +197,14 @@ the evaluation during training runs on that level's test set (a).
 PYTHONPATH=$PWD:$PWD/sim:../diffusion_policy MUJOCO_GL=egl \
     python policy/eval.py -c data/checkpoints/rgb_5obj_epoch100_ema.ckpt -o data/eval/rgb --n_test 50 --test_start_seed 100000
 ```
+   `--drop thermal` evaluates with a sensor switched off; `--save_w` stores the fusion weights per step (gated policies).
+
+### Cue-driven reliability gating (multi-sensor fusion)
+
+`policy/train_gated.sh <static|static_cue|gate|...> <rgb|rgbd|rgbt|rgbdt> <zarr>` trains the reliability-gated
+policy or its static baselines: one random crop shared by all modalities, a depth validity channel, per-modality
+encoder initialization, reliability cues from the raw frames, and a cue-driven gate on the fused features.
+Design, run matrix and evaluation protocol: `results/cue_gating/README.md`. CPU tests: `python -m policy.test_gating`.
 
 ### Running the hard-scenario sweep (single GPU machine)
 
