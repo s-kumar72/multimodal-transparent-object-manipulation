@@ -33,7 +33,8 @@ if [ ! -f $ZARR/meta/episode_ends/.zarray ]; then
 fi
 
 # 2. Training (resumes from $RUN/checkpoints/latest.ckpt if a previous attempt was interrupted)
-if ! grep -q "\"epoch\": $((EPOCHS - 1))," $RUN/logs.json.txt 2>/dev/null; then
+# Done = the last epoch's evaluation is logged (its step lines also carry the epoch number, so check for the score)
+if ! grep "\"epoch\": $((EPOCHS - 1))," $RUN/logs.json.txt 2>/dev/null | grep -q "test/mean_score"; then
     echo "[$(date +%H:%M)] $NAME: training $EPOCHS epochs -> $RUN (log $RUN.log)"
     CUDA_VISIBLE_DEVICES=$GPU DP_ROOT=$DP_ROOT policy/train.sh $VARIANT $ZARR training.num_epochs=$EPOCHS \
         task.env_runner.n_test=$NTEST task.env_runner.n_envs=$NENVS task.env_runner.level=$LEVEL \
