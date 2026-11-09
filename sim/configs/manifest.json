@@ -11,7 +11,10 @@
     "L3b": "sim/configs/L3b.yaml",
     "L4b": "sim/configs/L4b.yaml",
     "L3b_narrow": "sim/configs/L3b_narrow.yaml",
-    "L4b_narrow": "sim/configs/L4b_narrow.yaml"
+    "L4b_narrow": "sim/configs/L4b_narrow.yaml",
+    "L0_faint": "sim/configs/L0_faint.yaml",
+    "L1_alpha02": "sim/configs/L1_alpha02.yaml",
+    "L3b_mild": "sim/configs/L3b_mild.yaml"
   },
   "test_sets": {
     "a_in_distribution": {
