@@ -1,0 +1,7 @@
+L2g seed 0 flask: see-through 0 | glass px 261: missing 0.13, wrong 0.21 | other px missing 0.000
+L2g seed 1 wineglass: see-through 0 | glass px 242: missing 0.39, wrong 0.09 | other px missing 0.000
+L2g seed 2 flask: see-through 0 | glass px 222: missing 0.20, wrong 0.20 | other px missing 0.000
+L2g seed 3 flask: see-through 0 | glass px 212: missing 0.65, wrong 0.11 | other px missing 0.000
+L2g seed 4 jar: see-through 0 | glass px 163: missing 0.88, wrong 0.00 | other px missing 0.000
+L2g seed 5 jar: see-through 0 | glass px 199: missing 0.51, wrong 0.19 | other px missing 0.000
+Saved results/hard_scenario/thermal_value/glass_depth_L2g.png
