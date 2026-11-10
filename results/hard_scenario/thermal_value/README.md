@@ -94,3 +94,27 @@ episodes.
 With 50 episodes, differences under about 0.15 are within noise
 (`python policy/summarize_runs.py compare <run A> <run B>`, Fisher exact test). Whatever the results, all runs are
 reported.
+
+## Results
+
+### Probe (2026-11-11, before any policy run)
+
+`probe.md`: the commands above (collection split per level over two GPUs, 16 workers each, same seeds), 25 epochs,
+two trainings per input, tested on the first frames of 600 test-set (a) seeds. "Within 3 px / type" is the share of
+frames where the target's position is within 3 px / its object type is right. The L2, L3b and L4b rows are from
+`../probe.md`.
+
+| level | rgb | rgbd | rgbdt | depth | thermal | rgbd − rgb | rgbdt − rgbd |
+|---|---|---|---|---|---|---|---|
+| L2 | 0.79 / 0.63 | 0.99 / 0.97 | 0.99 / 0.97 | 0.99 / 0.98 | 0.91 / 0.85 | +0.20 / +0.34 | +0.00 / +0.00 |
+| L2g | 0.78 / 0.61 | 0.91 / 0.72 | 0.96 / 0.88 | 0.92 / 0.72 | 0.89 / 0.83 | +0.13 / +0.11 | +0.05 / +0.16 |
+| L2gs | 0.79 / 0.62 | 0.82 / 0.64 | 0.92 / 0.84 | 0.72 / 0.47 | 0.90 / 0.84 | +0.03 / +0.02 | +0.10 / +0.20 |
+| L3b | 0.76 / 0.56 | 0.91 / 0.73 | 0.94 / 0.83 | 0.90 / 0.70 | 0.89 / 0.81 | +0.15 / +0.17 | +0.03 / +0.10 |
+| L4b | 0.73 / 0.54 | 0.90 / 0.72 | 0.94 / 0.84 | 0.90 / 0.69 | 0.89 / 0.81 | +0.17 / +0.18 | +0.04 / +0.12 |
+
+- **On L2gs, depth adds almost nothing to RGB in the probe, and thermal adds the most of any level.** rgbd is 0.03
+  / 0.02 above rgb, and rgbdt is 0.10 / 0.20 above rgbd. Depth alone falls to 0.72 / 0.47.
+- **L2g puts the thermal gap at L3b's level or above** (+0.05 / +0.16, against +0.03 / +0.10), with depth broken on
+  the glass only.
+- The probe shows what the first frame carries, not what a policy learns from it. The policy runs below are needed
+  for the success rates.
