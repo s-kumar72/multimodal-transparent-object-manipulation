@@ -88,6 +88,7 @@ CONDITIONS = {
     "look-alike": lambda e: e.get("lookalike", 0),
     "thermal crossover": lambda e: e["is_crossover"],
     "liquid": lambda e: "filled" if e["fill_level"] > 0 else "empty",
+    "depth see-through": lambda e: e.get("glass_seethrough", 0),
 }
 
 def table(run):

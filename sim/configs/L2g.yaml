@@ -1,0 +1,8 @@
+# L2g = L2 with the structured depth defects of L3b (blobs) on the glass only: connected holes and blobs of wrong
+# depth, as structured-light / stereo depth cameras give on clear glass. L2 has no absorbers, table hole patches or
+# edge dropout, so nothing else in the depth image changes and depth around the gripper stays clean.
+# meta/ep_level id 12.
+base: L2.yaml
+name: L2g
+level: 12
+depth_defects: blobs
