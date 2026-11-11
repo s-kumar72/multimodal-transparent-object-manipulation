@@ -122,13 +122,12 @@ frames where the target's position is within 3 px / its object type is right. Th
 ### Policy runs (2026-11-11)
 
 All six runs as planned (500 demos, 101 epochs, `latest.ckpt`, one seed). Success on test set (a) / (g), 50 episodes
-each. The L2 rgbdt baseline is `../level_sweep_500/L2_rgbdt_500demos` (same plan); L2 rgb and rgbd are still running
-there.
+each. The L2 row is from `../level_sweep_500/` (same plan).
 
 | level | rgb | rgbd | rgbdt |
 |---|---|---|---|
 | target | ≤ 0.4 | 0.5-0.7 | ≥ 0.8 |
-| L2 (no blob defects) | | | 0.84 / 0.86 |
+| L2 (no blob defects) | 0.02 / 0.02 | 0.84 / 0.72 | 0.84 / 0.86 |
 | L2g | 0.02 / 0.04 | 0.30 / 0.36 | 0.40 / 0.36 |
 | L2gs | 0.02 / 0.02 | 0.14 / 0.26 | 0.24 / 0.32 |
 
