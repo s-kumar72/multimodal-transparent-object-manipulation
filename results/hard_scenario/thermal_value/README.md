@@ -118,3 +118,79 @@ frames where the target's position is within 3 px / its object type is right. Th
   the glass only.
 - The probe shows what the first frame carries, not what a policy learns from it. The policy runs below are needed
   for the success rates.
+
+### Policy runs (2026-11-11)
+
+All six runs as planned (500 demos, 101 epochs, `latest.ckpt`, one seed). Success on test set (a) / (g), 50 episodes
+each. The L2 rgbdt baseline is `../level_sweep_500/L2_rgbdt_500demos` (same plan); L2 rgb and rgbd are still running
+there.
+
+| level | rgb | rgbd | rgbdt |
+|---|---|---|---|
+| target | ≤ 0.4 | 0.5-0.7 | ≥ 0.8 |
+| L2 (no blob defects) | | | 0.84 / 0.86 |
+| L2g | 0.02 / 0.04 | 0.30 / 0.36 | 0.40 / 0.36 |
+| L2gs | 0.02 / 0.02 | 0.14 / 0.26 | 0.24 / 0.32 |
+
+Fisher exact tests (`summarize_runs.py compare` on (a), the same test on (g)):
+
+| comparison | (a) | (g) | p (a) | p (g) |
+|---|---|---|---|---|
+| L2gs rgbd vs rgbdt | 7 vs 12 | 13 vs 16 | 0.31 | 0.66 |
+| L2g rgbd vs rgbdt | 15 vs 20 | 18 vs 18 | 0.40 | 1 |
+| L2gs rgb vs rgbdt | 1 vs 12 | 1 vs 16 | 0.002 | 0.0001 |
+| L2g rgb vs rgbdt | 1 vs 20 | 2 vs 18 | 2e-6 | 9e-5 |
+| L2gs rgbdt vs L2g rgbdt | 12 vs 20 | 16 vs 18 | 0.13 | 0.83 |
+| L2g rgbdt vs L2 rgbdt | 20 vs 42 | 18 vs 43 | 1e-5 | 4e-7 |
+
+How the runs fail (share of the 50 episodes, (a) / (g)):
+
+| run | missed_grasp | other (closed away from every object) | wrong_height | dropped |
+|---|---|---|---|---|
+| L2 rgbdt | 0.06 / 0.10 | 0.00 / 0.00 | 0.08 / 0.04 | 0.02 / 0.00 |
+| L2g rgb | 0.30 / 0.18 | 0.56 / 0.66 | 0.00 / 0.02 | 0.04 / 0.02 |
+| L2g rgbd | 0.46 / 0.38 | 0.02 / 0.02 | 0.14 / 0.10 | 0.08 / 0.14 |
+| L2g rgbdt | 0.38 / 0.38 | 0.02 / 0.00 | 0.12 / 0.12 | 0.08 / 0.14 |
+| L2gs rgb | 0.26 / 0.22 | 0.62 / 0.62 | 0.02 / 0.02 | 0.06 / 0.04 |
+| L2gs rgbd | 0.52 / 0.36 | 0.12 / 0.24 | 0.16 / 0.08 | 0.06 / 0.06 |
+| L2gs rgbdt | 0.48 / 0.48 | 0.06 / 0.06 | 0.10 / 0.04 | 0.12 / 0.10 |
+
+L2gs by depth see-through (successes / episodes; the 22 see-through seeds are the same in (a) and (g)):
+
+| | (a) see-through 0 | (a) see-through 1 | (g) see-through 0 | (g) see-through 1 |
+|---|---|---|---|---|
+| rgb | 1/28 | 0/22 | 1/28 | 0/22 |
+| rgbd | 4/28 | 3/22 | 12/28 | 1/22 |
+| rgbdt | 7/28 | 5/22 | 9/28 | 7/22 |
+| p, rgbd vs rgbdt | 0.50 | 0.70 | 0.58 | 0.046 |
+
+**Against the reading table:**
+- **Goal not reached** on either level. rgb is far below 0.4, but rgbd and rgbdt are far below their ranges.
+- **L2gs rgbdt < 0.8: applies.** L2g rgbdt is just as low (0.40 / 0.36; L2gs vs L2g p = 0.13 / 0.83), so see-through
+  is not the main cause. The blob defects on the glass are: the same scene without them (L2 rgbdt) reaches 0.84 /
+  0.86.
+- **L2gs rgbd ≈ rgbdt: applies.** rgbdt is 0.10 / 0.06 higher, but this is not separable from noise at 50 episodes.
+  - By condition, rgbdt beats rgbd only on the see-through episodes of (g) (7/22 vs 1/22, p = 0.046). On (a) the
+    same episodes give 5/22 vs 3/22 (p = 0.70).
+  - That is one of four subgroup tests, so it is weak evidence.
+- **L2g: rgbd ≈ rgbdt holds** (0.30 vs 0.40, 0.36 vs 0.36), but rgbdt is not high.
+- **rgb > 0.4: does not apply.** rgb is 0.02-0.04 on both levels, and 0.02 / 0.02 on L1 (`../level_sweep_500/`).
+  The one success on (a) is the same seed (100003) in all three.
+- **Expected relation.** rgbd ≈ 0.5 × rgbdt + 0.5 × rgb gives 0.13 / 0.17; the runs give 0.14 / 0.26.
+  - On (a) the number fits, but not for the assumed reason: rgbd succeeds as often with see-through as without (3/22
+    vs 4/28).
+  - On (g) the split is as assumed (rgbd 12/28 without see-through, 1/22 with, p = 0.003).
+
+**What else the runs show:**
+- **Blob defects on the glass alone are enough to break grasping.** With depth in the input, the policies mostly
+  reach the target ("other" 0.00-0.24, against 0.56-0.66 for rgb) but miss the grasp in 0.36-0.52 of the episodes,
+  against 0.06 / 0.10 for L2 rgbdt.
+  - This is the failure seen on L3b and L4b with 500 demos (`../diagnosis/`: L3b rgbdt 0.16 / 0.26, L4b rgbdt 0.32 /
+    0.20, missed_grasp about half of the episodes).
+  - L2g has none of their edge dropout, table hole patches or absorbers. So those are not needed for this failure,
+    which goes against the reason these levels were built.
+- **Thermal does not make up for the defects in the policies,** although it does in the probe: there, on L2gs,
+  rgbdt beats rgbd by 0.10 on position (within 3 px) and 0.20 on object type.
+- **rgbdt val loss rises late.** On L2gs it goes from its lowest point (0.0046 at epoch 66) to 0.0070 at epoch 100,
+  with train loss 0.0014; on L2g it goes from 0.0034 (epoch 87) to 0.0040. The rgb and rgbd runs stay at
+  0.0023-0.0030. This is only an observation; the evaluations use `latest.ckpt` as planned.
