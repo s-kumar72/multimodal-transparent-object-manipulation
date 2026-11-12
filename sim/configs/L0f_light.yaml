@@ -1,0 +1,10 @@
+# Build-up level C3 (results/hard_scenario/build_up/): L0_faint plus the varied light of hard_base.yaml (train normal /
+# dim / bright / backlight, held-out spot / dusk) with its intensity jitter 0.15 and direction jitter 15 degrees.
+# No distractors, table as in L0. Thermal of the hard levels (no effect on RGB policies). meta/ep_level id 19.
+base: L0_faint.yaml
+name: L0f_light
+level: 19
+thermal: thermal/calibrated_v1_hard.yaml
+lighting: {train: [normal, dim, bright, backlight], test: [spot, dusk]}
+light_jitter: 0.15
+light_dir_jitter: 15
