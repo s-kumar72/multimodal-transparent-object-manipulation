@@ -105,3 +105,56 @@ to the end. Its results, its 5-demo zarr and its `data/runs` folder are then del
 With 50 episodes, differences under about 0.15 are within noise; use
 `python policy/summarize_runs.py compare <run A> <run B>` (Fisher exact test). Whatever the results, all runs are
 reported.
+
+## Step 1 results (2026-11-13)
+
+The four runs ran from 02:18 to 07:30 KST, one per GPU, 2.9-4.1 h each including evaluation; none failed. The smoke
+test ran to the end first and its outputs were deleted.
+
+| id | level | (a) | (g) | (a) against L0_faint rgb 0.26 (13/50) |
+|---|---|---|---|---|
+| C1 | L0f_distract | 0.04 (2/50) | 0.02 (1/50) | p = 0.004 |
+| C2 | L0f_table | 0.02 (1/50) | 0.00 (0/50) | p = 0.0008 |
+| C3 | L0f_light | 0.00 (0/50) | 0.04 (2/50) | p = 1e-4 |
+| C4 | L0f_scene | 0.00 (0/50) | 0.00 (0/50) | p = 1e-4 |
+
+p: Fisher exact, two-sided. L0_faint rgb is `../easy_l1/L0_faint_rgb_500demos` (same plan).
+
+**Selection.** All four are below 0.15, so by the rule above step 2 does not start (no `<B>_g`).
+
+**What the runs show.**
+- **Each factor alone takes rgb from 0.26 to the floor.** Distractors, tables and varied light each do it, and so
+  do distractors and tables together. With the faint glass, rgb on these levels is where it is on L1 (0.02).
+- **Where the gripper closes for the last time** (median distance to the target; within 8 cm):
+
+  | run | (a) | (g) |
+  |---|---|---|
+  | L0_faint | 2.3 cm; 49/50 | 2.5 cm; 48/49 |
+  | C1 L0f_distract | 5.9 cm; 32/50 | 7.9 cm; 25/50 |
+  | C2 L0f_table | 10.4 cm; 17/50 | 10.4 cm; 13/50 |
+  | C3 L0f_light | 11.6 cm; 15/49 | 9.2 cm; 21/50 |
+  | C4 L0f_scene | 9.3 cm; 18/50 | 10.3 cm; 15/50 |
+
+  - With varied tables or light, the policy does not find the glass, as on L1 (10.4-10.9 cm in
+    `../easy_l1/README.md`): it closes away from every object in 0.58-0.74 of the episodes.
+  - With distractors only, it gets closer (missed_grasp 0.46 / 0.40, other 0.32 / 0.48) but rarely succeeds, and it
+    never lifts a distractor.
+- **No condition stands out.** In C3, the normal-light episodes fail too (0/14); there, normal light still has the
+  intensity and direction jitter. Every table and distractor count has 0-1 successes.
+- **The rollouts during training stay at 0.00-0.08** in all four runs; L0_faint's rose to 0.28 by epoch 100.
+- **The thermal change is not a confound.** The new levels also differ from L0_faint in thermal (v0 →
+  calibrated_v1). L0_faint with `thermal/calibrated_v1_hard.yaml` gives the same first-frame RGB (all pixels equal),
+  target and position as L0_faint on 30 seeds (training seeds 0-19, test seeds 100000-100009).
+
+**Proposed next candidates (not run; waiting for approval).** The same build-up with the glass at the XML alpha 0.2
+and no tint, i.e. on L0 instead of L0_faint. Only the two ends are known: L0 alone gives 0.96, and all the factors of
+`hard_base.yaml` together give 0.04 (L1_alpha02). Each run pairs with the C run of the same factor, which shows how
+much of each collapse comes from the faint glass. RGB only, same protocol and the same selection rule (D4, then
+D1-D3).
+
+| id | level | = L0 (glass alpha 0.2) + |
+|---|---|---|
+| D1 | L0_distract | 1-3 opaque distractors (as C1) |
+| D2 | L0_table | the tables of C2 |
+| D3 | L0_light | the light of C3 |
+| D4 | L0_scene | D1 + D2 with normal light (as C4) |
