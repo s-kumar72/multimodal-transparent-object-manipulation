@@ -89,3 +89,45 @@ to the end. Its results, its 5-demo zarr and its `data/runs` folder are then del
 With 50 episodes, differences under about 0.15 are within noise; use
 `python policy/summarize_runs.py compare <run A> <run B>` (Fisher exact test). Whatever the results, all runs are
 reported.
+
+## Step 1 results (2026-11-12)
+
+| id | level | (a) | (g) | (a) compared with |
+|---|---|---|---|---|
+| R1 | L0_faint | 0.26 (13/50, CI 0.16-0.40) | 0.32 (16/50) | L0 rgb 0.96: p = 1e-13 |
+| R2 | L1_alpha02 | 0.04 (2/50) | 0.00 (0/50) | L1 rgb 0.02: p = 1 |
+| E1 | L1e_alpha | 0.02 (1/50) | 0.04 (2/50) | L1 rgb: p = 1 |
+| E2 | L1e_scene | 0.02 (1/50) | 0.08 (4/50) | L1 rgb: p = 1 |
+
+p: Fisher exact, two-sided. Also R1 vs L1 rgb p = 0.0008, R1 vs R2 p = 0.004.
+
+**Selection.** Both candidates are below 0.15, so by the rule above step 2 does not start (no `L2g_easy`).
+
+**What the runs show.**
+- The faint glass alone takes RGB from 0.96 to 0.26 (R1). The shared scene of L1-L4 alone (`hard_base.yaml`, with
+  the glass at the XML alpha 0.2 and no tint) takes it to 0.04 (R2). The scene is the bigger factor, and with it
+  neither a less faint glass (E1) nor a slightly simpler scene (E2) moves RGB off the L1 floor.
+- Where the gripper closes for the last time (distance to the target, test set (a), all 50 episodes closed):
+
+  | run | median distance | within 8 cm |
+  |---|---|---|
+  | L0 rgb | 0.3 cm | 50/50 |
+  | R1 L0_faint | 2.3 cm | 49/50 |
+  | R2, E1, E2, L1 rgb | 10.4-10.9 cm | 15-17/50 |
+
+  On L0_faint the policy finds the glass and misses it by a little (missed_grasp 0.42, wrong_height 0.20). In the
+  L1 scene it closes away from every object (`other` 0.62-0.68): it does not locate the glass.
+- E2's episodes with no distractor fail too (1/16), so the distractors alone are not the cause. No table, light or
+  liquid condition has more than 2 successes in R2, E1 or E2, which does not single out one factor.
+- R1's rollouts on (a) were still rising at epoch 100 (0.14, 0.22, 0.28 at epochs 50, 75, 100); the other three
+  stayed at 0.00-0.04.
+
+**Proposed next candidates (not run; waiting for approval).** Build up from L0_faint (0.26) instead of easing L1
+down: one factor of `hard_base.yaml` per level, RGB only, same protocol as step 1.
+
+| id | level | = L0_faint + |
+|---|---|---|
+| C1 | L0f_distract | 1-3 opaque distractors |
+| C2 | L0f_table | the table pool solid / checker / wood / noise with jitter 0.1 (no sky-blue) |
+| C3 | L0f_light | the light pool normal / dim / bright / backlight with its jitters |
+| C4 | L0f_scene | C1 + C2 with normal light: the two scene properties the main scenario needs |
