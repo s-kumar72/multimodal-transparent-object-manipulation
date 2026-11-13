@@ -93,6 +93,9 @@ class SceneConfig:
     defect_size: tuple = (1.5, 5.0)      # blob size: blur sigma in pixels of the 320x240 depth image
     defect_wrong: tuple = (0.0, 0.3)     # fraction of the remaining pixels with wrong depth
     defect_offset: tuple = (0.05, 0.3)   # typical depth error (m) of those pixels
+    # blobs only: per episode, probability that the depth sensor sees through the glass (no missing or wrong depth on
+    # it, only the surface behind), like a time-of-flight sensor; 0 draws nothing, so existing levels are unchanged
+    glass_seethrough_p: float = 0.0
 
     def pool(self, factor):
         """Value pool of a factor for this config's split."""

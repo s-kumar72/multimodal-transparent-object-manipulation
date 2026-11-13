@@ -1,0 +1,7 @@
+# Diagnosis level (experiment 2b): L3b with milder structured depth defects: missing fraction 0.1-0.5 instead of
+# 0.1-0.9 and wrong depth on 0-10% instead of 0-30% of the remaining pixels. meta/ep_level id 11.
+base: L3b.yaml
+name: L3b_mild
+level: 11
+defect_missing: [0.1, 0.5]
+defect_wrong: [0.0, 0.1]

@@ -9,3 +9,5 @@ logs/*
 real_data/out/
 # Trained checkpoints (GBs each); kept out of git
 results/checkpoint/
+# Demo-collection locks of scripts/run_experiment.sh
+results/data/*.lock

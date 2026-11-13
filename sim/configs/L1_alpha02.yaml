@@ -1,0 +1,7 @@
+# Diagnosis level (experiment 1b): L1 with the glass back at the XML alpha 0.2, i.e. the shared hard scene
+# (distractors, tables, lighting, liquid, calibrated thermal) without lever A. meta/ep_level id 10.
+base: L1.yaml
+name: L1_alpha02
+level: 10
+alpha: null
+tint: 0.0

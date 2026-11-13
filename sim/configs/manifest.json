@@ -11,7 +11,18 @@
     "L3b": "sim/configs/L3b.yaml",
     "L4b": "sim/configs/L4b.yaml",
     "L3b_narrow": "sim/configs/L3b_narrow.yaml",
-    "L4b_narrow": "sim/configs/L4b_narrow.yaml"
+    "L4b_narrow": "sim/configs/L4b_narrow.yaml",
+    "L0_faint": "sim/configs/L0_faint.yaml",
+    "L1_alpha02": "sim/configs/L1_alpha02.yaml",
+    "L3b_mild": "sim/configs/L3b_mild.yaml",
+    "L2g": "sim/configs/L2g.yaml",
+    "L2gs": "sim/configs/L2gs.yaml",
+    "L1e_alpha": "sim/configs/L1e_alpha.yaml",
+    "L1e_scene": "sim/configs/L1e_scene.yaml",
+    "L0f_distract": "sim/configs/L0f_distract.yaml",
+    "L0f_table": "sim/configs/L0f_table.yaml",
+    "L0f_light": "sim/configs/L0f_light.yaml",
+    "L0f_scene": "sim/configs/L0f_scene.yaml"
   },
   "test_sets": {
     "a_in_distribution": {

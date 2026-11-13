@@ -56,6 +56,10 @@ class Sensors:
         rng = factor_rng(seed, "sensor")
         blob_mode = cfg.depth_defects == "blobs"
         defects = {"glass": self._defect_params(rng)} if blob_mode else {}
+        # See-through glass: no defects on it. The "glass" key stays, otherwise render() falls back to the dot holes.
+        seethrough = blob_mode and cfg.glass_seethrough_p > 0 and rng.random() < cfg.glass_seethrough_p
+        if seethrough:
+            defects["glass"].update(missing=0.0, wrong=0.0)
         holes = {}
         for name in extras:
             if name.startswith("abs_"):
@@ -69,7 +73,8 @@ class Sensors:
                  for _ in range(rng.integers(cfg.n_table_blobs[0], cfg.n_table_blobs[1] + 1))]
         if blob_mode:
             defects.update({("patch", i): self._defect_params(rng) for i in range(len(blobs))})
-        self.scene = dict(target=target, liquid=liquid, holes=holes, blobs=blobs, defects=defects, rng=rng)
+        self.scene = dict(target=target, liquid=liquid, holes=holes, blobs=blobs, defects=defects, rng=rng,
+                          seethrough=int(seethrough))
         return self.scene
 
     def _defect_params(self, rng):

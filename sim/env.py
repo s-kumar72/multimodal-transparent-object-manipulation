@@ -162,6 +162,7 @@ class GlassPickEnv:
         self.sensor_scene = self.sensors.episode(seed, self.obj, liquid, extras, d,
                                                  (EXTRA_X_NARROW, EXTRA_Y_NARROW) if narrow else (EXTRA_X, EXTRA_Y))
         info["n_table_blobs"] = len(self.sensor_scene["blobs"])
+        info["glass_seethrough"] = self.sensor_scene["seethrough"]   # 0 unless blob mode drew a see-through episode
         self.episode_info = info
 
         for _ in range(300):

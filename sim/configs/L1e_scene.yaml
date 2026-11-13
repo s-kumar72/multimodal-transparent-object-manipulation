@@ -1,0 +1,8 @@
+# Easy-L1 candidate 2 (results/hard_scenario/easy_l1/, run E2): L1 with only a simpler scene: 0-2 opaque distractors
+# instead of 1-3, and no sky-blue table, which looks like the glass, among the training backgrounds (the held-out test
+# pool is unchanged). The faint glass of L1 stays. meta/ep_level id 15.
+base: L1.yaml
+name: L1e_scene
+level: 15
+n_distractors: [0, 2]
+background: {train: [solid, checker, wood, noise], test: [stripes, marble, white]}

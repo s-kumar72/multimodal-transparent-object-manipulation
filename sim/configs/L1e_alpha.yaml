@@ -1,0 +1,6 @@
+# Easy-L1 candidate 1 (results/hard_scenario/easy_l1/, run E1): L1 with only the glass less transparent, alpha
+# 0.05-0.1 -> 0.1-0.15 (the XML alpha is 0.2). Everything else as in L1, the tint included. meta/ep_level id 14.
+base: L1.yaml
+name: L1e_alpha
+level: 14
+alpha: [0.1, 0.15]

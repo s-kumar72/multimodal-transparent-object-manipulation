@@ -1,0 +1,7 @@
+# The thermal of the hard levels as one file: calibrated_v1 with thermal crossover in 10% of the episodes, the same
+# values hard_base.yaml gets from {base: thermal/calibrated_v1.yaml, crossover_p: 0.1}. Levels built on L0 name it
+# as a string (thermal: thermal/calibrated_v1_hard.yaml), which replaces the v0 thermal of default.yaml as a whole;
+# a dict would be merged into v0 and keep its name / pipeline / normalize. The name stays calibrated_v1, so
+# meta/ep_thermal_config records the same id as for the hard levels.
+base: calibrated_v1.yaml
+crossover_p: 0.1

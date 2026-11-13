@@ -1,0 +1,9 @@
+# Build-up level C4 (results/hard_scenario/build_up/): L0f_distract (L0_faint + 1-3 opaque distractors) plus the
+# tables of L0f_table (solid / checker / wood / noise, held-out stripes / marble / white, jitter 0.1): several objects
+# on a non-uniform background, the two scene properties the main scenario needs. Light stays normal as in L0.
+# Thermal of the hard levels, inherited from L0f_distract. meta/ep_level id 20.
+base: L0f_distract.yaml
+name: L0f_scene
+level: 20
+background: {train: [solid, checker, wood, noise], test: [stripes, marble, white]}
+background_jitter: 0.1
