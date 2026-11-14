@@ -1,0 +1,9 @@
+# Build-up round 2, level D2 (results/hard_scenario/build_up/): L0 (glass at the XML alpha 0.2, no tint) plus the
+# tables of L0f_table (C2): train solid / checker / wood / noise, held-out stripes / marble / white, colour jitter 0.1.
+# No distractors, light as in L0. Thermal of the hard levels (no effect on RGB policies). meta/ep_level id 23.
+base: L0.yaml
+name: L0_table
+level: 23
+thermal: thermal/calibrated_v1_hard.yaml
+background: {train: [solid, checker, wood, noise], test: [stripes, marble, white]}
+background_jitter: 0.1

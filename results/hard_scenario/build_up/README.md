@@ -158,3 +158,105 @@ D1-D3).
 | D2 | L0_table | the tables of C2 |
 | D3 | L0_light | the light of C3 |
 | D4 | L0_scene | D1 + D2 with normal light (as C4) |
+
+## Round 2 plan (alpha 0.2)
+
+Written before the runs (2026-11-14), after the user approved the proposal above.
+
+**Why.** On L0_faint (rgb 0.26), adding any one scene factor took rgb to 0.00-0.04 (C1-C4). Round 2 builds the same
+levels on L0 instead, with the glass as in L0 (the XML rgba 0.8 / 0.9 / 1.0, alpha 0.2, no tint). The known ends: L0
+rgb 0.96 (`../level_sweep_500/L0_rgb_500demos`), and all the factors of `hard_base.yaml` together 0.04
+(`../easy_l1/L1_alpha02_rgb_500demos`). Each Dk pairs with the Ck of the same factor, so Dk vs Ck is the share of the
+faint glass in that collapse.
+
+| id | level | config | = L0 + | pair |
+|---|---|---|---|---|
+| D1 | L0_distract | `sim/configs/L0_distract.yaml` (meta/ep_level 22) | 1-3 opaque distractors, as C1 | C1 0.04 |
+| D2 | L0_table | `sim/configs/L0_table.yaml` (23) | the tables and jitter of C2 | C2 0.02 |
+| D3 | L0_light | `sim/configs/L0_light.yaml` (24) | the light pools and jitters of C3 | C3 0.00 |
+| D4 | L0_scene | `sim/configs/L0_scene.yaml` (25) | D1 + D2 with normal light, as C4 | C4 0.00 |
+| | `<B>_g` | `sim/configs/<B>_g.yaml` (26), made in step 2 | the chosen level B + blob depth defects on the glass | |
+
+All four name `thermal/calibrated_v1_hard.yaml` as a string, like C1-C4, and set neither `alpha` nor `tint`.
+
+### Checks before the runs
+
+- **Config loading** (`test_set(level, "a_in_distribution")` and `"g_heldout_all"`):
+  - All four: `alpha` None (the XML rgba, alpha 0.2), `tint` 0; thermal name calibrated_v1, pipeline raw, normalize
+    centered, crossover_p 0.1, norm_range (-174, 404), equal to L1's thermal. No liquid, look-alike, absorbers, table
+    patches, edge dropout or RGB noise; `depth_defects: dots`.
+  - Against L0, only the intended keys differ (besides `name`, `level` and thermal): D1 `n_distractors` (0, 0) →
+    (1, 3); D2 the background pools and `background_jitter` 0.1; D3 the lighting pools, `light_jitter` 0.15 and
+    `light_dir_jitter` 15; D4 the keys of D1 and D2.
+  - Against its Ck, each Dk differs only in `alpha` ((0.05, 0.1) → None) and `tint` (0.05 → 0), on both test sets.
+  - Pools: (a) distractors mug / box / can / bowl, tables solid / checker / wood / noise, light normal / dim / bright /
+    backlight; (g) distractors opaque_bottle / opaque_cup, tables stripes / marble / white, light spot / dusk (each
+    level only for the factors it varies; the rest stay at L0's xml table and normal light).
+- **Same scene as the paired Ck except the glass** (first frame, training seeds 0-19 and seeds 100000-100009 of test
+  sets (a) and (g), 40 seeds per pair, 160 in all):
+  - Equal in every pair and seed: target object, the position of every body, episode info (background, light,
+    distractors, temperatures, crossover; all keys but `level` and `alpha`), segmentation, depth and thermal (raw and
+    the 96×96 policy inputs) and joints.
+  - RGB differs only on the glass: every differing pixel of the 320×240 render is on the glass or within 1 pixel of its
+    segmentation outline (the anti-aliased edge; at most 22-28 levels off the glass, checked on the training seeds of
+    all four pairs).
+  - The faint glass of Ck draws alpha 0.051-0.099 on these seeds.
+- **Teacher.** `python sim/teacher_check.py --n 50 --levels L0_distract L0_table L0_light L0_scene --workers 16`:
+  50/50 on training seeds and 50/50 on test set (g) for all four levels, and no episode moved a distractor more than
+  2 cm (`teacher_check_round2.txt`; run with `MUJOCO_GL=egl` as in round 1).
+- **First frames.** `levels_round2_seed0.png` to `levels_round2_seed3.png`, made with
+  `python sim/figure_levels.py --seed <s> --levels L0 L0_distract L0_table L0_light L0_scene --out results/hard_scenario/build_up/levels_round2_seed<s>.png`.
+  Same layout as round 1. The L0 row shows v0 thermal (per-frame min-max); the other rows the calibrated thermal.
+
+### Experiment plan
+
+All runs as in round 1: 500 demos (seeds 0-499), 101 epochs, `latest.ckpt` evaluated on test sets (a) and (g) with 50
+episodes each (the defaults of `scripts/run_experiment.sh`), one seed per run, `GROUP=build_up`.
+
+**Step 1: rgb on the four levels** (they can run at the same time, one per GPU, `GPU=<n>` in front).
+
+First a smoke test: `EPOCHS=1 NTEST=2 NENVS=2 GROUP=smoke bash scripts/run_experiment.sh L0_scene rgb 5` must run to
+the end. Its results, its 5-demo zarr and its `data/runs` folder are then deleted.
+
+| id | command | pair |
+|---|---|---|
+| D1 | `GROUP=build_up bash scripts/run_experiment.sh L0_distract rgb 500` | C1 0.04 |
+| D2 | `GROUP=build_up bash scripts/run_experiment.sh L0_table rgb 500` | C2 0.02 |
+| D3 | `GROUP=build_up bash scripts/run_experiment.sh L0_light rgb 500` | C3 0.00 |
+| D4 | `GROUP=build_up bash scripts/run_experiment.sh L0_scene rgb 500` | C4 0.00 |
+
+Each finished run's results folder is committed and pushed to `exp/demo-scale`.
+
+**Step 2: glass depth defects on the chosen level B** (only if step 1 chooses a B).
+- `sim/configs/<B>_g.yaml`: base `<B>.yaml`, level 26, `depth_defects: blobs`, registered in
+  `sim/configs/manifest.json`. Blob defects on the glass only, with the defaults (missing 0.1-0.9, wrong depth on 0-30%
+  of the rest). No black / metal objects, table hole patches or edge dropout.
+- Checks: the teacher succeeds in 100% of the episodes, and the depth renders show defects on the glass only
+  (`sim/preview_glass_depth.py`).
+- Four runs first: `<B>_g` × rgb, rgbd, rgbdt and rgbt.
+- If there is room, two more: `<B>` × rgbd and rgbdt (the baseline without defects).
+
+### Selection rule (fixed before the runs, not changed after seeing the results)
+
+- **Range:** rgb success on test set (a) of 0.15-0.50.
+- **If D4 is in the range, B = L0_scene.**
+- **If D4 is outside the range, B is the level of D1-D3 in the range whose rgb is closest to 0.30.** On a tie, D1
+  comes before D2, and D2 before D3. B then lacks part of "several objects on a non-uniform background", and the
+  report says so.
+- **If all four are outside the range,** step 2 does not start. The results are reported with a proposal for what to
+  try next.
+- **When step 1 ends, a short report comes before step 2:** (a) / (g) of the four runs, the comparison with the paired
+  Ck, the choice and the reason.
+
+### How to read the results (`<B>_g`, test set (a))
+
+| result | meaning |
+|---|---|
+| rgb 0.15-0.45, rgbd 0.45-0.70, rgbdt ≥ 0.70 | goal reached → propose a second seed and the L0 control |
+| rgb and rgbd in their ranges, rgbdt < 0.70 | usable as the benchmark; the limit of the simple fusion → the next task is to raise rgbdt with a fusion method |
+| rgbd < 0.45 | the glass depth defects break learning → compare with rgbt and with `<B>` × rgbd to find the cause |
+| rgbt − rgbdt ≥ 0.15 | direct evidence that broken depth drags the simple fusion down |
+
+With 50 episodes, differences under about 0.15 are within noise; use
+`python policy/summarize_runs.py compare <run A> <run B>` (Fisher exact test). With many comparisons, a p near 0.05
+can be chance. Whatever the results, all runs are reported.
