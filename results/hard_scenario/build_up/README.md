@@ -260,3 +260,40 @@ Each finished run's results folder is committed and pushed to `exp/demo-scale`.
 With 50 episodes, differences under about 0.15 are within noise; use
 `python policy/summarize_runs.py compare <run A> <run B>` (Fisher exact test). With many comparisons, a p near 0.05
 can be chance. Whatever the results, all runs are reported.
+
+## Round 2 results
+
+### Step 1: rgb on D1-D4 (2026-11-14)
+
+The four runs ran from 10:31 to 17:44 KST, one per GPU. Two attempts failed with CUDA out of memory when other users'
+jobs filled the GPU (the first smoke test at 10:20, and D4's first attempt at 15:01, right after its demos were
+collected); both were rerun. The smoke test then ran to the end and its outputs were deleted.
+
+| id | level | (a) (95% CI) | (g) | paired Ck (a) | p (a) vs Ck | p (a) vs L0 rgb 0.96 |
+|---|---|---|---|---|---|---|
+| D1 | L0_distract | 0.20 (10/50, 0.11-0.33) | 0.24 (12/50) | C1 0.04 (2/50) | 0.028 | 9e-16 |
+| D2 | L0_table | 0.00 (0/50, 0.00-0.07) | 0.04 (2/50) | C2 0.02 (1/50) | 1 | 3e-26 |
+| D3 | L0_light | 0.04 (2/50, 0.01-0.13) | 0.04 (2/50) | C3 0.00 (0/50) | 0.495 | 3e-23 |
+| D4 | L0_scene | 0.04 (2/50, 0.01-0.13) | 0.04 (2/50) | C4 0.00 (0/50) | 0.495 | 3e-23 |
+
+p: Fisher exact, two-sided. L0 rgb is `../level_sweep_500/L0_rgb_500demos` (48/50 on (a), 47/50 on (g)).
+
+**Selection.** D4 is below 0.15, so B is chosen among D1-D3. Only D1 is in 0.15-0.50, so **B = L0_distract**. B has
+several objects but L0's plain table: it lacks the non-uniform background of "several objects on a non-uniform
+background". The full analysis follows when step 2 ends.
+
+### Step 2 checks
+
+- **`sim/configs/L0_distract_g.yaml`** (level 26): base `L0_distract.yaml`, `depth_defects: blobs`, registered in the
+  manifest. On test sets (a) and (g), it differs from L0_distract only in `name`, `level` and `depth_defects`
+  (dots → blobs); its defect settings equal L2g's (missing 0.1-0.9, blob size 1.5-5 px, wrong depth on 0-30% of the
+  rest with offsets 0.05-0.3 m, no see-through episodes). No absorbers, table patches or edge dropout.
+- **Teacher.** `python sim/teacher_check.py --n 50 --levels L0_distract_g --workers 16`: 50/50 on training seeds and
+  50/50 on test set (g), no distractor moved more than 2 cm (`teacher_check_round2_g.txt`).
+- **Depth on the glass only.** `python sim/preview_glass_depth.py --levels L0_distract L0_distract_g --seeds 0 1 2 3 4 5 6 7 --out results/hard_scenario/build_up/glass_depth_round2.png`:
+  - On L0_distract_g, 0.13-0.88 of the glass pixels are missing and 0.03-0.24 have wrong depth, in connected blobs.
+  - On L0_distract (dots), 0.37-0.50 of the glass pixels are missing, scattered, and none are wrong.
+  - Off the glass, no pixel is missing on any seed of either level.
+
+**Step 2 runs** (as planned): `L0_distract_g` × rgb, rgbd, rgbdt and rgbt first, then `L0_distract` × rgbd and
+rgbdt when a GPU is free.
