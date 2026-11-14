@@ -1,0 +1,9 @@
+# Benchmark step 1, level A4 (results/hard_scenario/benchmark/): L0_distract with a less transparent glass, alpha 0.4
+# instead of the XML alpha 0.2, in every episode, with the XML colour 0.8 / 0.9 / 1.0 (tint 0). It stands in for
+# glass that is easier to see in RGB (thicker or less clear glass, or less glare); nothing else changes. meta/ep_level
+# id 28.
+base: L0_distract.yaml
+name: L0_distract_a04
+level: 28
+alpha: [0.4, 0.4]
+tint: 0.0

@@ -27,7 +27,10 @@
     "L0_table": "sim/configs/L0_table.yaml",
     "L0_light": "sim/configs/L0_light.yaml",
     "L0_scene": "sim/configs/L0_scene.yaml",
-    "L0_distract_g": "sim/configs/L0_distract_g.yaml"
+    "L0_distract_g": "sim/configs/L0_distract_g.yaml",
+    "L0_distract_a03": "sim/configs/L0_distract_a03.yaml",
+    "L0_distract_a04": "sim/configs/L0_distract_a04.yaml",
+    "L0_distract_s50": "sim/configs/L0_distract_s50.yaml"
   },
   "test_sets": {
     "a_in_distribution": {
