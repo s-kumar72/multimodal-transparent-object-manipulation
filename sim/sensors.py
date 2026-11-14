@@ -56,9 +56,12 @@ class Sensors:
         rng = factor_rng(seed, "sensor")
         blob_mode = cfg.depth_defects == "blobs"
         defects = {"glass": self._defect_params(rng)} if blob_mode else {}
-        # See-through glass: no defects on it. The "glass" key stays, otherwise render() falls back to the dot holes.
-        seethrough = blob_mode and cfg.glass_seethrough_p > 0 and rng.random() < cfg.glass_seethrough_p
-        if seethrough:
+        # See-through glass (either defect mode): depth on the glass is the surface behind it, with no holes. Drawn only
+        # when glass_seethrough_p > 0, so levels with p = 0 use the same random numbers as before. In blob mode the
+        # "glass" key stays with no defects, otherwise render() falls back to the dot holes; in dot mode render()
+        # skips the dot holes on the glass.
+        seethrough = cfg.glass_seethrough_p > 0 and rng.random() < cfg.glass_seethrough_p
+        if seethrough and blob_mode:
             defects["glass"].update(missing=0.0, wrong=0.0)
         holes = {}
         for name in extras:
@@ -144,7 +147,7 @@ class Sensors:
         defects = scene.get("defects", {})
         if "glass" in defects:
             self._blob_defects(depth, on_glass, depth_behind, defects["glass"], scene["rng"])
-        else:
+        elif not scene.get("seethrough", 0):
             depth[on_glass & dots] = 0.0
 
         # Lever C: no reading on IR-absorbing / specular objects, glass-sized hole patches on the table, edge dropout
