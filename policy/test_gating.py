@@ -182,6 +182,71 @@ def test_policy_loss():
     print("ok policy: ddpm + gate + aux losses backprop, lambda anneals, w_trace recorded at inference")
 
 
+def test_depth_object_cue():
+    """Optional 7th cue: with depth_object_ref on the cue key the vector grows by one, the first six are unchanged; a
+    gated encoder and the policy's depth warm start accept it."""
+    import copy
+    import os
+    import tempfile
+    ref = np.full((96, 96), 150, np.uint8)                              # fake_raw's table is at 150
+    raw = fake_raw(holes=0.0)
+    raw["depth"][:, 50:70, 40:56] = 120                                  # an object 30 units in front of the table
+    seen = compute_cues(raw, DEFAULT_ROI, depth_ref=ref)
+    raw_st = fake_raw(holes=0.0)                                         # see-through: only the table
+    through = compute_cues(raw_st, DEFAULT_ROI, depth_ref=ref)
+    assert seen.shape == (2, CUE_DIM + 1) and np.allclose(seen[:, :CUE_DIM], compute_cues(raw))
+    assert seen[0, CUE_DIM] > 0.04 and through[0, CUE_DIM] == 0, (seen[0, CUE_DIM], through[0, CUE_DIM])
+    with tempfile.TemporaryDirectory() as d:
+        path = os.path.join(d, "ref.npy")
+        np.save(path, ref)
+        meta = copy.deepcopy(SHAPE_META)
+        meta["obs"]["cue"]["shape"] = [CUE_DIM + 1]
+        meta["obs"]["cue"]["depth_object_ref"] = path
+        obs = to_policy_obs(raw, meta["obs"])
+        assert obs["cue"].shape == (2, CUE_DIM + 1) and np.allclose(obs["cue"], seen)
+        try:
+            from diffusers.schedulers.scheduling_ddpm import DDPMScheduler
+        except ImportError:
+            print("ok depth_object cue (policy part skipped: diffusers not installed)")
+            return
+        from diffusion_policy.common.normalize_util import get_image_range_normalizer
+        from diffusion_policy.model.common.normalizer import LinearNormalizer
+        from policy.gated_obs_encoder import GatedObsEncoder
+        from policy.gated_policy import GatedDiffusionPolicy
+        enc = GatedObsEncoder(meta, _resnet(), crop_shape=(84, 84), use_group_norm=True, imagenet_norm=True)
+        assert enc.gate["depth"][0].in_features == CUE_DIM + 1
+        sched = DDPMScheduler(num_train_timesteps=10, beta_schedule="squaredcos_cap_v2", prediction_type="epsilon")
+        policy = GatedDiffusionPolicy(meta, sched, enc, horizon=16, n_action_steps=8, n_obs_steps=2,
+                                      num_inference_steps=2, diffusion_step_embed_dim=32, down_dims=(64, 128),
+                                      gate_loss_weight=0.1, gate_anneal_steps=100, aux_weight=0.1, aux_hidden=32,
+                                      log_every=1, gate_depth_target="seethrough")
+        B, T = 3, 16
+        rng = np.random.default_rng(0)
+        obs = {k: torch.from_numpy(np.stack([to_policy_obs(fake_raw(T=T, rng=rng), meta["obs"])[k] for _ in range(B)]))
+               for k in meta["obs"]}
+        batch = {"obs": obs, "action": torch.randn(B, T, 7),
+                 "meta": {"ep_thermal_gap": torch.tensor([0.0, 10.0, -20.0]),
+                          "ep_is_crossover": torch.tensor([1., 0., 0.]),
+                          "ep_glass_seethrough": torch.tensor([1., 0., 1.])}}
+        norm = LinearNormalizer()
+        norm.fit({"action": batch["action"].reshape(-1, 7), "joints": obs["joints"].reshape(-1, 7),
+                  "cue": obs["cue"].reshape(-1, CUE_DIM + 1)}, last_n_dims=1, mode="limits")
+        for k in ("rgb", "depth", "thermal"):
+            norm[k] = get_image_range_normalizer()
+        policy.set_normalizer(norm)
+        policy.train()
+        import contextlib
+        import io
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):                            # log_every=1: one line per step
+            policy.compute_loss(batch).backward()
+        line = buf.getvalue()
+        assert "gate_depth" in line and "w_depth_st" in line and "w_depth_notst" in line, line
+        g = enc.gate["depth"][-1].bias.grad                              # last layer (zero-initialized weight)
+        assert g is not None and g.abs().sum() > 0
+    print("ok depth_object cue: 7th entry, first six unchanged, encoder and depth warm start accept it")
+
+
 if __name__ == "__main__":
     test_cues()
     test_obs()
@@ -190,4 +255,5 @@ if __name__ == "__main__":
     test_init_weights()
     test_gate()
     test_policy_loss()
+    test_depth_object_cue()
     print("all ok")

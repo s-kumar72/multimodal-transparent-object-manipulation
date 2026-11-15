@@ -44,7 +44,10 @@ class GatedObsEncoder(SharedCropObsEncoder):
                          random_crop=random_crop, use_group_norm=use_group_norm, share_rgb_model=False,
                          imagenet_norm=imagenet_norm, init_weights=init_weights)
         assert cue_key in self.low_dim_keys, f"shape_meta needs a '{cue_key}' low_dim observation (task glass_pick_cue)"
-        assert tuple(self.key_shape_map[cue_key]) == (CUE_DIM,), "cue shape must match obs_util.CUE_DIM"
+        n_cue_all = int(self.key_shape_map[cue_key][0])
+        assert len(self.key_shape_map[cue_key]) == 1 and n_cue_all in (CUE_DIM, CUE_DIM + 1), \
+            "cue shape must be obs_util.CUE_DIM, or CUE_DIM + 1 with depth_object_ref"
+        assert cross_modal_cue or n_cue_all == CUE_DIM, "per-modality cue slices assume the 6-vector"
         self.cue_key = cue_key
         self.mods = [m for m in MODALITIES if m in self.rgb_keys]          # gated, in the cue's fixed order
         self.other_rgb = [k for k in self.rgb_keys if k not in self.mods]  # any other camera: concatenated ungated
@@ -54,7 +57,7 @@ class GatedObsEncoder(SharedCropObsEncoder):
         self.dropout_mode, self.dropout_p, self.dropout_p_other = dropout_mode, dropout_p, dropout_p_other
 
         self.feat_dim = {m: self._feature_dim(m) for m in self.mods}
-        n_cue = CUE_DIM if cross_modal_cue else CUES_PER_MODALITY
+        n_cue = n_cue_all if cross_modal_cue else CUES_PER_MODALITY
         self.gate = nn.ModuleDict()
         for m in self.mods:
             in_dim = {"cue": n_cue, "feature": self.feat_dim[m], "both": n_cue + self.feat_dim[m]}[gate_input]

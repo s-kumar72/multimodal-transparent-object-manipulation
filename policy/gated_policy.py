@@ -6,11 +6,14 @@ Extra loss terms (each off at weight 0):
   gate loss   L_gate = mean (w_thermal - tanh(|thermal gap| / gate_tau))^2 on frames where thermal was not dropped.
               Uses the per-episode thermal gap from the zarr meta (sim only, never available on a robot), so it is
               annealed linearly to 0 over gate_anneal_steps: a warm start for the gate, not something it depends on.
+              gate_depth_target="seethrough" adds the same warm start for depth, (w_depth - (1 - see-through))^2 with
+              the episode's ep_glass_seethrough flag, with the same weight and schedule (off by default).
   aux loss    unimodal action heads: from each modality's feature at the last observation step (+ robot state),
               predict the next n_action_steps normalized actions. Keeps every encoder learning even when rgb alone
               already solves the task (modality collapse); its per-modality error is also the "unimodal error" the
               gate weights should anti-correlate with (QMF).
-Logging: loss terms are averaged and printed every log_every training steps (the DP workspace logs only the total).
+Logging: loss terms are averaged and printed every log_every training steps (the DP workspace logs only the total),
+with w_depth on see-through / other samples and w_thermal on crossover / other samples when the meta has the flags.
 For evaluation, set policy.w_trace = [] before a rollout; predict_action then appends the gate weights and raw cues of
 the last observation step at every decision, one list per policy.reset() (= per env chunk of the runner).
 """
@@ -23,9 +26,11 @@ from diffusion_policy.policy.diffusion_unet_image_policy import DiffusionUnetIma
 
 class GatedDiffusionPolicy(DiffusionUnetImagePolicy):
     def __init__(self, *args, gate_loss_weight=0.1, gate_anneal_steps=20000, gate_tau=5.0,
-                 aux_weight=0.1, aux_hidden=256, log_every=500, **kwargs):
+                 aux_weight=0.1, aux_hidden=256, log_every=500, gate_depth_target="none", **kwargs):
         super().__init__(*args, **kwargs)
+        assert gate_depth_target in ("none", "seethrough")
         self.gate_loss_weight, self.gate_anneal_steps, self.gate_tau = gate_loss_weight, gate_anneal_steps, gate_tau
+        self.gate_depth_target = gate_depth_target
         self.aux_weight, self.log_every = aux_weight, log_every
         self.register_buffer("train_steps", torch.zeros((), dtype=torch.long), persistent=True)
         enc = self.obs_encoder
@@ -37,7 +42,7 @@ class GatedDiffusionPolicy(DiffusionUnetImagePolicy):
             self.aux_heads = nn.ModuleDict({m: nn.Sequential(nn.Linear(enc.feat_dim[m] + state_dim, aux_hidden),
                                                              nn.Mish(), nn.Linear(aux_hidden, out_dim))
                                             for m in enc.mods})
-        self._terms, self._n_terms = {}, 0
+        self._terms, self._counts, self._n_terms = {}, {}, 0
         self.w_trace = None
 
     # ------------------------------------------------------------------ training
@@ -67,6 +72,14 @@ class GatedDiffusionPolicy(DiffusionUnetImagePolicy):
                 l_gate = (((w[:, :, ti] - target) ** 2) * keep).sum() / keep.sum().clamp(min=1)
                 loss = loss + lam * l_gate
                 terms["gate"] = l_gate.detach()
+            if lam > 0 and self.gate_depth_target == "seethrough" and "depth" in enc.mods \
+                    and "ep_glass_seethrough" in meta:
+                di = enc.mods.index("depth")
+                target = (1.0 - meta["ep_glass_seethrough"].float())[:, None]                      # (B, 1)
+                keep = (~drop[:, :, di]).float()
+                l_gate_d = (((w[:, :, di] - target) ** 2) * keep).sum() / keep.sum().clamp(min=1)
+                loss = loss + lam * l_gate_d
+                terms["gate_depth"] = l_gate_d.detach()
 
             if self.aux_heads is not None:
                 nobs = self.normalizer.normalize(batch["obs"])
@@ -82,6 +95,12 @@ class GatedDiffusionPolicy(DiffusionUnetImagePolicy):
                     terms[f"aux_{m}"] = l_aux.detach()
             for i, m in enumerate(enc.mods):
                 terms[f"w_{m}"] = w[:, :, i].mean().detach()
+            for m, flag, name in (("depth", "ep_glass_seethrough", "st"), ("thermal", "ep_is_crossover", "xo")):
+                if m in enc.mods and flag in meta:
+                    wm, f = w[:, :, enc.mods.index(m)].mean(-1), meta[flag].float() > 0.5
+                    if f.any() and (~f).any():   # only batches with both kinds, so the averages are comparable
+                        terms[f"w_{m}_{name}"] = wm[f].mean().detach()
+                        terms[f"w_{m}_not{name}"] = wm[~f].mean().detach()
 
         if self.training and torch.is_grad_enabled():
             self.train_steps += 1
@@ -91,11 +110,12 @@ class GatedDiffusionPolicy(DiffusionUnetImagePolicy):
     def _log(self, terms):
         for k, v in terms.items():
             self._terms[k] = self._terms.get(k, 0.0) + float(v)
+            self._counts[k] = self._counts.get(k, 0) + 1     # a term can be missing from some steps
         self._n_terms += 1
         if self.log_every and self._n_terms >= self.log_every:
-            msg = "  ".join(f"{k} {v / self._n_terms:.4f}" for k, v in self._terms.items())
+            msg = "  ".join(f"{k} {v / self._counts[k]:.4f}" for k, v in self._terms.items())
             print(f"[gated step {int(self.train_steps)}] lambda_gate {self.gate_lambda():.3f}  {msg}", flush=True)
-            self._terms, self._n_terms = {}, 0
+            self._terms, self._counts, self._n_terms = {}, {}, 0
 
     # ------------------------------------------------------------------ inference
     def reset(self):

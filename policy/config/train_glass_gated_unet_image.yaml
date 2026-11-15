@@ -48,6 +48,7 @@ policy:
   gate_loss_weight: 0.1        # sim-only warm start of w_thermal toward tanh(|thermal gap| / gate_tau)
   gate_anneal_steps: 20000     # ~50 epochs of 410 steps; 0 = constant
   gate_tau: 5.0
+  gate_depth_target: none      # seethrough: also warm-start w_depth toward 1 - ep_glass_seethrough (same schedule)
   aux_weight: 0.1              # unimodal action heads on each modality's feature (0 = off)
   aux_hidden: 256
   log_every: 500

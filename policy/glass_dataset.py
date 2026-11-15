@@ -24,9 +24,10 @@ from diffusion_policy.common.sampler import SequenceSampler, downsample_mask, ge
 from diffusion_policy.dataset.base_dataset import BaseImageDataset
 from diffusion_policy.model.common.normalizer import LinearNormalizer, SingleFieldLinearNormalizer
 
-from policy.obs_util import compute_cues, cue_roi, to_policy_obs
+from policy.obs_util import compute_cues, cue_opts, cue_roi, to_policy_obs
 
-META_KEYS = ("ep_thermal_gap", "ep_is_crossover", "ep_t_env", "ep_obj_temp", "ep_level", "ep_liquid_fill")
+META_KEYS = ("ep_thermal_gap", "ep_is_crossover", "ep_t_env", "ep_obj_temp", "ep_level", "ep_liquid_fill",
+             "ep_glass_seethrough")
 
 
 def zarr_data_keys(zarr_path):
@@ -94,6 +95,7 @@ class GlassImageDataset(BaseImageDataset):
         self.obs_meta = dict(shape_meta["obs"])
         self.has_cue = "cue" in self.obs_meta
         self.roi = cue_roi(self.obs_meta)
+        self.cue_opts = cue_opts(self.obs_meta)
         data_keys = [k for k in self.obs_meta if k != "cue"]
         available = zarr_data_keys(zarr_path)
         if self.has_cue and "thermal" in self.obs_meta and "thermal_raw" in available:
@@ -155,12 +157,13 @@ class GlassImageDataset(BaseImageDataset):
         idx = np.sort(rng.choice(n, size=min(n, self.n_cue_fit_frames), replace=False))
         raw = {k: self.replay_buffer[k][idx] for k in ("rgb", "depth", "thermal", "thermal_raw")
                if k in self.replay_buffer.keys()}
-        cues = [compute_cues(raw, self.roi)]
+        cues = [compute_cues(raw, self.roi, **self.cue_opts)]
         if self.augment is not None:
             step = 50   # corrupt in small groups so the draws vary
             parts = []
             for i in range(0, len(idx), step):
-                parts.append(compute_cues(self.augment({k: v[i:i + step] for k, v in raw.items()}, rng), self.roi))
+                parts.append(compute_cues(self.augment({k: v[i:i + step] for k, v in raw.items()}, rng), self.roi,
+                                          **self.cue_opts))
             cues.append(np.concatenate(parts))
         return np.concatenate(cues)
 

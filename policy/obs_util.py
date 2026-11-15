@@ -9,6 +9,10 @@ Besides the images it can produce two things the fusion models need:
 * reliability cues (`cue` key, type low_dim): per-frame scalars computed from the *raw* sensor data before any
   normalization, two per modality, that say how much each sensor can be trusted right now (see compute_cues).
   The cue is computed here, not stored in the zarr, so train and eval use the same code path.
+  Optional 7th cue (`depth_object_ref: <.npy>` on the cue key, cue shape [7]): depth_object = fraction of ROI pixels
+  with a reading more than `depth_object_thr` (8-bit depth units, 7.8 mm each) closer than the empty-table reference
+  depth of the fixed camera, i.e. "does the depth sensor see an object"; it drops when the sensor sees through the
+  glass. Without the key the cue is the 6-vector above, unchanged.
 """
 import warnings
 
@@ -33,6 +37,8 @@ THERMAL_NOISE_COUNTS = 2.73
 # the full range; prefer thermal_raw.
 THERMAL_NOISE_UINT8 = 2.0
 NOISE_P99_P1 = 4.65                 # p99 - p1 of a unit Gaussian
+# Optional cue after the fixed six (enabled per run, see the module docstring)
+DEPTH_OBJECT_THR = 8                # 8-bit depth units (255 = 2 m): 6 cm above the table
 
 _warned = set()
 
@@ -97,13 +103,22 @@ def thermal_cues(raw, roi=DEFAULT_ROI, noise=THERMAL_NOISE_COUNTS):
     return np.stack([contrast, extent], -1)
 
 
-def compute_cues(raw, roi=DEFAULT_ROI):
+def depth_object_cue(depth8, ref8, roi=DEFAULT_ROI, thr=DEPTH_OBJECT_THR):
+    """(..., H, W, 1) uint8 depth, (H, W) uint8 empty-table reference -> (...,): fraction of ROI pixels with a reading
+    more than thr units closer than the table."""
+    d = _roi(np.asarray(depth8, np.float32)[..., 0], roi)
+    r = _roi(np.asarray(ref8, np.float32), roi)
+    return ((d > 0) & (r - d > thr)).mean((-2, -1))
+
+
+def compute_cues(raw, roi=DEFAULT_ROI, depth_ref=None, depth_thr=DEPTH_OBJECT_THR):
     """Reliability cue vector (..., CUE_DIM) from a raw observation dict (arrays (..., H, W, C)).
     Modalities missing from `raw` get zeros, so the layout is fixed whatever sensors a run uses.
-    Uses thermal_raw (counts, before normalization) when present, else the 8-bit thermal image."""
+    Uses thermal_raw (counts, before normalization) when present, else the 8-bit thermal image.
+    With depth_ref ((H, W) uint8), the vector has a 7th entry, depth_object_cue."""
     ref = next(v for k, v in raw.items() if k in ("rgb", "depth", "thermal", "thermal_raw"))
     lead = np.shape(ref)[:-3]
-    out = np.zeros(lead + (CUE_DIM,), np.float32)
+    out = np.zeros(lead + (CUE_DIM + (depth_ref is not None),), np.float32)
     if "rgb" in raw:
         out[..., 0:2] = rgb_cues(raw["rgb"], roi)
     if "depth" in raw:
@@ -113,6 +128,8 @@ def compute_cues(raw, roi=DEFAULT_ROI):
     elif "thermal" in raw:
         _warn_once("thermal8", "compute_cues: no thermal_raw, computing the thermal cue on the normalized 8-bit image")
         out[..., 4:6] = thermal_cues(raw["thermal"], roi, THERMAL_NOISE_UINT8)
+    if depth_ref is not None and "depth" in raw:
+        out[..., CUE_DIM] = depth_object_cue(raw["depth"], depth_ref, roi, depth_thr)
     return np.nan_to_num(out)
 
 
@@ -123,12 +140,26 @@ def cue_roi(obs_meta):
     return tuple(int(v) for v in roi) if roi is not None else DEFAULT_ROI
 
 
+_depth_refs = {}
+
+
+def cue_opts(obs_meta):
+    """compute_cues keyword arguments beyond the ROI from the cue key of shape_meta: depth_object_ref / _thr."""
+    attr = obs_meta.get("cue")
+    path = attr.get("depth_object_ref") if attr is not None and hasattr(attr, "get") else None
+    if path is None:
+        return {}
+    if path not in _depth_refs:
+        _depth_refs[path] = np.load(path)
+    return {"depth_ref": _depth_refs[path], "depth_thr": int(attr.get("depth_object_thr", DEPTH_OBJECT_THR))}
+
+
 def to_policy_obs(raw, obs_meta):
     """raw: dict of (..., H, W, C) uint8 images / (..., D) vectors. obs_meta: shape_meta["obs"]."""
     out = {}
     for key, attr in obs_meta.items():
         if key == "cue":
-            out[key] = compute_cues(raw, cue_roi(obs_meta))
+            out[key] = compute_cues(raw, cue_roi(obs_meta), **cue_opts(obs_meta))
             continue
         x = raw[key]
         if attr.get("type", "low_dim") == "rgb":
