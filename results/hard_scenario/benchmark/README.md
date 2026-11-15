@@ -145,3 +145,47 @@ results, its 5-demo zarr and its `data/runs` folder are then deleted.
 With 50 episodes, differences under about 0.15 are within noise. Use
 `python policy/summarize_runs.py compare <run A> <run B>` (Fisher exact test). With many comparisons, a p near 0.05
 can be chance. Whatever the results, all runs are reported.
+
+## Selection after step 1 (the rule above, applied as written)
+
+Step 1 results on test sets (a) / (g), 50 episodes each (S5t was still running when the selection was made; it does
+not enter the rule):
+
+| id | run | (a) | (g) | (a) + (g) |
+|---|---|---|---|---|
+| A3 | `L0_distract_a03_rgb_500demos` | 0.32 (16/50) | 0.34 (17/50) | 0.33 (33/100) |
+| A4 | `L0_distract_a04_rgb_500demos` | 0.48 (24/50) | 0.48 (24/50) | 0.48 (48/100) |
+| S5d | `L0_distract_s50_rgbd_500demos` | 0.42 (21/50) | 0.62 (31/50) | 0.52 (52/100) |
+
+S5d by episode type ((a) and (g) share the same 22 see-through and 28 normal episodes):
+- normal: 15/28 on (a), 24/28 on (g), together **s_ok = 39/56 = 0.696** (95% CI 0.57-0.80);
+- see-through: 6/22 on (a), 7/22 on (g), together 13/44 = 0.295 (95% CI 0.18-0.44).
+
+**Check of the see-through assumption:** see-through rgbd 0.295 against rgb at alpha 0.2, 0.24 (48/200): difference
+0.055, Fisher exact p = 0.45. Not 0.15 or more with p < 0.05, so the assumption "see-through rgbd ≈ rgb" holds and step
+2 starts.
+
+**alpha\*:** rgb (a) + (g) is 0.24 at alpha 0.2, 0.33 at 0.3 and 0.48 at 0.4, that is 0.16, 0.07 and 0.08 from 0.40.
+**alpha\* = 0.3** (r = 0.33). Alpha 0.4 is only 0.01 further, well within noise, but the rule is applied as written.
+
+**p\*** = (s_ok − 0.60) / (s_ok − r) = (0.696 − 0.60) / (0.696 − 0.33) = 0.096 / 0.366 = 0.263, rounded to the nearest
+0.05: **p\* = 0.25** (inside 0.2-0.8). Expected rgbd on L0_bench: (1 − 0.25) × 0.696 + 0.25 × 0.33 = 0.60.
+
+s_ok came out lower than the 0.84 of L0_distract rgbd that the plan assumed, mostly from (a) (15/28 normal episodes, against
+24/28 on (g)). The rule uses the measured s_ok, so p* is 0.25 rather than the about 0.5 that s_ok = 0.84 would give.
+
+**L0_bench** (`sim/configs/L0_bench.yaml`, meta/ep_level 30, registered in the manifest): base `L0_distract.yaml`,
+`alpha: [0.3, 0.3]`, `tint: 0.0`, `glass_seethrough_p: 0.25`. Checks:
+- Config loading ((a) and (g)): against L0_distract it differs only in `name`, `level`, `alpha` (None → (0.3, 0.3)) and
+  `glass_seethrough_p` (0 → 0.25); every other key as listed for the step 1 levels.
+- First frames against L0_distract_a03 (same alpha), training seeds 0-19 and seeds 100000-100009 of (a) and (g): 0
+  mismatches. RGB, thermal, segmentation, joints and episode info are equal. Depth is equal in normal episodes; in
+  see-through episodes it differs only on the glass where A3 has a dot hole, and every glass pixel holds the depth
+  behind. See-through in 7 of training seeds 0-19 and 2 of test seeds 100000-100009.
+- Over all seeds: see-through in 128 of the 500 training seeds and in 11 of the 50 test seeds (the same 11 in (a)
+  and (g): 100000, 100006, 100015, 100018, 100024, 100031, 100033, 100034, 100038, 100046, 100047). The see-through
+  draw is the same uniform number as in S5 (p 0.5), so these 11 are a subset of S5's 22.
+- Teacher (`teacher_check_bench.txt`): 50/50 on training seeds and on test set (g), no distractor moved more than 2 cm.
+- Depth (`glass_depth_bench.png`, `python sim/preview_glass_depth.py --levels L0_distract_a03 L0_bench --seeds 0 1 2 3 4 5 6 7`):
+  see-through seeds 0, 2, 6, 7 have no missing or wrong glass pixel; seeds 1, 3, 4, 5 have 0.37 / 0.38 / 0.50 / 0.44 of
+  the glass missing, the same as A3. No pixel off the glass is missing.

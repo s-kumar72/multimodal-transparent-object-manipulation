@@ -30,7 +30,8 @@
     "L0_distract_g": "sim/configs/L0_distract_g.yaml",
     "L0_distract_a03": "sim/configs/L0_distract_a03.yaml",
     "L0_distract_a04": "sim/configs/L0_distract_a04.yaml",
-    "L0_distract_s50": "sim/configs/L0_distract_s50.yaml"
+    "L0_distract_s50": "sim/configs/L0_distract_s50.yaml",
+    "L0_bench": "sim/configs/L0_bench.yaml"
   },
   "test_sets": {
     "a_in_distribution": {
