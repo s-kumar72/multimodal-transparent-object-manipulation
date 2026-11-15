@@ -10,13 +10,16 @@
 # NENVS (envs rendered at once, 10), WORKERS (demo collection processes, 4), GROUP (results folder, diagnosis),
 # RUNS_DIR (training outputs and checkpoints, data/runs; ~5 GB per run), EXTRA (more hydra overrides),
 # TAG (suffix of the run name for runs that differ only by EXTRA, e.g. TAG=imagenet), GPU (CUDA_VISIBLE_DEVICES, 0).
+# TRAIN (training command, called as `$TRAIN <variant> <zarr> <overrides>`; default policy/train.sh, e.g.
+# TRAIN="policy/train_gated.sh gate" or TRAIN=scripts/train_fusion_policy.sh), EVAL_EXTRA (more policy/eval.py options,
+# e.g. --save_w), TOPK (best checkpoints kept besides latest.ckpt, 1; 0 keeps only latest.ckpt, which is the one evaluated).
 # Several runs can start at once on different GPUs: a lock makes the first one collect a missing demo set and the
 # others wait for it.
 set -e
 LEVEL=$1; VARIANT=$2; NDEMOS=$3
 [ -n "$NDEMOS" ] || { echo "usage: bash scripts/run_experiment.sh <level> <variant> <n_demos>"; exit 1; }
 EPOCHS=${EPOCHS:-101}; NTEST=${NTEST:-50}; NENVS=${NENVS:-10}; WORKERS=${WORKERS:-4}
-GROUP=${GROUP:-diagnosis}; RUNS_DIR=${RUNS_DIR:-data/runs}; GPU=${GPU:-0}
+GROUP=${GROUP:-diagnosis}; RUNS_DIR=${RUNS_DIR:-data/runs}; GPU=${GPU:-0}; TOPK=${TOPK:-1}
 DP_ROOT=${DP_ROOT:-../diffusion_policy}
 export PYTHONPATH=$PWD:$PWD/sim:$DP_ROOT:$PYTHONPATH MUJOCO_GL=${MUJOCO_GL:-egl} WANDB_MODE=${WANDB_MODE:-offline}
 
@@ -42,9 +45,9 @@ mkdir -p results/data
 # Done = the last epoch's evaluation is logged (its step lines also carry the epoch number, so check for the score)
 if ! grep "\"epoch\": $((EPOCHS - 1))," $RUN/logs.json.txt 2>/dev/null | grep -q "test/mean_score"; then
     echo "[$(date +%H:%M)] $NAME: training $EPOCHS epochs -> $RUN (log $RUN.log)"
-    CUDA_VISIBLE_DEVICES=$GPU DP_ROOT=$DP_ROOT policy/train.sh $VARIANT $ZARR training.num_epochs=$EPOCHS \
+    CUDA_VISIBLE_DEVICES=$GPU DP_ROOT=$DP_ROOT ${TRAIN:-policy/train.sh} $VARIANT $ZARR training.num_epochs=$EPOCHS \
         task.env_runner.n_test=$NTEST task.env_runner.n_envs=$NENVS task.env_runner.level=$LEVEL \
-        checkpoint.topk.k=1 hydra.run.dir=$RUN ${EXTRA:-} >> $RUN.log 2>&1
+        checkpoint.topk.k=$TOPK hydra.run.dir=$RUN ${EXTRA:-} >> $RUN.log 2>&1
 fi
 cp $RUN/logs.json.txt $OUT/train_logs.json.txt
 python policy/summarize_runs.py curve $OUT/train_logs.json.txt $OUT/curve.json
@@ -53,7 +56,7 @@ python policy/summarize_runs.py curve $OUT/train_logs.json.txt $OUT/curve.json
 if [ ! -f $OUT/g_heldout_all/eval_log.json ]; then
     echo "[$(date +%H:%M)] $NAME: evaluating test sets (a) and (g) (log $RUN.eval.log)"
     CUDA_VISIBLE_DEVICES=$GPU python policy/eval.py -c $RUN/checkpoints/latest.ckpt -o $OUT --level $LEVEL \
-        --n_test $NTEST --n_envs $NENVS --n_vis 0 --test_set a_in_distribution --test_set g_heldout_all \
+        --n_test $NTEST --n_envs $NENVS --n_vis 0 --test_set a_in_distribution --test_set g_heldout_all ${EVAL_EXTRA:-} \
         > $RUN.eval.log 2>&1
 fi
 echo "[$(date +%H:%M)] $NAME: done -> $OUT"
