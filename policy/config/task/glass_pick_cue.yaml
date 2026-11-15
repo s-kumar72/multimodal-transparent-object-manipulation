@@ -1,0 +1,29 @@
+# glass_pick plus what the fusion experiments need: a depth validity channel, the reliability cue observation,
+# per-episode meta for training-time supervision, and online sensor corruption on training samples.
+# Drop modalities as before (~task.shape_meta.obs.thermal); the cue entries of a dropped modality are zero.
+# Remove the cue for a plain baseline with ~task.shape_meta.obs.cue; turn corruption off with task.dataset.augment=null.
+defaults:
+  - glass_pick
+  - _self_
+
+name: glass_pick_cue
+
+shape_meta:
+  obs:
+    depth:
+      shape: [3, 96, 96]   # [depth, depth > 0, depth]
+      type: rgb
+      mask_channel: true
+    cue:
+      shape: [6]           # policy/obs_util.py CUE_NAMES: rgb brightness/sharpness, depth valid/rough, thermal contrast/extent
+      type: low_dim
+      roi: [32, 96, 0, 96] # rows 32-96 (table), all columns; see obs_util.DEFAULT_ROI
+
+dataset:
+  with_meta: true
+  augment:
+    thermal_contrast_p: 0.5
+    thermal_contrast: [0.0, 0.6]
+    depth_hole_p: 0.5
+    depth_hole_frac: [0.1, 0.6]
+    depth_blob_cells: [6, 16]

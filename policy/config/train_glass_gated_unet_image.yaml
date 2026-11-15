@@ -1,0 +1,63 @@
+# Cue-driven reliability gating on top of train_glass_unet_image: same denoiser, diffusion, optimizer and schedule;
+# the observation encoder and the task (glass_pick_cue: depth mask channel, cue, meta, corruption) change.
+# policy/train_gated.sh picks the fusion arm (static / static_cue / gate) with overrides on this file.
+defaults:
+  - train_glass_unet_image
+  - override task: glass_pick_cue
+  - _self_
+
+name: train_glass_gated_unet_image
+exp_name: "gate_rgbdt"
+
+policy:
+  _target_: policy.gated_policy.GatedDiffusionPolicy
+
+  obs_encoder:
+    _target_: policy.gated_obs_encoder.GatedObsEncoder
+    shape_meta: ${shape_meta}
+    rgb_model:
+      _target_: diffusion_policy.model.vision.model_getter.get_resnet
+      name: resnet18
+      weights: null
+    resize_shape: null
+    crop_shape: [84, 84]
+    random_crop: True          # one crop window shared by all image keys
+    use_group_norm: True
+    share_rgb_model: False
+    imagenet_norm: True
+    # per-key initial weights: imagenet | path of a ResNet state dict (e.g. the encoder/thermal_pretrain export) | null
+    init_weights:
+      rgb: imagenet
+      depth: imagenet
+      thermal: imagenet
+    # --- gate ---
+    cue_key: cue
+    gate_input: cue            # cue | feature | both
+    cross_modal_cue: True
+    gate_hidden: 32
+    gate_act: sigmoid          # sigmoid | softmax
+    w_in_cond: True
+    cue_in_cond: False
+    missing: learned           # learned | zero
+    dropout_mode: targeted     # none | random | targeted
+    dropout_p: 0.3
+    dropout_p_other: 0.1
+    rgb_gate_bias: 2.0
+
+  # --- extra losses (GatedDiffusionPolicy) ---
+  gate_loss_weight: 0.1        # sim-only warm start of w_thermal toward tanh(|thermal gap| / gate_tau)
+  gate_anneal_steps: 20000     # ~50 epochs of 410 steps; 0 = constant
+  gate_tau: 5.0
+  aux_weight: 0.1              # unimodal action heads on each modality's feature (0 = off)
+  aux_hidden: 256
+  log_every: 500
+
+training:
+  num_epochs: 151              # DP evaluates when epoch % 25 == 0; 151 keeps the epoch-150 evaluation
+
+checkpoint:
+  topk:
+    monitor_key: test_mean_score
+    mode: max
+    k: 3
+    format_str: 'epoch={epoch:04d}-test_mean_score={test_mean_score:.3f}.ckpt'
