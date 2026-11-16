@@ -11,6 +11,13 @@ rgbd (0.640, p 0.026); with sensor guidance at inference (×1.5, same checkpoint
 rgbd, 7e-7 against rgbdt), level with rgbd on normal and crossover episodes and far above it on see-through ones.
 Sections up to "Next steps (proposals, not run)" are the state of 11/16 07:00 and are kept as written.
 
+**Update, 11/16 21:26 – 11/17 04:08 KST (round 6, before "Files"):** the guidance scale chosen on validation episodes
+is 3.0 (the largest of the grid); with it `vis_route` reaches 0.780 over three seeds (1200 episodes; as trained 0.698).
+A control trained the same way without the routing (`nogate_rgbonly`, one seed) reaches 0.682 as trained, not
+distinguishable from `vis_route` at the same seed (0.705), and gains nothing from the same guidance (0.680, 0.682).
+So guidance needs the routing, and without guidance the routing is not shown to add to its training scheme: conclusion
+11 of rounds 3–5 is narrowed by conclusion 17. The rounds 3–5 section is kept as written.
+
 ## Setup
 
 - **Protocol** as in the benchmark: `L0_bench`, 500 demos (`results/data/sim_demos_L0_bench_500.zarr`), 101 epochs,
@@ -343,7 +350,7 @@ Detect-Reject-Correct (ICRA 2021). What differs here: the on / off decision is m
 object, in the physical units of each sensor, and the same decision is used in training, so every sensor subset is a
 trained mode of one policy.
 
-### Next steps (proposals, not run)
+### Next steps (proposals of 11/16 18:40; 1–3 were then run, see round 6)
 
 1. Separate guidance from the gate: an rgbdt policy trained with the 10% rgb-only samples and no routing, evaluated with
    the same guidance (1 training run + evaluations).
@@ -352,6 +359,150 @@ trained mode of one policy.
 4. Partially visible targets (intermediate thermal gaps, partial see-through) to test 0 / 1 against continuous weights
    where they can differ; this needs new test conditions and is outside the fixed benchmark.
 5. Learned attention weighting with a third seed, as proposed above.
+
+## Round 6: guidance control, guidance scale, third seed (11/16 21:26 – 11/17 04:08 KST)
+
+### Runs
+
+All on `L0_bench`, rgbdt, 500 demos, 101 epochs, as above. No code changed in this round. Both trainings ran to epoch
+100 without interruption; all 22 queued jobs finished at the first attempt.
+
+| run tag | what | overrides on `policy/train_gated.sh gate rgbdt` |
+|---|---|---|
+| `nogate_rgbonly` (seed 42) | **control of `vis_route`**: the same code path and settings, but the visibility thresholds are −1000, so depth and thermal are never switched off (weights 1 / 1 / 1 in every evaluated step); the 10% rgb-only training samples stay, so the policy has the rgb-only mode that guidance needs | the `vis_route` overrides with `vis_thr=[-1000,-1000]` |
+| `vis_route_seed44` | third seed of `vis_route` | the `vis_route` overrides + `training.seed=44` |
+
+Evaluations (`eval.py`, 10 envs):
+
+- **Validation**, `val100/<run>__g{100,125,150,200,300}/`: 100 episodes per test set with `--test_start_seed 200000`
+  (demos use seeds 0–499, test episodes 100000–100199), `--guidance` 1.0, 1.25, 1.5, 2.0, 3.0, on the `vis_route`
+  checkpoints of seeds 42 and 43.
+- **Test**, `n200/<run>[__guide15|__guide30]/`: 200 episodes per test set on the test seeds, as trained and with
+  `--guidance 1.5` / `3.0`, for `nogate_rgbonly`, `vis_route_seed44`, `vis_soft`, and `guide30` for the two earlier
+  `vis_route` checkpoints.
+
+### Guidance scale on validation episodes
+
+Rule, fixed before these evaluations: the scale with the highest success pooled over both checkpoints and both test
+sets (400 episodes per scale) is taken, ties go to the smaller scale; if it is not 1.5, test evaluations with it are added.
+
+| scale | pooled (400) | normal (300) | see-through (100) | crossover (44) | seed 42 (a) / (g) | seed 43 (a) / (g) | same episodes against 1.0 |
+|---|---|---|---|---|---|---|---|
+| 1.0 (no guidance) | 284 = 0.710 | 0.753 | 0.580 | 0.705 | 79 / 70 | 75 / 60 | – |
+| 1.25 | 298 = 0.745 | 0.790 | 0.610 | 0.773 | 83 / 70 | 82 / 63 | gained 22, lost 8 (p 0.016) |
+| 1.5 | 298 = 0.745 | 0.793 | 0.600 | 0.727 | 85 / 70 | 82 / 61 | gained 25, lost 11 (p 0.029) |
+| 2.0 | 309 = 0.773 | 0.823 | 0.620 | 0.773 | 85 / 74 | 84 / 66 | gained 36, lost 11 (p 3e-4) |
+| **3.0** | **318 = 0.795** | 0.840 | 0.660 | 0.727 | 89 / 74 | 88 / 67 | gained 49, lost 15 (p 2e-5) |
+
+**Selected: 3.0.** It is the largest scale of the grid and success rises over the whole grid, so the best scale may be
+larger; the grid was not extended after seeing this. On these 400 episodes 3.0 against 1.5 is p 0.11 (Fisher).
+
+### Results on the test seeds: `vis_route`, three seeds
+
+200 episodes per test set and seed. The baselines have two seeds (800 episodes), `vis_route` three (1200). p: two-sided
+Fisher exact test on all episodes against rgbd / rgbdt, not corrected for the number of comparisons.
+
+| method | seed 42 / 43 / 44 (of 400) | all | normal | see-through | crossover | p vs rgbd / rgbdt |
+|---|---|---|---|---|---|---|
+| rgbd | 261 / 251 / – | 0.640 | 0.798 | 0.094 | 0.774 | |
+| rgbdt | 239 / 262 / – | 0.626 | 0.747 | 0.211 | 0.548 | |
+| vis_route, as trained | 282 / 273 / 282 | 0.698 (0.67–0.72) | 0.741 | 0.548 | 0.643 | 0.007 / 0.001 |
+| vis_route, `guide15` | 304 / 290 / 295 | 0.741 (0.72–0.76) | 0.795 | 0.556 | 0.738 | 2e-6 / 6e-8 |
+| **vis_route, `guide30`** (selected scale) | 311 / 305 / 320 | **0.780** (0.76–0.80) | 0.840 | 0.574 | 0.778 | 1e-11 / 1e-13 |
+
+- Seeds 42 and 43 only (the seeds of the baselines, 800 episodes): `guide30` 0.770 (normal 0.827, see-through 0.572,
+  crossover 0.762), p 1e-8 / 5e-10. Per seed against the same-seed baselines: 0.777 vs 0.652 (p 1e-4) and 0.598
+  (p 5e-8) at seed 42; 0.762 vs 0.627 (p 4e-5) and 0.655 (p 0.001) at seed 43.
+- Seed 44, whose checkpoint took no part in choosing the scale: 0.705 as trained, 0.738 with `guide15`, 0.800 with `guide30`.
+- Same checkpoints, same episodes, against `vis_route` as trained (1200 episodes, sign test): `guide15` gained 93,
+  lost 41 (p 8e-6); `guide30` gained 160, lost 61 (p 2e-11): normal gained 130, lost 38 (p 6e-13), crossover 24 / 7
+  (p 0.003), see-through 30 / 23 (p 0.41). `guide30` against `guide15`: 936 vs 889 of 1200 (Fisher p 0.028; gained 112,
+  lost 65, sign test p 5e-4).
+- Per group, `guide30` against rgbd: normal 0.840 vs 0.798 (p 0.041), crossover 0.778 vs 0.774, see-through 0.574 vs
+  0.094; against rgbdt: normal p 9e-6, crossover p 8e-4. As trained against rgbd: normal 0.741 vs 0.798 (p 0.010),
+  crossover 0.643 vs 0.774 (p 0.048).
+- Per test set: as trained (a) 0.732, (g) 0.663; `guide30` (a) 0.807, (g) 0.753; rgbd 0.658 / 0.623; rgbdt 0.640 / 0.613.
+- Failure outcomes over 1200 episodes: as trained missed grasp 164, dropped 111, wrong height 69, other 18; `guide15`
+  123 / 97 / 63 / 24; `guide30` 101 / 91 / 46 / 20.
+- First decision at seed 44 as at the other seeds: depth off in 90/90 see-through episodes, on in 310/310 others;
+  thermal off in 41/42 crossover episodes, on in 358/358 others; a flag changed later in 28 episodes.
+- 50 episodes per test set (benchmark protocol): `vis_route_seed44` (a) 0.76, (g) 0.60; three seeds 208/300 = 0.693
+  (normal 0.701, see-through 0.667, crossover 0.639).
+
+### Results on the test seeds: control and `vis_soft`, seed 42 (400 episodes)
+
+| run | guidance | all | normal (310) | see-through (90) | crossover (42) | same episodes against the run as trained |
+|---|---|---|---|---|---|---|
+| rgbd | | 261 = 0.652 | 0.816 | 0.089 | 0.857 | |
+| rgbdt | | 239 = 0.598 | 0.706 | 0.222 | 0.571 | |
+| **nogate_rgbonly** | – | 273 = 0.682 (0.64–0.73) | 0.710 | 0.589 | 0.500 | |
+| nogate_rgbonly | 1.5 | 272 = 0.680 | 0.710 | 0.578 | 0.524 | gained 22, lost 23 (p 1) |
+| nogate_rgbonly | 3.0 | 273 = 0.682 | 0.729 | 0.522 | 0.500 | gained 36, lost 36 (p 1) |
+| vis_route | – | 282 = 0.705 (0.66–0.75) | 0.739 | 0.589 | 0.690 | |
+| vis_route | 1.5 | 304 = 0.760 | 0.800 | 0.622 | 0.762 | gained 33, lost 11 (p 0.001) |
+| vis_route | 3.0 | 311 = 0.777 | 0.829 | 0.600 | 0.786 | gained 52, lost 23 (p 0.001) |
+| vis_soft | – | 280 = 0.700 | 0.739 | 0.567 | 0.690 | |
+| vis_soft | 1.5 | 289 = 0.723 | 0.774 | 0.544 | 0.762 | gained 31, lost 22 (p 0.27) |
+| vis_soft | 3.0 | 294 = 0.735 | 0.794 | 0.533 | 0.690 | gained 51, lost 37 (p 0.17) |
+
+- **Control against `vis_route`, both as trained**: 0.682 vs 0.705, Fisher p 0.54; on the same episodes `vis_route`
+  gained 35 and lost 26 (sign test p 0.31). See-through 53/90 in both; normal 220 vs 229 of 310 (p 0.47); crossover
+  21 vs 29 of 42 (p 0.12).
+- **Control against the other seed-42 runs, as trained**: rgbdt 0.598 (p 0.015; see-through 0.589 vs 0.222, p 9e-7;
+  normal 0.710 vs 0.706; crossover 0.500 vs 0.571, p 0.66); rgbd 0.652 (p 0.41; normal 0.710 vs 0.816, p 0.002;
+  crossover 0.500 vs 0.857, p 9e-4); `static_nohole` 0.573 (p 0.002; normal 0.710 vs 0.577, p 8e-4); `gate_nohole`
+  0.625 (p 0.10); `gate_vis` 0.655 (p 0.45).
+- **Gain from guidance, `vis_route` minus control** (bootstrap over the 400 shared test episodes): +5.8 points at 1.5
+  (95% interval +1.3 to +10.2), +7.2 points at 3.0 (+1.8 to +12.8).
+- **With guidance, `vis_route` against control**: 0.760 vs 0.680 at 1.5 (Fisher p 0.015; same episodes gained 52,
+  lost 20, p 2e-4); 0.777 vs 0.682 at 3.0 (p 0.003; gained 67, lost 29, p 1e-4; normal 257 vs 226 of 310, crossover 33
+  vs 21 of 42, see-through 54 vs 47 of 90).
+- **`vis_soft`**: its gains (+2.3 and +3.5 points) are not significant; `vis_route`'s gain minus `vis_soft`'s is +3.3
+  points (−1.5 to +8.0) at 1.5 and +3.7 (−1.3 to +8.7) at 3.0, and guided `vis_soft` against guided `vis_route` is
+  p 0.26 / 0.19.
+- Failure outcomes of the control (400 episodes): missed grasp 65, dropped 36, wrong height 17, other 5; with
+  `guide30` 60 / 40 / 15 / 9.
+- 50 episodes per test set: `nogate_rgbonly` (a) 0.68, (g) 0.56, 62/100 (normal 0.641, see-through 0.545, crossover 0.583).
+
+### Conclusions of round 6
+
+15. **The selected guidance scale is 3.0 and its gain holds on the test seeds**: 0.780 over three seeds against 0.698
+    as trained, above rgbd and rgbdt at each seed, and 0.800 at the seed that took no part in the selection. Normal
+    episodes rise to 0.840 (rgbd 0.798, p 0.041 uncorrected), crossover to the rgbd level (0.778 vs 0.774); see-through
+    does not change with guidance (0.548 → 0.574). The scale is at the edge of the grid.
+16. **Guidance needs the routing.** The control, trained the same way without the routing, gains nothing from the same
+    guidance at either scale (0.682 → 0.680 → 0.682, as many episodes lost as gained), while `vis_route` gains 5.5 and
+    7.2 points at the same seed; the difference of the gains excludes 0 at both scales. `vis_soft`, whose unseen-sensor
+    weight is about 0.3 instead of 0, lies between (+2.3, +3.5, not significant).
+17. **Without guidance the routing is not shown to add to its training scheme** (narrows conclusion 11). The control
+    reaches 0.682 against 0.705, with the same see-through success (53/90); only crossover differs (0.500 vs 0.690 on
+    42 episodes, p 0.12). The `all_on` test of conclusion 11 shows that a policy trained with the routing needs it at
+    inference; it does not show that a policy trained without it is worse. The see-through gain over rgbdt (0.589 vs
+    0.222) comes from the training scheme, not from switching depth off. This rests on one seed of the control, and
+    400 episodes cannot resolve a difference under about 7 points.
+18. **The control is the best policy without a gate here**: above rgbdt (0.598, p 0.015) and `static_nohole` (0.573,
+    p 0.002), level with rgbd (0.652) with the opposite profile (see-through 0.589 vs 0.089, crossover 0.500 vs 0.857).
+    It differs from `static_nohole` in the 10% rgb-only samples and in the encoder family (missing-sensor embedding,
+    weights in the conditioning, unimodal aux heads); which of these matters is not separated.
+19. **A third seed confirms `vis_route` as trained**: 282/400, three seeds 0.698 (p 0.007 against rgbd, 0.001 against
+    rgbdt). It stays below rgbd on normal (0.741 vs 0.798, p 0.010) and crossover episodes (0.643 vs 0.774, p 0.048).
+
+Caveats: the control has one seed; the scale was selected at the edge of its grid; the validation episodes have other
+seeds than the test episodes but two of the three tested checkpoints are the ones the scale was chosen on (the third,
+seed 44, is not); rgbd and rgbdt have two seeds and cannot be guided (no rgb-only mode), so the control is the only
+guided comparison without a gate; p values are not corrected for the number of comparisons. Why guidance does nothing
+without the routing was not examined: on normal episodes both policies have all sensors on, yet `vis_route` gains
+there (seed 42: 42 gained, 14 lost at 3.0) and the control does not (29 / 23).
+
+### Next steps (proposals, not run)
+
+1. Seeds 43 and 44 of the control (2 trainings, 3 evaluations each) to settle conclusion 17 and repeat conclusion 16.
+2. Validation at scales above 3.0 (4, 5, 7) on the same validation episodes, then the test evaluations of the selected
+   scale (evaluations only).
+3. Why guidance needs the routing: size and direction of the difference between the routed and the rgb-only noise
+   prediction on the same frames, `vis_route` against the control (no training).
+4. What lifts the control above `static_nohole`: the control without the rgb-only samples (`route_rgb_only_p=0`, 1 training).
+5. Partially visible targets and the third seed of learned attention weighting, as proposed above.
 
 ## Files
 
@@ -373,3 +524,6 @@ trained mode of one policy.
   normalizer), `policy/gated_obs_encoder.py` (`route=visible|soft`, `route_rgb_only_p`, `route_tau`, `gate_norm`,
   `route_eval`), `policy/gated_policy.py` (`route_latch`, `guidance`, diagnostics), `policy/eval.py` (`--route`,
   `--route_latch`, `--guidance`). The mask array and checkpoints are not in git (`data/`).
+- Round 6 results: `L0_bench_rgbdt_500demos_{nogate_rgbonly,vis_route_seed44}/` and their `n200/` evaluations (as
+  trained, `__guide15`, `__guide30`), `n200/<vis_route run>__guide30/`, `n200/L0_bench_rgbdt_500demos_vis_soft__{guide15,guide30}/`,
+  and `val100/<vis_route run>__g{100,125,150,200,300}/` (validation seeds 200000–200099). No code was added.
