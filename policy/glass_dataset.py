@@ -101,6 +101,13 @@ class GlassImageDataset(BaseImageDataset):
         if self.has_cue and "thermal" in self.obs_meta and "thermal_raw" in available:
             data_keys.append("thermal_raw")
         self.replay_buffer = ReplayBuffer.copy_from_path(zarr_path, keys=data_keys + ["action"])
+        cue_attr = self.obs_meta.get("cue")
+        mask_path = cue_attr.get("glass_mask") if self.has_cue and hasattr(cue_attr, "get") else None
+        if mask_path is not None:      # glass masks of every frame (policy/make_glass_masks.py), for the visibility cues
+            masks = np.load(mask_path)
+            assert len(masks) == self.replay_buffer.n_steps, (mask_path, len(masks), self.replay_buffer.n_steps)
+            self.replay_buffer.root["data"]["glass_mask"] = masks
+            data_keys.append("glass_mask")
 
         val_mask = get_val_mask(n_episodes=self.replay_buffer.n_episodes, val_ratio=val_ratio, seed=seed)
         train_mask = downsample_mask(mask=~val_mask, max_n=max_train_episodes, seed=seed)
@@ -146,8 +153,12 @@ class GlassImageDataset(BaseImageDataset):
         if self.has_cue:
             # z-scores rather than limits: cues of corrupted / crossover frames must stay in range, and the fit
             # sample includes corrupted copies of the frames so the training distribution is covered
-            normalizer["cue"] = SingleFieldLinearNormalizer.create_fit(self._cue_sample(), last_n_dims=1,
-                                                                        mode="gaussian")
+            cue_norm = SingleFieldLinearNormalizer.create_fit(self._cue_sample(), last_n_dims=1, mode="gaussian")
+            if self.cue_opts.get("vis"):   # the two visibility flags stay 0 / 1: the encoder routes on them
+                n_id = 4 if self.cue_opts["vis"].get("raw") else 2   # vis_raw: the two measurements stay raw too
+                cue_norm.params_dict["scale"].data[-n_id:] = 1.0
+                cue_norm.params_dict["offset"].data[-n_id:] = 0.0
+            normalizer["cue"] = cue_norm
         return normalizer
 
     def _cue_sample(self):
@@ -155,7 +166,7 @@ class GlassImageDataset(BaseImageDataset):
         n = self.replay_buffer.n_steps
         rng = np.random.default_rng(self.seed)
         idx = np.sort(rng.choice(n, size=min(n, self.n_cue_fit_frames), replace=False))
-        raw = {k: self.replay_buffer[k][idx] for k in ("rgb", "depth", "thermal", "thermal_raw")
+        raw = {k: self.replay_buffer[k][idx] for k in ("rgb", "depth", "thermal", "thermal_raw", "glass_mask")
                if k in self.replay_buffer.keys()}
         cues = [compute_cues(raw, self.roi, **self.cue_opts)]
         if self.augment is not None:

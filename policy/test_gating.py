@@ -247,6 +247,226 @@ def test_depth_object_cue():
     print("ok depth_object cue: 7th entry, first six unchanged, encoder and depth warm start accept it")
 
 
+def test_visibility_route():
+    """Target-visibility cues from a glass mask, and the encoder that switches sensors on / off with them."""
+    import copy
+    from policy.obs_util import visibility_cues
+    from policy.gated_obs_encoder import GatedObsEncoder
+    raw = fake_raw(T=4, hot=True, holes=0.0)
+    raw["depth"][:, 50:70, 40:56] = 120                                  # glass 30 units in front of the table (150)
+    mask = np.zeros((4, 96, 96, 1), np.uint8)
+    mask[:, 50:70, 40:56] = 255
+    raw["glass_mask"] = mask
+    v = visibility_cues(raw["depth"], raw["thermal_raw"], mask)
+    assert v.shape == (4, 3) and np.allclose(v[:, 0], 30) and (v[:, 1] > 50).all() and (v[:, 2] == 1).all(), v
+    vis = {"thr": (15.0, 30.0), "seg_ckpt": None}
+    seen = compute_cues(raw, DEFAULT_ROI, vis=vis)
+    assert seen.shape == (4, CUE_DIM + 4) and np.allclose(seen[:, :CUE_DIM], compute_cues(raw))
+    assert (seen[:, -2:] == 1).all()
+    through = dict(raw, depth=np.full_like(raw["depth"], 150))           # depth sees only the table
+    cold = dict(fake_raw(T=4, hot=False, holes=0.0), glass_mask=mask)    # thermal crossover, depth as fake_raw (flat)
+    cold["depth"][:, 50:70, 40:56] = 120
+    assert (compute_cues(through, DEFAULT_ROI, vis=vis)[:, -2:] == [0, 1]).all()
+    assert (compute_cues(cold, DEFAULT_ROI, vis=vis)[:, -2:] == [1, 0]).all()
+    empty = dict(raw, glass_mask=np.zeros_like(mask))                    # no mask: nothing is switched off
+    assert (compute_cues(empty, DEFAULT_ROI, vis=vis)[:, -2:] == 1).all()
+
+    meta = copy.deepcopy(SHAPE_META)
+    meta["obs"]["cue"]["shape"] = [CUE_DIM + 4]
+    meta["obs"]["cue"]["vis_thr"] = [15, 30]
+    obs = to_policy_obs(raw, meta["obs"])
+    assert obs["cue"].shape == (4, CUE_DIM + 4) and np.allclose(obs["cue"], seen)
+    enc = GatedObsEncoder(meta, _resnet(), crop_shape=(84, 84), use_group_norm=True, imagenet_norm=True,
+                          dropout_mode="none", route="visible", route_rgb_only_p=0.0)
+    B = 4
+    t = {k: torch.from_numpy(np.stack([to_policy_obs(fake_raw(T=1, holes=0.0), SHAPE_META["obs"])[k][0]
+                                       for _ in range(B)])) for k in ("rgb", "depth", "thermal", "joints")}
+    cue = torch.zeros(B, CUE_DIM + 4)
+    cue[:, -2:] = torch.tensor([[1., 1.], [0., 1.], [1., 0.], [0., 0.]])   # normal, see-through, crossover, both
+    t["cue"] = cue
+    for mode in (True, False):
+        enc.train(mode)
+        enc(t)
+        assert enc.last_w.tolist() == [[1, 1, 1], [1, 0, 1], [1, 1, 0], [1, 0, 0]], enc.last_w
+    out = enc(t)
+    assert torch.allclose(out[1, 512:1024], torch.zeros(512)) and not torch.allclose(out[0, 512:1024], torch.zeros(512))
+    enc.route_eval = "depth_first"
+    enc(t)
+    assert enc.last_w.tolist() == [[1, 1, 0], [1, 0, 1], [1, 1, 0], [1, 0, 0]], enc.last_w
+    enc.route_eval = "all_on"
+    enc(t)
+    assert (enc.last_w == 1).all()
+    enc.route_eval = "rgb_only"
+    enc(t)
+    assert enc.last_w.tolist() == [[1, 0, 0]] * 4
+    enc.route_eval, enc.route_rgb_only_p = "visible", 1.0
+    enc.train()
+    enc(t)
+    assert enc.last_w.tolist() == [[1, 0, 0]] * 4                          # training-time rgb-only draw
+    enc.route_rgb_only_p = 0.0
+    try:
+        from diffusers.schedulers.scheduling_ddpm import DDPMScheduler
+    except ImportError:
+        print("ok visibility route (policy part skipped: diffusers not installed)")
+        return
+    from diffusion_policy.common.normalize_util import get_image_range_normalizer
+    from diffusion_policy.model.common.normalizer import LinearNormalizer, SingleFieldLinearNormalizer
+    from policy.gated_policy import GatedDiffusionPolicy
+    sched = DDPMScheduler(num_train_timesteps=10, beta_schedule="squaredcos_cap_v2", prediction_type="epsilon")
+    policy = GatedDiffusionPolicy(meta, sched, enc, horizon=16, n_action_steps=8, n_obs_steps=2,
+                                  num_inference_steps=2, diffusion_step_embed_dim=32, down_dims=(64, 128),
+                                  gate_loss_weight=0, aux_weight=0.1, aux_hidden=32, log_every=0)
+    norm = LinearNormalizer()
+    norm.fit({"action": torch.randn(64, 7), "joints": torch.randn(64, 7)}, last_n_dims=1, mode="limits")
+    norm["cue"] = SingleFieldLinearNormalizer.create_identity()
+    for k in ("rgb", "depth", "thermal"):
+        norm[k] = get_image_range_normalizer()
+    policy.set_normalizer(norm)
+    policy.eval()
+    obs2 = {k: v[:, None].repeat(1, 2, *[1] * (v.dim() - 1)) for k, v in t.items()}       # (B, To=2, ...)
+    policy.route_latch, policy.guidance = True, 2.0
+    policy.reset()
+    with torch.no_grad():
+        res = policy.predict_action(obs2)
+        assert res["action"].shape == (B, 8, 7) and torch.isfinite(res["action"]).all()
+        first = enc.last_w.view(B, 2, -1)[:, -1].clone()
+        flipped = dict(obs2, cue=obs2["cue"].clone())
+        flipped["cue"][..., -2:] = 0                                      # later frames: nothing visible
+        policy.predict_action(flipped)
+        assert torch.equal(enc.last_w.view(B, 2, -1)[:, -1], first)       # latched: the first flags still decide
+        policy.reset()
+        policy.predict_action(flipped)
+        assert (enc.last_w.view(B, 2, -1)[:, -1, 1:] == 0).all()          # after reset the new flags are taken
+    assert enc.route_eval == "visible" and policy._guide_cond is None
+    print("ok visibility route: cues at the mask, flags, sensors switched by the flags, eval rules, latch, guidance")
+
+
+def test_soft_route_and_norm():
+    """route=soft (continuous weights from the visibility measurements, learned slope / shift) and gate_norm=max."""
+    import copy
+    import torch.nn as nn
+    from policy.obs_util import cue_opts
+    from policy.gated_obs_encoder import GatedObsEncoder
+    meta = copy.deepcopy(SHAPE_META)
+    meta["obs"]["cue"]["shape"] = [CUE_DIM + 4]
+    meta["obs"]["cue"]["vis_thr"] = [15, 30]
+    B = 5
+    t = {k: torch.from_numpy(np.stack([to_policy_obs(fake_raw(T=1, holes=0.0), SHAPE_META["obs"])[k][0]
+                                       for _ in range(B)])) for k in ("rgb", "depth", "thermal", "joints")}
+    kw = dict(crop_shape=(84, 84), use_group_norm=True, imagenet_norm=True)
+    try:                                                                  # soft needs the raw measurements
+        GatedObsEncoder(meta, _resnet(), dropout_mode="none", route="soft", route_tau=[5.0, 2.0], **kw)
+        raise RuntimeError("route=soft without cue.vis_raw must fail")
+    except AssertionError:
+        pass
+    meta["obs"]["cue"]["vis_raw"] = True
+    assert cue_opts(meta["obs"])["vis"]["raw"] is True and "raw" not in cue_opts({"cue": {"vis_thr": [15, 30]}})["vis"]
+    enc = GatedObsEncoder(meta, _resnet(), dropout_mode="none", route="soft", route_tau=[5.0, 2.0], **kw)
+    cue = torch.zeros(B, CUE_DIM + 4)
+    #                      depth step, thermal step, depth flag, thermal flag
+    cue[:, -4:] = torch.tensor([[50., 150., 1., 1.],      # both clearly visible
+                                [-2., 150., 0., 1.],      # see-through
+                                [50., 5., 1., 0.],        # crossover
+                                [15., 30., 0., 0.],       # exactly at both thresholds
+                                [0., 0., 1., 1.]])        # no glass mask found (flags 1 with zero steps)
+    t["cue"] = cue
+    sig = lambda x: 1 / (1 + np.exp(-x))
+    want = np.array([[1, sig(35 / 5), sig(120 / 2)], [1, sig(-17 / 5), sig(120 / 2)], [1, sig(35 / 5), sig(-25 / 2)],
+                     [1, 0.5, 0.5], [1, 1, 1]])
+    for mode in (True, False):
+        enc.train(mode)
+        out = enc(t)
+        assert np.allclose(enc.last_w.numpy(), want, atol=1e-6), enc.last_w
+    assert enc.last_w[1, 1] < 0.04 and enc.last_w[2, 2] < 1e-4 and enc.last_w[0, 1:].min() > 0.99
+    g = torch.autograd.grad(out.sum(), [enc.route_a, enc.route_b], allow_unused=True)
+    assert all(x is not None and torch.isfinite(x).all() and x.abs().sum() > 0 for x in g), g    # the gate is learned
+    with torch.no_grad():                                                 # a sharper gate moves the weights apart
+        enc.route_a.fill_(3.0)
+        enc(t)
+        assert enc.last_w[1, 1] < want[1, 1] and enc.last_w[0, 1] > want[0, 1] and enc.last_w[3, 1] == 0.5
+        enc.route_a.fill_(1.0)
+        enc.route_b.fill_(2.0)                                            # a shift raises every weight
+        enc(t)
+        assert (enc.last_w[:4, 1:].numpy() > want[:4, 1:] - 1e-9).all() and abs(float(enc.last_w[3, 1]) - sig(2)) < 1e-6
+        enc.route_b.fill_(0.0)
+    enc.route_eval = "all_on"
+    enc(t)
+    assert (enc.last_w == 1).all()
+    enc.route_eval = "rgb_only"
+    enc(t)
+    assert enc.last_w.tolist() == [[1, 0, 0]] * B
+    enc.route_eval = "depth_first"
+    try:
+        enc(t)
+        raise RuntimeError("depth_first must be refused for route=soft")
+    except AssertionError:
+        pass
+    enc.route_eval, enc.route_rgb_only_p = "visible", 1.0
+    enc.train()
+    enc(t)
+    assert enc.last_w.tolist() == [[1, 0, 0]] * B                         # training-time rgb-only draw
+    assert {"route_a", "route_b", "route_thr", "route_tau"} <= set(enc.state_dict())
+
+    # gate_norm=max on the learned gate: the largest weight of each frame is 1, ratios are kept, drops stay 0
+    torch.manual_seed(0)
+    plain = GatedObsEncoder(meta, _resnet(), dropout_mode="none", **kw)
+    for m in plain.gate.values():
+        nn.init.normal_(m[-1].weight, std=0.5)
+        nn.init.constant_(m[-1].bias, -3.0)                               # small weights, as the collapsed gate
+    normed = GatedObsEncoder(meta, _resnet(), dropout_mode="none", gate_norm="max", **kw)
+    normed.load_state_dict(plain.state_dict())
+    t["cue"] = torch.randn(B, CUE_DIM + 4)
+    plain.eval(), normed.eval()
+    plain(t), normed(t)
+    wp, wn = plain.last_w, normed.last_w
+    assert wp.max() < 0.5 and torch.allclose(wn.max(-1).values, torch.ones(B))
+    assert torch.allclose(wn, wp / wp.max(-1, keepdim=True).values, atol=1e-6)
+    normed.force_drop = {"thermal"}
+    normed(t)
+    assert (normed.last_w[:, 2] == 0).all() and torch.allclose(normed.last_w.max(-1).values, torch.ones(B))
+    normed.force_drop = set()
+    normed.train()
+    normed.dropout_mode, normed.dropout_p = "targeted", 1.0               # the top sensor is dropped: the next one gets 1
+    normed(t)
+    assert (normed.last_w.min(-1).values == 0).all() and torch.allclose(normed.last_w.max(-1).values, torch.ones(B))
+
+    try:
+        from diffusers.schedulers.scheduling_ddpm import DDPMScheduler
+    except ImportError:
+        print("ok soft route + gate_norm (policy part skipped: diffusers not installed)")
+        return
+    from diffusion_policy.common.normalize_util import get_image_range_normalizer
+    from diffusion_policy.model.common.normalizer import LinearNormalizer, SingleFieldLinearNormalizer
+    from policy.gated_policy import GatedDiffusionPolicy
+    enc.route_rgb_only_p = 0.1
+    sched = DDPMScheduler(num_train_timesteps=10, beta_schedule="squaredcos_cap_v2", prediction_type="epsilon")
+    policy = GatedDiffusionPolicy(meta, sched, enc, horizon=16, n_action_steps=8, n_obs_steps=2,
+                                  num_inference_steps=2, diffusion_step_embed_dim=32, down_dims=(64, 128),
+                                  gate_loss_weight=0, aux_weight=0.1, aux_hidden=32, log_every=0)
+    norm = LinearNormalizer()
+    norm.fit({"action": torch.randn(64, 7), "joints": torch.randn(64, 7)}, last_n_dims=1, mode="limits")
+    norm["cue"] = SingleFieldLinearNormalizer.create_identity()
+    for k in ("rgb", "depth", "thermal"):
+        norm[k] = get_image_range_normalizer()
+    policy.set_normalizer(norm)
+    t["cue"] = cue
+    obs2 = {k: v[:, None].repeat(1, 2, *[1] * (v.dim() - 1)) for k, v in t.items()}       # (B, To=2, ...)
+    policy.train()
+    batch = {"obs": obs2, "action": torch.randn(B, 16, 7),
+             "meta": {"ep_glass_seethrough": torch.tensor([0, 1, 0, 0, 0]), "ep_is_crossover": torch.tensor([0, 0, 1, 0, 0])}}
+    loss = policy.compute_loss(batch)
+    loss.backward()
+    assert enc.route_a.grad is not None and torch.isfinite(enc.route_a.grad).all()
+    policy.eval()
+    policy.guidance = 2.0
+    policy.reset()
+    with torch.no_grad():
+        res = policy.predict_action(obs2)
+    assert res["action"].shape == (B, 8, 7) and torch.isfinite(res["action"]).all()
+    assert np.allclose(enc.last_w.view(B, 2, -1)[:, -1].numpy(), want, atol=1e-6)        # the soft weights, not rgb-only
+    print("ok soft route + gate_norm")
+
+
 if __name__ == "__main__":
     test_cues()
     test_obs()
@@ -256,4 +476,6 @@ if __name__ == "__main__":
     test_gate()
     test_policy_loss()
     test_depth_object_cue()
+    test_visibility_route()
+    test_soft_route_and_norm()
     print("all ok")

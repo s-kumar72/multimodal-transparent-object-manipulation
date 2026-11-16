@@ -43,6 +43,8 @@ policy:
     dropout_p: 0.3
     dropout_p_other: 0.1
     rgb_gate_bias: 2.0
+    # visibility routing (no learned gate): add +policy.obs_encoder.route=visible [+policy.obs_encoder.route_rgb_only_p=0.1]
+    # on the command line; the keys are not listed here because the static arms of train_gated.sh swap the encoder class
 
   # --- extra losses (GatedDiffusionPolicy) ---
   gate_loss_weight: 0.1        # sim-only warm start of w_thermal toward tanh(|thermal gap| / gate_tau)
