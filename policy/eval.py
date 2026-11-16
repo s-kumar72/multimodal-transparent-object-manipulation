@@ -38,7 +38,13 @@ OmegaConf.register_new_resolver("eval", eval, replace=True)
 @click.option("--test_set", "test_sets", multiple=True, help="test set name(s) from sim/configs/manifest.json")
 @click.option("--drop", "drops", multiple=True, help="image modality switched off at inference (repeatable)")
 @click.option("--save_w", is_flag=True, help="store gate weights and cues per decision step in episodes.json")
-def main(checkpoint, output_dir, n_test, test_start_seed, n_envs, n_vis, device, level, test_sets, drops, save_w):
+@click.option("--route", default=None, type=click.Choice(["visible", "depth_first", "all_on", "rgb_only"]),
+              help="routing rule at inference for a route=visible encoder (default: as trained)")
+@click.option("--route_latch", is_flag=True, help="keep the first step's visibility flags for the whole episode")
+@click.option("--guidance", default=1.0, type=float,
+              help="s: denoise with eps_rgb + s (eps_routed - eps_rgb) (route=visible encoders; 1 = off)")
+def main(checkpoint, output_dir, n_test, test_start_seed, n_envs, n_vis, device, level, test_sets, drops, save_w,
+         route, route_latch, guidance):
 
     payload = torch.load(open(checkpoint, "rb"), pickle_module=dill, weights_only=False, map_location="cpu")
     cfg = payload["cfg"]
@@ -51,6 +57,14 @@ def main(checkpoint, output_dir, n_test, test_start_seed, n_envs, n_vis, device,
     if drops:
         assert hasattr(encoder, "force_drop"), "--drop needs SharedCropObsEncoder / GatedObsEncoder"
         encoder.force_drop = set(drops)
+    if route:
+        assert getattr(encoder, "route", "none") != "none", "--route needs an encoder trained with route=visible / soft"
+        assert encoder.route == "visible" or route != "depth_first", "depth_first is a rule of route=visible"
+        encoder.route_eval = route
+    if route_latch or guidance != 1.0:
+        assert getattr(encoder, "route", "none") != "none", "--route_latch / --guidance need route=visible / soft"
+        assert encoder.route == "visible" or not route_latch, "--route_latch needs route=visible"
+        policy.route_latch, policy.guidance = route_latch, guidance
     suffix = ("_drop_" + "_".join(sorted(drops))) if drops else ""
 
     runner_cfg = cfg.task.env_runner
@@ -81,7 +95,8 @@ def main(checkpoint, output_dir, n_test, test_start_seed, n_envs, n_vis, device,
             records = attach_w_trace(records, policy.w_trace, runner.n_envs)
             policy.w_trace = None
         result = {"checkpoint": str(checkpoint), "level": level, "test_set": name, "n_test": n_test,
-                  "test_start_seed": test_start_seed, "drop": sorted(drops),
+                  "test_start_seed": test_start_seed, "drop": sorted(drops), "route": route,
+                  "route_latch": route_latch, "guidance": guidance,
                   **{k: plain(v) for k, v in sorted(log.items())}}
         (out / "eval_log.json").write_text(json.dumps(result, indent=2))
         (out / "episodes.json").write_text(json.dumps(records, indent=1))

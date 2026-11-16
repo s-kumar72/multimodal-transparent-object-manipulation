@@ -21,6 +21,21 @@ Options (all in the config under policy.obs_encoder):
   dropout_mode     none | random | targeted      training-time modality dropout; targeted drops the modality with the
                    highest gate weight in each sample with p, the others with p_other (Targeted Modality Dropout)
   rgb_gate_bias    initial logit bias of the rgb gate, so training starts from "trust rgb"
+  route            none | visible. visible: no learned gate; a sensor is on (w = 1) when the target is visible in it and
+                   off (w = 0, feature zeroed) otherwise, read from the two visibility flags at the end of the cue
+                   (policy/obs_util.py, vis_thr). The same rule is applied in training and at inference, so each sensor
+                   subset is a mode the policy has been trained in. rgb is never switched off.
+                   soft: the same two measurements give a continuous weight instead of on / off,
+                   w_m = sigmoid(a_m (s_m - thr_m) / tau_m + b_m) for depth and thermal (s = depth step / thermal step
+                   at the glass mask, raw units: the cue key needs vis_raw; thr = the cue's vis_thr; tau = route_tau).
+                   a (init 1) and b (init 0) are learned with the policy, so training can sharpen, soften or shift the
+                   gate; with a = 1, b = 0 the weight is 0.5 at the threshold of route=visible. rgb stays at 1.
+  route_tau        [depth, thermal] width of the soft gate in the units of the measurements (route=soft).
+  route_rgb_only_p training only, with route=visible / soft: extra probability of switching off depth and thermal together.
+  gate_norm        none | max. max: the learned sigmoid weights are divided by the largest one of the frame, so the most
+                   trusted sensor has w = 1 and the others are relative to it (the weights cannot all shrink together).
+At inference `route_eval` picks the rule: visible (as trained) | depth_first (thermal only when depth does not show
+the target; route=visible only) | all_on (no routing) | rgb_only.
 After each forward the encoder keeps last_w (B, M), last_z {m: (B, D)} and last_drop (B, M) for the policy's
 auxiliary losses and for logging; force_drop = {"thermal"} switches a sensor off at inference (eval.py --drop).
 """
@@ -36,8 +51,10 @@ class GatedObsEncoder(SharedCropObsEncoder):
                  use_group_norm=False, share_rgb_model=False, imagenet_norm=False, init_weights=None,
                  cue_key="cue", gate_input="cue", cross_modal_cue=True, gate_hidden=32, gate_act="sigmoid",
                  w_in_cond=True, cue_in_cond=False, missing="learned", dropout_mode="targeted", dropout_p=0.3,
-                 dropout_p_other=0.1, rgb_gate_bias=2.0):
+                 dropout_p_other=0.1, rgb_gate_bias=2.0, route="none", route_rgb_only_p=0.0, route_tau=None,
+                 gate_norm="none"):
         assert not share_rgb_model, "the gate needs one encoder per modality"
+        assert route in ("none", "visible", "soft") and gate_norm in ("none", "max")
         assert gate_input in ("cue", "feature", "both") and gate_act in ("sigmoid", "softmax")
         assert missing in ("learned", "zero") and dropout_mode in ("none", "random", "targeted")
         super().__init__(shape_meta, rgb_model, resize_shape=resize_shape, crop_shape=crop_shape,
@@ -45,9 +62,20 @@ class GatedObsEncoder(SharedCropObsEncoder):
                          imagenet_norm=imagenet_norm, init_weights=init_weights)
         assert cue_key in self.low_dim_keys, f"shape_meta needs a '{cue_key}' low_dim observation (task glass_pick_cue)"
         n_cue_all = int(self.key_shape_map[cue_key][0])
-        assert len(self.key_shape_map[cue_key]) == 1 and n_cue_all in (CUE_DIM, CUE_DIM + 1), \
-            "cue shape must be obs_util.CUE_DIM, or CUE_DIM + 1 with depth_object_ref"
+        assert len(self.key_shape_map[cue_key]) == 1 and n_cue_all >= CUE_DIM, \
+            "cue shape must be obs_util.CUE_DIM plus the optional entries (depth_object_ref: 1, vis_thr: 4)"
         assert cross_modal_cue or n_cue_all == CUE_DIM, "per-modality cue slices assume the 6-vector"
+        assert route == "none" or n_cue_all >= CUE_DIM + 4, "route=visible needs the visibility cues (vis_thr)"
+        self.route, self.route_rgb_only_p, self.route_eval = route, route_rgb_only_p, "visible"
+        self.gate_norm = gate_norm
+        if route == "soft":
+            cue_attr = shape_meta["obs"][cue_key]
+            assert cue_attr.get("vis_raw"), "route=soft reads the two measurements in raw units: set cue.vis_raw"
+            assert route_tau is not None and len(route_tau) == 2, "route=soft needs route_tau = [depth, thermal]"
+            self.register_buffer("route_thr", torch.tensor([float(x) for x in cue_attr["vis_thr"]]))
+            self.register_buffer("route_tau", torch.tensor([float(x) for x in route_tau]))
+            self.route_a = nn.Parameter(torch.ones(2))
+            self.route_b = nn.Parameter(torch.zeros(2))
         self.cue_key = cue_key
         self.mods = [m for m in MODALITIES if m in self.rgb_keys]          # gated, in the cue's fixed order
         self.other_rgb = [k for k in self.rgb_keys if k not in self.mods]  # any other camera: concatenated ungated
@@ -100,7 +128,10 @@ class GatedObsEncoder(SharedCropObsEncoder):
             w = torch.nan_to_num(w, nan=0.0)                                # all dropped -> zeros
         else:
             w = torch.sigmoid(logits)
-        return w * (~drop).to(w.dtype)
+        w = w * (~drop).to(w.dtype)
+        if self.gate_norm == "max":
+            w = w / w.max(-1, keepdim=True).values.clamp(min=1e-6)
+        return w
 
     def _dropout_mask(self, logits):
         """(B, M) bool: which gated modalities to drop in this training step."""
@@ -119,6 +150,46 @@ class GatedObsEncoder(SharedCropObsEncoder):
         drop[drop.all(-1), keep[drop.all(-1)]] = False
         return drop
 
+    def _route_mask(self, cue):
+        """(B, M) bool: sensors to switch off, from the visibility flags (last two cue entries: depth, thermal)."""
+        B, dev = cue.shape[0], cue.device
+        vis = {"depth": cue[:, -2] > 0.5, "thermal": cue[:, -1] > 0.5}
+        rule = "visible" if self.training else self.route_eval
+        assert self.route == "visible" or rule != "depth_first", "depth_first is a rule of route=visible"
+        drop = torch.zeros(B, len(self.mods), dtype=torch.bool, device=dev)
+        for i, m in enumerate(self.mods):
+            if m == "rgb" or rule == "all_on":
+                continue
+            if rule == "rgb_only":
+                drop[:, i] = True
+            elif self.route == "soft":      # no hard switch: the weight itself goes to 0 (_soft_weights)
+                continue
+            elif rule == "depth_first" and m == "thermal":
+                drop[:, i] = vis["depth"] | ~vis["thermal"]
+            else:
+                drop[:, i] = ~vis[m]
+        if self.training and self.route_rgb_only_p > 0:
+            off = torch.rand(B, device=dev) < self.route_rgb_only_p
+            for i, m in enumerate(self.mods):
+                if m != "rgb":
+                    drop[:, i] |= off
+        return drop
+
+    def _soft_weights(self, cue):
+        """(B, M) continuous weights from the two visibility measurements (cue entries -4, -3, raw units)."""
+        B = cue.shape[0]
+        w = torch.ones(B, len(self.mods), dtype=cue.dtype, device=cue.device)
+        if not self.training and self.route_eval == "all_on":
+            return w
+        s = cue[:, -4:-2]
+        g = torch.sigmoid(self.route_a * (s - self.route_thr) / self.route_tau + self.route_b)
+        # no glass mask in the frame: compute_cues sets both flags to 1 with zero steps -> both sensors stay on
+        found = ~((cue[:, -2] > 0.5) & (s[:, 0] <= self.route_thr[0]))
+        g = torch.where(found[:, None], g, torch.ones_like(g))
+        cols = [g[:, ("depth", "thermal").index(m)] if m in ("depth", "thermal") else w[:, i]
+                for i, m in enumerate(self.mods)]
+        return torch.stack(cols, -1)
+
     # ------------------------------------------------------------------ forward
     def forward(self, obs_dict):
         obs = self._prepare(obs_dict)                                        # shared crop, force_drop -> zeros
@@ -131,7 +202,7 @@ class GatedObsEncoder(SharedCropObsEncoder):
             z[m] = self.key_model_map[m](self.key_transform_map[m](img))
 
         logits = self._logits(z, cue)
-        drop = self._dropout_mask(logits)
+        drop = self._route_mask(cue) if self.route != "none" else self._dropout_mask(logits)
         if self.force_drop:
             for i, m in enumerate(self.mods):
                 if m in self.force_drop:
@@ -142,7 +213,12 @@ class GatedObsEncoder(SharedCropObsEncoder):
                 z[m] = torch.where(drop[:, i:i + 1], fill, z[m])
             if self.gate_input != "cue":                                     # gate sees the replaced features
                 logits = self._logits(z, cue)
-        w = self._weights(logits, drop)
+        if self.route == "visible":
+            w = (~drop).to(logits.dtype)
+        elif self.route == "soft":
+            w = self._soft_weights(cue) * (~drop).to(logits.dtype)
+        else:
+            w = self._weights(logits, drop)
 
         feats = [w[:, i:i + 1] * z[m] for i, m in enumerate(self.mods)]
         for k in self.other_rgb:

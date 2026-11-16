@@ -13,6 +13,10 @@ Besides the images it can produce two things the fusion models need:
   with a reading more than `depth_object_thr` (8-bit depth units, 7.8 mm each) closer than the empty-table reference
   depth of the fixed camera, i.e. "does the depth sensor see an object"; it drops when the sensor sees through the
   glass. Without the key the cue is the 6-vector above, unchanged.
+  Optional target-visibility entries (`vis_thr: [depth, thermal]` on the cue key, 4 more entries at the end):
+  [depth step, thermal step, depth visible, thermal visible] measured where a glass mask says the glass is
+  (visibility_cues); the last two are 0/1 flags, step > threshold. The mask is `glass_mask` in the raw dict when the
+  dataset supplies it (policy/make_glass_masks.py), else predicted from the frame with `seg_ckpt` (policy/glass_seg.py).
 """
 import warnings
 
@@ -111,14 +115,49 @@ def depth_object_cue(depth8, ref8, roi=DEFAULT_ROI, thr=DEPTH_OBJECT_THR):
     return ((d > 0) & (r - d > thr)).mean((-2, -1))
 
 
-def compute_cues(raw, roi=DEFAULT_ROI, depth_ref=None, depth_thr=DEPTH_OBJECT_THR):
+def visibility_cues(depth8, thermal, mask, noise=THERMAL_NOISE_COUNTS, ring=5, min_pixels=5):
+    """Does each sensor show the target? Measured where a glass mask says the glass is, against a ring around it.
+    depth8 (..., H, W, 1) uint8, thermal (..., H, W, 1) raw counts (or the 8-bit image with its noise floor), mask
+    (..., H, W) bool or (..., H, W, 1) uint8 -> (..., 3):
+      depth step       median depth of the ring minus median depth on the mask, 8-bit units (7.8 mm each): > 0 when
+                       the sensor sees something standing there, ~0 when it sees through the glass to the table;
+      thermal step     |median on the mask - median of the ring| / noise: ~1-10 at thermal crossover, > 40 otherwise;
+      found            1 if the mask has at least min_pixels pixels, else 0 (the two steps are then 0)."""
+    from scipy.ndimage import maximum_filter
+    m = np.asarray(mask)
+    if m.ndim == np.ndim(depth8):
+        m = m[..., 0]
+    m = m.astype(bool)
+    lead = m.shape[:-2]
+    m2 = m.reshape((-1,) + m.shape[-2:])
+    d = np.asarray(depth8, np.float32)[..., 0].reshape(m2.shape)
+    t = np.asarray(thermal, np.float32)[..., 0].reshape(m2.shape)
+    around = maximum_filter(m2, size=(1, 2 * ring + 1, 2 * ring + 1)) & ~m2
+    out = np.zeros((len(m2), 3), np.float32)
+    for i in range(len(m2)):
+        if m2[i].sum() < min_pixels or not around[i].any():
+            continue
+        di, do = d[i][m2[i]], d[i][around[i]]
+        di, do = di[di > 0], do[do > 0]
+        step = float(np.median(do) - np.median(di)) if len(di) and len(do) else 0.0
+        out[i] = (step, abs(float(np.median(t[i][m2[i]]) - np.median(t[i][around[i]]))) / noise, 1.0)
+    return out.reshape(lead + (3,))
+
+
+VIS_DIM = 4                         # depth step, thermal step, depth visible, thermal visible
+
+
+def compute_cues(raw, roi=DEFAULT_ROI, depth_ref=None, depth_thr=DEPTH_OBJECT_THR, vis=None):
     """Reliability cue vector (..., CUE_DIM) from a raw observation dict (arrays (..., H, W, C)).
     Modalities missing from `raw` get zeros, so the layout is fixed whatever sensors a run uses.
     Uses thermal_raw (counts, before normalization) when present, else the 8-bit thermal image.
-    With depth_ref ((H, W) uint8), the vector has a 7th entry, depth_object_cue."""
+    With depth_ref ((H, W) uint8), the vector has a 7th entry, depth_object_cue.
+    With vis = dict(thr=(depth, thermal), seg_ckpt=path or None) the last VIS_DIM entries are the target-visibility
+    cues; a frame whose mask is empty counts as visible in both sensors (nothing is switched off)."""
     ref = next(v for k, v in raw.items() if k in ("rgb", "depth", "thermal", "thermal_raw"))
     lead = np.shape(ref)[:-3]
-    out = np.zeros(lead + (CUE_DIM + (depth_ref is not None),), np.float32)
+    n_base = CUE_DIM + (depth_ref is not None)
+    out = np.zeros(lead + (n_base + (VIS_DIM if vis else 0),), np.float32)
     if "rgb" in raw:
         out[..., 0:2] = rgb_cues(raw["rgb"], roi)
     if "depth" in raw:
@@ -130,6 +169,19 @@ def compute_cues(raw, roi=DEFAULT_ROI, depth_ref=None, depth_thr=DEPTH_OBJECT_TH
         out[..., 4:6] = thermal_cues(raw["thermal"], roi, THERMAL_NOISE_UINT8)
     if depth_ref is not None and "depth" in raw:
         out[..., CUE_DIM] = depth_object_cue(raw["depth"], depth_ref, roi, depth_thr)
+    if vis:
+        mask = raw.get("glass_mask")
+        if mask is None:
+            from policy.glass_seg import predict_glass_mask
+            mask = predict_glass_mask(raw, vis["seg_ckpt"])
+        if "thermal_raw" in raw:
+            v = visibility_cues(raw["depth"], raw["thermal_raw"], mask, THERMAL_NOISE_COUNTS)
+        else:
+            v = visibility_cues(raw["depth"], raw["thermal"], mask, THERMAL_NOISE_UINT8)
+        found = v[..., 2] > 0
+        out[..., n_base:n_base + 2] = v[..., :2]
+        out[..., n_base + 2] = np.where(found, v[..., 0] > vis["thr"][0], True)
+        out[..., n_base + 3] = np.where(found, v[..., 1] > vis["thr"][1], True)
     return np.nan_to_num(out)
 
 
@@ -144,14 +196,23 @@ _depth_refs = {}
 
 
 def cue_opts(obs_meta):
-    """compute_cues keyword arguments beyond the ROI from the cue key of shape_meta: depth_object_ref / _thr."""
+    """compute_cues keyword arguments beyond the ROI from the cue key of shape_meta: depth_object_ref / _thr, and
+    vis_thr / seg_ckpt for the target-visibility entries."""
     attr = obs_meta.get("cue")
-    path = attr.get("depth_object_ref") if attr is not None and hasattr(attr, "get") else None
-    if path is None:
+    if attr is None or not hasattr(attr, "get"):
         return {}
-    if path not in _depth_refs:
-        _depth_refs[path] = np.load(path)
-    return {"depth_ref": _depth_refs[path], "depth_thr": int(attr.get("depth_object_thr", DEPTH_OBJECT_THR))}
+    opts = {}
+    path = attr.get("depth_object_ref")
+    if path is not None:
+        if path not in _depth_refs:
+            _depth_refs[path] = np.load(path)
+        opts.update(depth_ref=_depth_refs[path], depth_thr=int(attr.get("depth_object_thr", DEPTH_OBJECT_THR)))
+    thr = attr.get("vis_thr")
+    if thr is not None:
+        opts["vis"] = {"thr": (float(thr[0]), float(thr[1])), "seg_ckpt": attr.get("seg_ckpt")}
+        if attr.get("vis_raw"):      # the two measurements reach the encoder unnormalized (route=soft)
+            opts["vis"]["raw"] = True
+    return opts
 
 
 def to_policy_obs(raw, obs_meta):

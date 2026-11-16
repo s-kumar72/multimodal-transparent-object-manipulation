@@ -16,11 +16,19 @@ Logging: loss terms are averaged and printed every log_every training steps (the
 with w_depth on see-through / other samples and w_thermal on crossover / other samples when the meta has the flags.
 For evaluation, set policy.w_trace = [] before a rollout; predict_action then appends the gate weights and raw cues of
 the last observation step at every decision, one list per policy.reset() (= per env chunk of the runner).
+
+Inference options for an encoder with route=visible (policy/gated_obs_encoder.py), both off by default:
+  route_latch  the visibility flags of the first decision after reset() are kept for the whole episode, so the arm
+               passing in front of the glass later cannot switch a sensor off.
+  guidance     s != 1: the denoiser output is eps_rgb + s (eps_routed - eps_rgb), with eps_rgb from the same network with
+               depth and thermal switched off (classifier-free guidance toward the sensors the routing trusts); needs
+               training with route_rgb_only_p > 0 so that the rgb-only mode has been trained. Two denoiser calls per step.
 """
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from diffusion_policy.common.pytorch_util import dict_apply
 from diffusion_policy.policy.diffusion_unet_image_policy import DiffusionUnetImagePolicy
 
 
@@ -44,6 +52,8 @@ class GatedDiffusionPolicy(DiffusionUnetImagePolicy):
                                             for m in enc.mods})
         self._terms, self._counts, self._n_terms = {}, {}, 0
         self.w_trace = None
+        self.route_latch, self.guidance = False, 1.0
+        self._latched, self._guide_cond = None, None
 
     # ------------------------------------------------------------------ training
     def gate_lambda(self):
@@ -95,6 +105,9 @@ class GatedDiffusionPolicy(DiffusionUnetImagePolicy):
                     terms[f"aux_{m}"] = l_aux.detach()
             for i, m in enumerate(enc.mods):
                 terms[f"w_{m}"] = w[:, :, i].mean().detach()
+            if getattr(enc, "route", "none") == "soft":      # the learned slope / shift of the soft gate
+                for j, m in enumerate(("depth", "thermal")):
+                    terms[f"route_a_{m}"], terms[f"route_b_{m}"] = enc.route_a[j].detach(), enc.route_b[j].detach()
             for m, flag, name in (("depth", "ep_glass_seethrough", "st"), ("thermal", "ep_is_crossover", "xo")):
                 if m in enc.mods and flag in meta:
                     wm, f = w[:, :, enc.mods.index(m)].mean(-1), meta[flag].float() > 0.5
@@ -120,12 +133,51 @@ class GatedDiffusionPolicy(DiffusionUnetImagePolicy):
     # ------------------------------------------------------------------ inference
     def reset(self):
         super().reset()
+        self._latched = None
         if self.w_trace is not None:
             self.w_trace.append([])
 
+    def conditional_sample(self, condition_data, condition_mask, local_cond=None, global_cond=None, generator=None,
+                           **kwargs):
+        if self._guide_cond is None:
+            return super().conditional_sample(condition_data, condition_mask, local_cond=local_cond,
+                                              global_cond=global_cond, generator=generator, **kwargs)
+        scheduler = self.noise_scheduler
+        trajectory = torch.randn(size=condition_data.shape, dtype=condition_data.dtype, device=condition_data.device,
+                                 generator=generator)
+        scheduler.set_timesteps(self.num_inference_steps)
+        for t in scheduler.timesteps:
+            trajectory[condition_mask] = condition_data[condition_mask]
+            eps = self.model(trajectory, t, local_cond=local_cond, global_cond=global_cond)
+            eps_rgb = self.model(trajectory, t, local_cond=local_cond, global_cond=self._guide_cond)
+            trajectory = scheduler.step(eps_rgb + self.guidance * (eps - eps_rgb), t, trajectory, generator=generator,
+                                        **kwargs).prev_sample
+        trajectory[condition_mask] = condition_data[condition_mask]
+        return trajectory
+
     def predict_action(self, obs_dict):
-        result = super().predict_action(obs_dict)
         enc = self.obs_encoder
+        routed = getattr(enc, "route", "none") != "none"
+        if routed and self.route_latch:
+            assert enc.route == "visible", "route_latch keeps the on / off flags: route=visible only"
+            flags = obs_dict[enc.cue_key][:, -1, -2:]
+            if self._latched is None or self._latched.shape != flags.shape:
+                self._latched = flags.clone()
+            cue = obs_dict[enc.cue_key].clone()
+            cue[..., -2:] = self._latched[:, None, :]
+            obs_dict = dict(obs_dict)
+            obs_dict[enc.cue_key] = cue
+        self._guide_cond = None
+        if routed and self.guidance != 1.0:
+            assert self.obs_as_global_cond, "guidance is implemented for global conditioning"
+            nobs = self.normalizer.normalize(obs_dict)
+            B = next(iter(nobs.values())).shape[0]
+            this_nobs = dict_apply(nobs, lambda x: x[:, :self.n_obs_steps, ...].reshape(-1, *x.shape[2:]))
+            rule, enc.route_eval = enc.route_eval, "rgb_only"
+            self._guide_cond = enc(this_nobs).reshape(B, -1)
+            enc.route_eval = rule
+        result = super().predict_action(obs_dict)          # runs the encoder with the routing rule: last_w is the routed one
+        self._guide_cond = None
         if self.w_trace is not None and self.gated and getattr(enc, "last_w", None) is not None:
             B = next(iter(obs_dict.values())).shape[0]
             w = enc.last_w.view(B, self.n_obs_steps, -1)[:, -1]
