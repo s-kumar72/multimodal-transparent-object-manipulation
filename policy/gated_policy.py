@@ -23,6 +23,10 @@ Inference options for an encoder with route=visible (policy/gated_obs_encoder.py
   guidance     s != 1: the denoiser output is eps_rgb + s (eps_routed - eps_rgb), with eps_rgb from the same network with
                depth and thermal switched off (classifier-free guidance toward the sensors the routing trusts); needs
                training with route_rgb_only_p > 0 so that the rgb-only mode has been trained. Two denoiser calls per step.
+  gate_error   robustness tests (eval.py --gate_error): wrong visibility flags at inference. A dict with any of
+               flip = probability that each flag (depth, thermal; per env) is inverted at a decision, drawn anew at
+               every decision from a generator seeded with `seed` (0); depth / thermal = 0 or 1, the flag is forced
+               to that value in every frame (0: the sensor is always off, 1: always on). None (default): no change.
 """
 import torch
 import torch.nn as nn
@@ -54,6 +58,7 @@ class GatedDiffusionPolicy(DiffusionUnetImagePolicy):
         self.w_trace = None
         self.route_latch, self.guidance = False, 1.0
         self._latched, self._guide_cond = None, None
+        self.gate_error, self._ge_gen = None, None
 
     # ------------------------------------------------------------------ training
     def gate_lambda(self):
@@ -158,6 +163,21 @@ class GatedDiffusionPolicy(DiffusionUnetImagePolicy):
     def predict_action(self, obs_dict):
         enc = self.obs_encoder
         routed = getattr(enc, "route", "none") != "none"
+        if routed and self.gate_error:
+            assert enc.route == "visible", "gate_error changes the on / off flags: route=visible only"
+            cue = obs_dict[enc.cue_key].clone()
+            flags = cue[..., -2:]                                   # (B, To, 2) view: depth, thermal
+            p = float(self.gate_error.get("flip", 0.0))
+            if p > 0:
+                if self._ge_gen is None:
+                    self._ge_gen = torch.Generator().manual_seed(int(self.gate_error.get("seed", 0)))
+                flip = (torch.rand(flags.shape[0], 2, generator=self._ge_gen) < p).to(flags.device)
+                flags[:] = torch.where(flip[:, None, :], 1 - flags, flags)
+            for i, m in enumerate(("depth", "thermal")):
+                if m in self.gate_error:
+                    flags[..., i] = float(self.gate_error[m])
+            obs_dict = dict(obs_dict)
+            obs_dict[enc.cue_key] = cue
         if routed and self.route_latch:
             assert enc.route == "visible", "route_latch keeps the on / off flags: route=visible only"
             flags = obs_dict[enc.cue_key][:, -1, -2:]

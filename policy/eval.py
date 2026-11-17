@@ -11,6 +11,12 @@ a plain encoder gets a black image. The output folder gets a "_drop_<mods>" suff
 --save_w stores, per episode in episodes.json, the gate weights and raw cues at every decision step ("w", "cue",
 policies with a cue-gated encoder only), for the w vs. thermal-gap plots.
 
+Robustness of a route=visible gate (all off by default; the test-set folder names do not change, so give each
+condition its own output folder): --gate_error flip=0.1 inverts each visibility flag with that probability at every
+decision, --gate_error depth=0 (or thermal=0, =1) forces a flag; --vis_thr 7.5,15 recomputes the flags with other
+thresholds than the ones of training; --mask_noise drop=0.3 / shift=2 degrades the predicted glass mask the flags are
+measured on (policy/obs_util.py degrade_mask).
+
 Test episode k uses seed test_start_seed + k; the object is seed % 5, so n_test=50 gives 10 episodes per object.
 The seeds 100000-100049 are the ones evaluated during training; any other range gives new scenes drawn the same way.
 Works with full training checkpoints and with EMA-only exports (the EMA weights are evaluated when present).
@@ -43,8 +49,11 @@ OmegaConf.register_new_resolver("eval", eval, replace=True)
 @click.option("--route_latch", is_flag=True, help="keep the first step's visibility flags for the whole episode")
 @click.option("--guidance", default=1.0, type=float,
               help="s: denoise with eps_rgb + s (eps_routed - eps_rgb) (route=visible encoders; 1 = off)")
+@click.option("--gate_error", default=None, help="wrong visibility flags: flip=P and / or depth=0|1, thermal=0|1 (comma separated)")
+@click.option("--vis_thr", default=None, help="DEPTH,THERMAL visibility thresholds at inference (default: as trained)")
+@click.option("--mask_noise", default=None, help="errors of the predicted glass mask: drop=P and / or shift=K (comma separated)")
 def main(checkpoint, output_dir, n_test, test_start_seed, n_envs, n_vis, device, level, test_sets, drops, save_w,
-         route, route_latch, guidance):
+         route, route_latch, guidance, gate_error, vis_thr, mask_noise):
 
     payload = torch.load(open(checkpoint, "rb"), pickle_module=dill, weights_only=False, map_location="cpu")
     cfg = payload["cfg"]
@@ -65,6 +74,21 @@ def main(checkpoint, output_dir, n_test, test_start_seed, n_envs, n_vis, device,
         assert getattr(encoder, "route", "none") != "none", "--route_latch / --guidance need route=visible / soft"
         assert encoder.route == "visible" or not route_latch, "--route_latch needs route=visible"
         policy.route_latch, policy.guidance = route_latch, guidance
+    spec = lambda s: {k.strip(): float(v) for k, v in (kv.split("=") for kv in s.split(","))} if s else None
+    gate_error, mask_noise = spec(gate_error), spec(mask_noise)
+    vis_thr = [float(v) for v in vis_thr.split(",")] if vis_thr else None
+    if gate_error or vis_thr or mask_noise:
+        assert getattr(encoder, "route", "none") == "visible", "--gate_error / --vis_thr / --mask_noise need route=visible"
+        assert not gate_error or set(gate_error) <= {"flip", "depth", "thermal", "seed"}, gate_error
+        assert not mask_noise or set(mask_noise) <= {"drop", "shift", "seed"}, mask_noise
+        policy.gate_error = gate_error
+        cue_cfg = cfg.task.env_runner.shape_meta.obs.cue     # the eval env computes the cue with these options
+        OmegaConf.set_struct(cue_cfg, False)
+        if vis_thr:
+            assert len(vis_thr) == 2
+            cue_cfg.vis_thr = vis_thr
+        if mask_noise:
+            cue_cfg.mask_noise = mask_noise
     suffix = ("_drop_" + "_".join(sorted(drops))) if drops else ""
 
     runner_cfg = cfg.task.env_runner
@@ -97,6 +121,7 @@ def main(checkpoint, output_dir, n_test, test_start_seed, n_envs, n_vis, device,
         result = {"checkpoint": str(checkpoint), "level": level, "test_set": name, "n_test": n_test,
                   "test_start_seed": test_start_seed, "drop": sorted(drops), "route": route,
                   "route_latch": route_latch, "guidance": guidance,
+                  "gate_error": gate_error, "vis_thr": vis_thr, "mask_noise": mask_noise,
                   **{k: plain(v) for k, v in sorted(log.items())}}
         (out / "eval_log.json").write_text(json.dumps(result, indent=2))
         (out / "episodes.json").write_text(json.dumps(records, indent=1))

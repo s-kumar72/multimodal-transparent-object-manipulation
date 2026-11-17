@@ -276,6 +276,16 @@ def test_visibility_route():
     meta["obs"]["cue"]["vis_thr"] = [15, 30]
     obs = to_policy_obs(raw, meta["obs"])
     assert obs["cue"].shape == (4, CUE_DIM + 4) and np.allclose(obs["cue"], seen)
+    # mask errors for robustness tests (eval.py --mask_noise): opt-in, predicted masks only
+    from policy.obs_util import cue_opts, degrade_mask
+    noisy = copy.deepcopy(meta)
+    noisy["obs"]["cue"]["mask_noise"] = {"drop": 1.0}
+    assert cue_opts(noisy["obs"])["vis"]["mask_noise"] == {"drop": 1.0} and "mask_noise" not in cue_opts(meta["obs"])["vis"]
+    assert np.allclose(to_policy_obs(raw, noisy["obs"])["cue"], seen)    # a mask stored with the frames is not degraded
+    mb = mask[..., 0] > 0
+    assert (degrade_mask(mb, raw["depth"]) == mb).all() and not degrade_mask(mb, raw["depth"], drop=1.0).any()
+    moved = degrade_mask(mb, raw["depth"], shift=2)
+    assert (moved.sum((1, 2)) == mb.sum((1, 2))).all() and (moved == degrade_mask(mb, raw["depth"], shift=2)).all()
     enc = GatedObsEncoder(meta, _resnet(), crop_shape=(84, 84), use_group_norm=True, imagenet_norm=True,
                           dropout_mode="none", route="visible", route_rgb_only_p=0.0)
     B = 4
@@ -337,8 +347,36 @@ def test_visibility_route():
         policy.reset()
         policy.predict_action(flipped)
         assert (enc.last_w.view(B, 2, -1)[:, -1, 1:] == 0).all()          # after reset the new flags are taken
+        # wrong flags for robustness tests (eval.py --gate_error): forced values, flips; the input is not changed
+        last_w = lambda: enc.last_w.view(B, 2, -1)[:, -1].tolist()
+        policy.route_latch, policy.guidance = False, 1.0
+        policy.reset()
+        policy.predict_action(obs2)
+        assert last_w() == [[1, 1, 1], [1, 0, 1], [1, 1, 0], [1, 0, 0]]
+        policy.gate_error = {"depth": 0}
+        policy.predict_action(obs2)
+        assert last_w() == [[1, 0, 1], [1, 0, 1], [1, 0, 0], [1, 0, 0]]
+        policy.gate_error = {"depth": 1, "thermal": 1}
+        policy.predict_action(obs2)
+        assert (enc.last_w == 1).all()
+        policy.gate_error = {"flip": 1.0}
+        policy.predict_action(obs2)
+        assert last_w() == [[1, 0, 0], [1, 1, 0], [1, 0, 1], [1, 1, 1]]
+        policy.gate_error, policy._ge_gen = {"flip": 0.0}, None
+        policy.predict_action(obs2)
+        assert last_w() == [[1, 1, 1], [1, 0, 1], [1, 1, 0], [1, 0, 0]]
+        policy.gate_error, policy._ge_gen = {"flip": 0.5}, None
+        draws = []
+        for _ in range(50):
+            policy.predict_action(obs2)
+            draws.append(enc.last_w.view(B, 2, -1)[:, -1, 1:].clone())
+        wrong = (torch.stack(draws) != cue[:, -2:]).float().mean()
+        assert 0.4 < wrong < 0.6, wrong
+        assert torch.equal(obs2["cue"][:, :, -2:], cue[:, None, -2:].expand(B, 2, 2))
+        policy.gate_error, policy._ge_gen = None, None
     assert enc.route_eval == "visible" and policy._guide_cond is None
-    print("ok visibility route: cues at the mask, flags, sensors switched by the flags, eval rules, latch, guidance")
+    print("ok visibility route: cues at the mask, flags, sensors switched by the flags, eval rules, latch, guidance, "
+          "gate_error, mask_noise")
 
 
 def test_soft_route_and_norm():

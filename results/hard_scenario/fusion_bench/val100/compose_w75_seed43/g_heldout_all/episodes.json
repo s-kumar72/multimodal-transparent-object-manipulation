@@ -1,0 +1,6132 @@
+[
+ {
+  "split": 1,
+  "seed": 200000,
+  "level": 30,
+  "object": 0,
+  "t_env": 23.7738503990496,
+  "obj_temp": 24.321256016030343,
+  "thermal_gap": 0.5474056169807417,
+  "is_crossover": 1,
+  "realistic": 0,
+  "obj_emis": 0.930701107081869,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   24.751522738926028,
+   23.36614231955769,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.8809118542007646,
+   0.924334008213319,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "tumbler",
+  "max_lift": 0.10540833312698449,
+  "closes": [
+   {
+    "d_target": 0.009406588562569778,
+    "dz": -0.0037291452247240203,
+    "d_extra": 0.29426941840804655
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200001,
+  "level": 30,
+  "object": 1,
+  "t_env": 21.88522528729344,
+  "obj_temp": 0.47543221247673273,
+  "thermal_gap": -21.409793074816708,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9090576051283153,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   5,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   21.310559752985995,
+   3.0331510817835365,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9300208553272624,
+   0.9268261110170357,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "bottle",
+  "max_lift": 0.10739434260287531,
+  "closes": [
+   {
+    "d_target": 0.007448346595157242,
+    "dz": -0.000268887276998947,
+    "d_extra": 0.23368607177080347
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200002,
+  "level": 30,
+  "object": 2,
+  "t_env": 25.87783850937572,
+  "obj_temp": -6.915955836539382,
+  "thermal_gap": -32.7937943459151,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8638579220762886,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   26.41513022174874,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9461229981430028,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "wineglass",
+  "max_lift": 0.1077718863615193,
+  "closes": [
+   {
+    "d_target": 0.0012369107524972372,
+    "dz": 0.003956920967478558,
+    "d_extra": 0.221248042826805
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200003,
+  "level": 30,
+  "object": 3,
+  "t_env": 22.661646107319946,
+  "obj_temp": 55.179183969558146,
+  "thermal_gap": 32.5175378622382,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8757857282339543,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   5,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   22.858402722749165,
+   23.48217637033728,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9376914790780408,
+   0.9017690613435765,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "jar",
+  "max_lift": 0.1070188560819473,
+  "closes": [
+   {
+    "d_target": 0.008673551776976245,
+    "dz": -0.0004137811893368676,
+    "d_extra": 0.1760859065455246
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200004,
+  "level": 30,
+  "object": 4,
+  "t_env": 18.94636657625644,
+  "obj_temp": 33.51944598094504,
+  "thermal_gap": 14.573079404688592,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.895079194853945,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   5,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   19.68495837645808,
+   18.114695951309038,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9377833918212093,
+   0.9305921933894947,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "flask",
+  "max_lift": 0.10622762328695194,
+  "closes": [
+   {
+    "d_target": 0.0024186601074656327,
+    "dz": -0.00447788164748103,
+    "d_extra": 0.16586056258805884
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200005,
+  "level": 30,
+  "object": 0,
+  "t_env": 22.314288868282556,
+  "obj_temp": 54.52198842647529,
+  "thermal_gap": 32.20769955819273,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9104009693048862,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   23.216943343403173,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.906430025134947,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "tumbler",
+  "max_lift": 0.10358950056449714,
+  "closes": [
+   {
+    "d_target": 0.011478830337446256,
+    "dz": -0.00046719195436846495,
+    "d_extra": 0.15314484812733944
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200006,
+  "level": 30,
+  "object": 1,
+  "t_env": 25.67098492502019,
+  "obj_temp": 2.4746926136994887,
+  "thermal_gap": -23.1962923113207,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9254934917515143,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   25.520596205359723,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9343617140929442,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "bottle",
+  "max_lift": 0.10827824656864886,
+  "closes": [
+   {
+    "d_target": 0.005012663921867896,
+    "dz": 0.0017226274357567128,
+    "d_extra": 0.22170058221867783
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200007,
+  "level": 30,
+  "object": 2,
+  "t_env": 22.82721410404786,
+  "obj_temp": 13.249725788267968,
+  "thermal_gap": -9.577488315779894,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9455600007848682,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   22.96928552237194,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9409582755297072,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "missed_grasp",
+  "obj_name": "wineglass",
+  "max_lift": 0.005878632432283124,
+  "closes": [
+   {
+    "d_target": 0.00834995269433116,
+    "dz": 0.0012181147367406608,
+    "d_extra": 0.34075533762608506
+   },
+   {
+    "d_target": 0.01889279891855059,
+    "dz": 0.003891794362978651,
+    "d_extra": 0.33652247358209525
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200008,
+  "level": 30,
+  "object": 3,
+  "t_env": 24.486456989880736,
+  "obj_temp": 10.078084329292684,
+  "thermal_gap": -14.408372660588052,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8777939365861342,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   5,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   19.310483166397105,
+   24.390803687439643,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9394241651270012,
+   0.9487893872373308,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "jar",
+  "max_lift": 0.10305414766679666,
+  "closes": [
+   {
+    "d_target": 0.007910668424735352,
+    "dz": 0.004075284304890028,
+    "d_extra": 0.18588772606476295
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200009,
+  "level": 30,
+  "object": 4,
+  "t_env": 20.621052041916286,
+  "obj_temp": 21.581906340562316,
+  "thermal_gap": 0.9608542986460296,
+  "is_crossover": 1,
+  "realistic": 0,
+  "obj_emis": 0.9339700226189463,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   5,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   20.441844132135785,
+   19.978955193818994,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9454069579673018,
+   0.8821647561260548,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "flask",
+  "max_lift": 0.10871171448154014,
+  "closes": [
+   {
+    "d_target": 0.0002171106645015692,
+    "dz": -0.0024178542940980208,
+    "d_extra": 0.18617316641769835
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200010,
+  "level": 30,
+  "object": 0,
+  "t_env": 24.541787621406677,
+  "obj_temp": 31.618821636831726,
+  "thermal_gap": 7.077034015425047,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9021056091528086,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   54.454798093125255,
+   24.14034855376508,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.8920216776940877,
+   0.9399854531105725,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 1,
+  "outcome": "wrong_height",
+  "obj_name": "tumbler",
+  "max_lift": 4.272025449260364e-07,
+  "closes": [
+   {
+    "d_target": 0.007312480161204107,
+    "dz": 0.0665677730935609,
+    "d_extra": 0.2158653249587563
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200011,
+  "level": 30,
+  "object": 1,
+  "t_env": 22.811396189561975,
+  "obj_temp": -11.2668607597436,
+  "thermal_gap": -34.078256949305576,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8892402849604121,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   14.12199075243082,
+   23.36384274009735,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9151779926566019,
+   0.8972779880596243,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "bottle",
+  "max_lift": 0.10473173946589881,
+  "closes": [
+   {
+    "d_target": 0.004364305977179699,
+    "dz": 0.0027864806785947993,
+    "d_extra": 0.22290437489096793
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200012,
+  "level": 30,
+  "object": 2,
+  "t_env": 20.059319113212187,
+  "obj_temp": 13.994670962274926,
+  "thermal_gap": -6.064648150937261,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.888271210022627,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   5,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   40.227326637958875,
+   19.34499740730162,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.8816250392612794,
+   0.9197283545580283,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "wineglass",
+  "max_lift": 0.10617702682931349,
+  "closes": [
+   {
+    "d_target": 0.0018586115570908325,
+    "dz": 0.006595298279045342,
+    "d_extra": 0.18857570274532948
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200013,
+  "level": 30,
+  "object": 3,
+  "t_env": 21.28295929653298,
+  "obj_temp": -1.125426183160073,
+  "thermal_gap": -22.408385479693052,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.896253602459465,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   21.289634886188523,
+   21.748574461509957,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.8991913875299565,
+   0.9005773900993498,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 1,
+  "outcome": "success",
+  "obj_name": "jar",
+  "max_lift": 0.10857631310641672,
+  "closes": [
+   {
+    "d_target": 0.010741830486519022,
+    "dz": 0.0016994897630644296,
+    "d_extra": 0.17888695200352736
+   },
+   {
+    "d_target": 0.02404684758608094,
+    "dz": 0.03432502258737828,
+    "d_extra": 0.17927934422054387
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200014,
+  "level": 30,
+  "object": 4,
+  "t_env": 23.606616265976626,
+  "obj_temp": -10.511056766041015,
+  "thermal_gap": -34.11767303201764,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8518717813647153,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   23.842215905620726,
+   23.426091195255562,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.8915257305673835,
+   0.8997048241457299,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "flask",
+  "max_lift": 0.1007426516450976,
+  "closes": [
+   {
+    "d_target": 0.008655930238284908,
+    "dz": 0.0019307901124037685,
+    "d_extra": 0.1764418758418201
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200015,
+  "level": 30,
+  "object": 0,
+  "t_env": 21.566775325177492,
+  "obj_temp": 27.453838574750364,
+  "thermal_gap": 5.887063249572871,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.863443550101425,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   -6.2217025098065335,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9190180937261768,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "tumbler",
+  "max_lift": 0.10396714750430007,
+  "closes": [
+   {
+    "d_target": 0.0060572929031899375,
+    "dz": -0.006992235034035052,
+    "d_extra": 0.24331435944487703
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200016,
+  "level": 30,
+  "object": 1,
+  "t_env": 25.911397990204385,
+  "obj_temp": 58.909761262857494,
+  "thermal_gap": 32.99836327265311,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8828454200926873,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   5,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   25.48962545731312,
+   26.61183165763576,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9192694819855891,
+   0.9078805656264538,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 1,
+  "outcome": "missed_grasp",
+  "obj_name": "bottle",
+  "max_lift": 1.8234325617830227e-07,
+  "closes": [
+   {
+    "d_target": 0.0548717696247411,
+    "dz": -0.06790062257516083,
+    "d_extra": 0.14351873938282125
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200017,
+  "level": 30,
+  "object": 2,
+  "t_env": 19.788704374412163,
+  "obj_temp": 31.976513990236818,
+  "thermal_gap": 12.187809615824653,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8737663623456429,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   20.483957637925197,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.886392059664488,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "wineglass",
+  "max_lift": 0.10380428381631923,
+  "closes": [
+   {
+    "d_target": 0.0046276611140981415,
+    "dz": 0.00270870748201521,
+    "d_extra": 0.3050699458936564
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200018,
+  "level": 30,
+  "object": 3,
+  "t_env": 18.601012535130295,
+  "obj_temp": 8.169248627942974,
+  "thermal_gap": -10.431763907187321,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8896559395094545,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   19.34794479757078,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.8860037363521892,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "jar",
+  "max_lift": 0.10536631379740763,
+  "closes": [
+   {
+    "d_target": 0.0059444225846810115,
+    "dz": 0.001951009695840361,
+    "d_extra": 0.17840452947572707
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200019,
+  "level": 30,
+  "object": 4,
+  "t_env": 24.421748649549393,
+  "obj_temp": 45.331035006978986,
+  "thermal_gap": 20.909286357429593,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8720562524207915,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   47.8678164084388,
+   24.199579615441472,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.916590798516404,
+   0.9360414240111214,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "flask",
+  "max_lift": 0.10290115281113674,
+  "closes": [
+   {
+    "d_target": 0.005600523992574244,
+    "dz": 0.0014944102945826654,
+    "d_extra": 0.31989767726476925
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200020,
+  "level": 30,
+  "object": 0,
+  "t_env": 18.357623806087688,
+  "obj_temp": 38.42785404251855,
+  "thermal_gap": 20.070230236430863,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8883437235801546,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   5,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   19.25931708350067,
+   17.82193185587012,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9324876959472864,
+   0.8849905842166182,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "tumbler",
+  "max_lift": 0.10251996526717747,
+  "closes": [
+   {
+    "d_target": 0.0011013675294762025,
+    "dz": 0.009124794291488575,
+    "d_extra": 0.1694441515499818
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200021,
+  "level": 30,
+  "object": 1,
+  "t_env": 19.827160177507984,
+  "obj_temp": 29.004402030645693,
+  "thermal_gap": 9.177241853137707,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9324385255371872,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   18.89793615851809,
+   19.800106412945293,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9023850515921034,
+   0.9211184363166781,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 1,
+  "outcome": "other",
+  "obj_name": "bottle",
+  "max_lift": 0.029953306359013995,
+  "closes": [
+   {
+    "d_target": 0.03845580929178552,
+    "dz": -0.04852664598242307,
+    "d_extra": 0.22768549318339415
+   },
+   {
+    "d_target": 0.11491912388881753,
+    "dz": -0.06676366463445349,
+    "d_extra": 0.18666418369236104
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200022,
+  "level": 30,
+  "object": 2,
+  "t_env": 20.527801171265867,
+  "obj_temp": -1.6590914748086618,
+  "thermal_gap": -22.18689264607453,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8771664323888737,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   21.395761884925562,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.8868985873680758,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "missed_grasp",
+  "obj_name": "wineglass",
+  "max_lift": 0.005792120651015972,
+  "closes": [
+   {
+    "d_target": 0.008793424042298425,
+    "dz": 0.0015038985599814952,
+    "d_extra": 0.2489393799123388
+   },
+   {
+    "d_target": 0.015414000090782897,
+    "dz": 0.0017254511000034528,
+    "d_extra": 0.25213869956735435
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200023,
+  "level": 30,
+  "object": 3,
+  "t_env": 24.23516119124867,
+  "obj_temp": 44.202676604211845,
+  "thermal_gap": 19.967515412963174,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.862139116590525,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   24.73139757727093,
+   24.707425199122145,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.8869605405579117,
+   0.9171795534152991,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "jar",
+  "max_lift": 0.10634720899572772,
+  "closes": [
+   {
+    "d_target": 0.0061786381536168946,
+    "dz": 0.009826333138882828,
+    "d_extra": 0.17168904528079829
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200024,
+  "level": 30,
+  "object": 4,
+  "t_env": 19.699777838000927,
+  "obj_temp": -14.510120686062542,
+  "thermal_gap": -34.20989852406347,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9458944389472121,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   19.096100079869696,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.934315407892472,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "flask",
+  "max_lift": 0.1090117217367401,
+  "closes": [
+   {
+    "d_target": 0.009842611929974493,
+    "dz": -0.005086409007133141,
+    "d_extra": 0.2446226371804259
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200025,
+  "level": 30,
+  "object": 0,
+  "t_env": 25.805157347250173,
+  "obj_temp": 56.292875398374754,
+  "thermal_gap": 30.48771805112458,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8634890769272544,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   5,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   26.473322924978913,
+   26.559031370770658,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9163649051461015,
+   0.9386985693812782,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "missed_grasp",
+  "obj_name": "tumbler",
+  "max_lift": 0.004619949611210022,
+  "closes": [
+   {
+    "d_target": 0.004594614204245108,
+    "dz": 7.046969236829126e-05,
+    "d_extra": 0.16391451458470832
+   },
+   {
+    "d_target": 0.02720475086105318,
+    "dz": 0.009237038944196724,
+    "d_extra": 0.15276749784676374
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200026,
+  "level": 30,
+  "object": 1,
+  "t_env": 24.799484188784298,
+  "obj_temp": 50.15255607215795,
+  "thermal_gap": 25.353071883373648,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9469136676190383,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   5,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   25.074638642948468,
+   25.273582745364187,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9017832693088305,
+   0.9477911589949545,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "bottle",
+  "max_lift": 0.10024073577781639,
+  "closes": [
+   {
+    "d_target": 0.0033719665971722345,
+    "dz": 0.0011088836797751578,
+    "d_extra": 0.19682757043333643
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200027,
+  "level": 30,
+  "object": 2,
+  "t_env": 20.570767423465426,
+  "obj_temp": 11.023665661293471,
+  "thermal_gap": -9.547101762171955,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9327843779292622,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   35.36201639557639,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9241772361281408,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "wineglass",
+  "max_lift": 0.10567039784534281,
+  "closes": [
+   {
+    "d_target": 0.001011272367617786,
+    "dz": 0.004196233148644174,
+    "d_extra": 0.25601633617248776
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200028,
+  "level": 30,
+  "object": 3,
+  "t_env": 21.39322016869024,
+  "obj_temp": -5.778158832116187,
+  "thermal_gap": -27.17137900080643,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8500274344748266,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   26.759600834979594,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9275161476146289,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 1,
+  "outcome": "missed_grasp",
+  "obj_name": "jar",
+  "max_lift": 0.02502032736517055,
+  "closes": [
+   {
+    "d_target": 0.037955998524314916,
+    "dz": 0.03142844171486778,
+    "d_extra": 0.29905558114638553
+   },
+   {
+    "d_target": 0.06537882485587615,
+    "dz": 0.006152477128888306,
+    "d_extra": 0.25842797992772265
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200029,
+  "level": 30,
+  "object": 4,
+  "t_env": 25.11742046282113,
+  "obj_temp": 49.77508898668647,
+  "thermal_gap": 24.657668523865343,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9147522811682847,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   24.30261167188742,
+   25.839839216003032,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9331942280184756,
+   0.9406621307255463,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "missed_grasp",
+  "obj_name": "flask",
+  "max_lift": 0.002499457802418052,
+  "closes": [
+   {
+    "d_target": 0.009978741641156811,
+    "dz": 0.004097977528295743,
+    "d_extra": 0.20817832796438704
+   },
+   {
+    "d_target": 0.012646243238452858,
+    "dz": 0.00180671600284113,
+    "d_extra": 0.20040209264897454
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200030,
+  "level": 30,
+  "object": 0,
+  "t_env": 25.425576505951007,
+  "obj_temp": -8.767814172676829,
+  "thermal_gap": -34.193390678627836,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9114207658084513,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   44.623190495694494,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9396085837601453,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 1,
+  "outcome": "other",
+  "obj_name": "tumbler",
+  "max_lift": 0.02997988123807542,
+  "closes": [
+   {
+    "d_target": 0.09951108530480761,
+    "dz": 0.04909667478874061,
+    "d_extra": 0.24460031568547322
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200031,
+  "level": 30,
+  "object": 1,
+  "t_env": 18.791318134157983,
+  "obj_temp": 0.15715880654143888,
+  "thermal_gap": -18.634159327616544,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9219941198745405,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   18.506761729641998,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9004793847330363,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 1,
+  "outcome": "missed_grasp",
+  "obj_name": "bottle",
+  "max_lift": 0.0013395657368493082,
+  "closes": [
+   {
+    "d_target": 0.043631227562163054,
+    "dz": -0.051271303154482945,
+    "d_extra": 0.17235589556030792
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200032,
+  "level": 30,
+  "object": 2,
+  "t_env": 20.036564872156834,
+  "obj_temp": 20.589760883830255,
+  "thermal_gap": 0.5531960116734198,
+  "is_crossover": 1,
+  "realistic": 0,
+  "obj_emis": 0.9243059288051776,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   20.450693565502576,
+   19.42933580900542,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9275791901349837,
+   0.8821031037950109,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "wineglass",
+  "max_lift": 0.10518313242558051,
+  "closes": [
+   {
+    "d_target": 0.006510563300628496,
+    "dz": 0.003398912500681528,
+    "d_extra": 0.30270678726551414
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200033,
+  "level": 30,
+  "object": 3,
+  "t_env": 24.148055805113632,
+  "obj_temp": -5.644692930481266,
+  "thermal_gap": -29.7927487355949,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.929969730358814,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   24.448370080301576,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9370698323184519,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "jar",
+  "max_lift": 0.10245088158155331,
+  "closes": [
+   {
+    "d_target": 0.010309384321942434,
+    "dz": 0.0006893569326450327,
+    "d_extra": 0.28498816824850476
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200034,
+  "level": 30,
+  "object": 4,
+  "t_env": 19.485611786602593,
+  "obj_temp": 19.214737615420308,
+  "thermal_gap": -0.2708741711822855,
+  "is_crossover": 1,
+  "realistic": 0,
+  "obj_emis": 0.9227199110534103,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   18.96885299251671,
+   -8.314804534269143,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9152609403478572,
+   0.8973821972394875,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "dropped",
+  "obj_name": "flask",
+  "max_lift": 0.09337945959686855,
+  "closes": [
+   {
+    "d_target": 0.005985318834693814,
+    "dz": -0.002038205970904844,
+    "d_extra": 0.2887494374213067
+   },
+   {
+    "d_target": 0.004365436074366022,
+    "dz": -0.0018275666341046326,
+    "d_extra": 0.2891123053182559
+   },
+   {
+    "d_target": 0.005244688027638892,
+    "dz": -9.480065244976688e-05,
+    "d_extra": 0.2877076226870901
+   },
+   {
+    "d_target": 0.008218869679910165,
+    "dz": 0.007951830527207743,
+    "d_extra": 0.2863618063641841
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200035,
+  "level": 30,
+  "object": 0,
+  "t_env": 24.873321849647297,
+  "obj_temp": 32.91358101895672,
+  "thermal_gap": 8.040259169309422,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8582973999602906,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   16.11670477158924,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9369145746513389,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "tumbler",
+  "max_lift": 0.1011349697275475,
+  "closes": [
+   {
+    "d_target": 0.0031881228457496416,
+    "dz": -0.00014963862726546928,
+    "d_extra": 0.2347064670474951
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200036,
+  "level": 30,
+  "object": 1,
+  "t_env": 23.5124845561652,
+  "obj_temp": 28.74359854407488,
+  "thermal_gap": 5.231113987909679,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9327867916017742,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   9.809181294527272,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9341646349605653,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "missed_grasp",
+  "obj_name": "bottle",
+  "max_lift": 0.00694625309662995,
+  "closes": [
+   {
+    "d_target": 0.026598147459814838,
+    "dz": -0.007971135117234185,
+    "d_extra": 0.22429788469836526
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200037,
+  "level": 30,
+  "object": 2,
+  "t_env": 23.962064797679826,
+  "obj_temp": 23.175661662209805,
+  "thermal_gap": -0.7864031354700225,
+  "is_crossover": 1,
+  "realistic": 0,
+  "obj_emis": 0.8500071020233047,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   24.565990699116576,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.8814858614955453,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 1,
+  "outcome": "other",
+  "obj_name": "wineglass",
+  "max_lift": 1.8053231196774044e-07,
+  "closes": [
+   {
+    "d_target": 0.08016827355823918,
+    "dz": 0.011941569210290062,
+    "d_extra": 0.14956520103365298
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200038,
+  "level": 30,
+  "object": 3,
+  "t_env": 21.297629640763894,
+  "obj_temp": 38.92062255035891,
+  "thermal_gap": 17.622992909595013,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8899642220569833,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   20.379165579641786,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.898448911226015,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "jar",
+  "max_lift": 0.10795894183041371,
+  "closes": [
+   {
+    "d_target": 0.00794669657765319,
+    "dz": -0.0018098705296804712,
+    "d_extra": 0.3676811685558656
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200039,
+  "level": 30,
+  "object": 4,
+  "t_env": 21.9547961249549,
+  "obj_temp": 48.49251602453823,
+  "thermal_gap": 26.537719899583333,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8797336792213989,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   12.994882878120475,
+   22.597556808313094,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9491372319896294,
+   0.8908412856416971,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "flask",
+  "max_lift": 0.10268708673400316,
+  "closes": [
+   {
+    "d_target": 0.0049925250625941515,
+    "dz": -0.0016094659112259324,
+    "d_extra": 0.21908723907898775
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200040,
+  "level": 30,
+  "object": 0,
+  "t_env": 22.252041648774814,
+  "obj_temp": 45.81459335875999,
+  "thermal_gap": 23.562551709985176,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9013857139090636,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   23.184768775419826,
+   21.57049125906716,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9123249185853031,
+   0.9415959615802465,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "missed_grasp",
+  "obj_name": "tumbler",
+  "max_lift": 0.009609683958532022,
+  "closes": [
+   {
+    "d_target": 0.009643403076845055,
+    "dz": 0.03469785727059123,
+    "d_extra": 0.169321040415412
+   },
+   {
+    "d_target": 0.012211627661535138,
+    "dz": 0.00017264121825714962,
+    "d_extra": 0.1677571001404212
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200041,
+  "level": 30,
+  "object": 1,
+  "t_env": 24.51240257911803,
+  "obj_temp": -1.1828464626933517,
+  "thermal_gap": -25.695249041811383,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9126636107770607,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   24.223485064550605,
+   25.438279972697202,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.892252898612777,
+   0.9385616711593732,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "missed_grasp",
+  "obj_name": "bottle",
+  "max_lift": 0.0025527878729405713,
+  "closes": [
+   {
+    "d_target": 0.01565982601120079,
+    "dz": -0.005551340438857272,
+    "d_extra": 0.16221722156243656
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200042,
+  "level": 30,
+  "object": 2,
+  "t_env": 20.644574685774785,
+  "obj_temp": 3.59312727769888,
+  "thermal_gap": -17.051447408075905,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.901991962996362,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   5,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   21.570810046359338,
+   33.40604558870381,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9496680669461082,
+   0.8865092808313256,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "wineglass",
+  "max_lift": 0.10683836209183713,
+  "closes": [
+   {
+    "d_target": 0.00974471520125476,
+    "dz": 0.004000015089312636,
+    "d_extra": 0.2928476402753792
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200043,
+  "level": 30,
+  "object": 3,
+  "t_env": 21.702707254512514,
+  "obj_temp": -3.955023846182062,
+  "thermal_gap": -25.657731100694576,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.85865465103016,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   5,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   7.743083657164149,
+   39.5869622929892,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.925240915836019,
+   0.9011324565389192,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 1,
+  "outcome": "wrong_height",
+  "obj_name": "jar",
+  "max_lift": 5.155192245309692e-12,
+  "closes": [
+   {
+    "d_target": 0.035394788291242076,
+    "dz": 0.07316384925910667,
+    "d_extra": 0.20356274807478314
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200044,
+  "level": 30,
+  "object": 4,
+  "t_env": 19.900894073945263,
+  "obj_temp": 2.367974978739209,
+  "thermal_gap": -17.532919095206054,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9385906231612006,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   46.8119341852904,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9106877592391082,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "flask",
+  "max_lift": 0.10013193044824033,
+  "closes": [
+   {
+    "d_target": 0.009911555054965658,
+    "dz": -0.005042254088870157,
+    "d_extra": 0.2560384127079738
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200045,
+  "level": 30,
+  "object": 0,
+  "t_env": 20.758641346309222,
+  "obj_temp": 53.5089910575839,
+  "thermal_gap": 32.75034971127468,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8604211002252664,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   20.763346351867405,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.8803478792250095,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "dropped",
+  "obj_name": "tumbler",
+  "max_lift": 0.09022466938690975,
+  "closes": [
+   {
+    "d_target": 0.01162145118165578,
+    "dz": 0.0015082301834077327,
+    "d_extra": 0.20616846148612702
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200046,
+  "level": 30,
+  "object": 1,
+  "t_env": 24.09504102908106,
+  "obj_temp": 35.17479890949204,
+  "thermal_gap": 11.079757880410982,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9060671065685064,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   5,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   24.299132077021863,
+   24.018095330509485,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9308996018806197,
+   0.9297806318760444,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "bottle",
+  "max_lift": 0.10494619761124054,
+  "closes": [
+   {
+    "d_target": 0.005403671462419386,
+    "dz": 0.0010699501859303406,
+    "d_extra": 0.298750181849526
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200047,
+  "level": 30,
+  "object": 2,
+  "t_env": 21.52682973129864,
+  "obj_temp": 27.910427413573753,
+  "thermal_gap": 6.383597682275113,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9418375617003686,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   21.2558923391538,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.884370509999163,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 1,
+  "outcome": "missed_grasp",
+  "obj_name": "wineglass",
+  "max_lift": 4.1551415153745497e-07,
+  "closes": [
+   {
+    "d_target": 0.05886261317549554,
+    "dz": -0.04187771187125222,
+    "d_extra": 0.18942344112855417
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200048,
+  "level": 30,
+  "object": 3,
+  "t_env": 25.31979246314856,
+  "obj_temp": 24.32668142661516,
+  "thermal_gap": -0.9931110365334004,
+  "is_crossover": 1,
+  "realistic": 0,
+  "obj_emis": 0.8944888852690291,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   25.521184421635862,
+   24.508919329867016,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9403040027628466,
+   0.9085775318099849,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "jar",
+  "max_lift": 0.10640628053297654,
+  "closes": [
+   {
+    "d_target": 0.009190775778606133,
+    "dz": 0.003962244936055848,
+    "d_extra": 0.24289558240099607
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200049,
+  "level": 30,
+  "object": 4,
+  "t_env": 18.39957061556661,
+  "obj_temp": 32.754762709269315,
+  "thermal_gap": 14.355192093702703,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8748394390891185,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   17.817664795598755,
+   18.531042234512295,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9483949118477546,
+   0.904648471108597,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "flask",
+  "max_lift": 0.10802256913941732,
+  "closes": [
+   {
+    "d_target": 0.00509928303528702,
+    "dz": 0.0012231896504425743,
+    "d_extra": 0.1606402432852716
+   },
+   {
+    "d_target": 0.007359597724696818,
+    "dz": 0.00550669870041981,
+    "d_extra": 0.15529142734855347
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200050,
+  "level": 30,
+  "object": 0,
+  "t_env": 24.07475842345817,
+  "obj_temp": 32.51164377044965,
+  "thermal_gap": 8.436885346991481,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9283487928648415,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   43.691785773345984,
+   24.872503404870198,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9176201193475537,
+   0.9065756570808551,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "tumbler",
+  "max_lift": 0.10032212707229687,
+  "closes": [
+   {
+    "d_target": 0.009240642690022038,
+    "dz": 0.0020454770484404083,
+    "d_extra": 0.16528201980490612
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200051,
+  "level": 30,
+  "object": 1,
+  "t_env": 22.39168372610773,
+  "obj_temp": 52.1403205952966,
+  "thermal_gap": 29.748636869188868,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9022627491559452,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   23.02998563727735,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.8808121314520111,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "missed_grasp",
+  "obj_name": "bottle",
+  "max_lift": 0.012523620378303162,
+  "closes": [
+   {
+    "d_target": 0.010891141749119128,
+    "dz": 0.002806487720629691,
+    "d_extra": 0.19292298075991698
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200052,
+  "level": 30,
+  "object": 2,
+  "t_env": 24.682753104019266,
+  "obj_temp": 4.7538813137150875,
+  "thermal_gap": -19.92887179030418,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8797446369656675,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   38.50101937354766,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.8836827684633531,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "wineglass",
+  "max_lift": 0.106143996198385,
+  "closes": [
+   {
+    "d_target": 0.0035255574115778602,
+    "dz": 0.0016690460692133785,
+    "d_extra": 0.3122765676185318
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200053,
+  "level": 30,
+  "object": 3,
+  "t_env": 22.414283893862777,
+  "obj_temp": 32.279585750636656,
+  "thermal_gap": 9.865301856773877,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9305824121254151,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   35.94064933340361,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9334899794985754,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 1,
+  "outcome": "other",
+  "obj_name": "jar",
+  "max_lift": 5.1553102065060585e-12,
+  "closes": [
+   {
+    "d_target": 0.08850007422066997,
+    "dz": 0.06927404689518649,
+    "d_extra": 0.27680288567702044
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200054,
+  "level": 30,
+  "object": 4,
+  "t_env": 18.156341768041624,
+  "obj_temp": 17.436897176641217,
+  "thermal_gap": -0.7194445914004062,
+  "is_crossover": 1,
+  "realistic": 0,
+  "obj_emis": 0.9312422926304739,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   5,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   19.028379340674384,
+   47.17635947860872,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9438651725796636,
+   0.8909700726609562,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "missed_grasp",
+  "obj_name": "flask",
+  "max_lift": 0.004745574995261671,
+  "closes": [
+   {
+    "d_target": 0.005755794756395519,
+    "dz": -0.0034812317713889818,
+    "d_extra": 0.27137691093487065
+   },
+   {
+    "d_target": 0.009123148747904573,
+    "dz": 0.0008199385044687646,
+    "d_extra": 0.2673285382611782
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200055,
+  "level": 30,
+  "object": 0,
+  "t_env": 20.894441004726538,
+  "obj_temp": 39.0365211504926,
+  "thermal_gap": 18.14208014576606,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.928264085033153,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   27.865267658139636,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9181807097605802,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 1,
+  "outcome": "missed_grasp",
+  "obj_name": "tumbler",
+  "max_lift": 0.003397289959934432,
+  "closes": [
+   {
+    "d_target": 0.033449018002759894,
+    "dz": 0.004206705763690893,
+    "d_extra": 0.3242116005999661
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200056,
+  "level": 30,
+  "object": 1,
+  "t_env": 22.37153413805682,
+  "obj_temp": 4.40580951639625,
+  "thermal_gap": -17.96572462166057,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9428209248462847,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   5,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   23.161592009497085,
+   22.21994327950026,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.8975243340359639,
+   0.9458751192775181,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "missed_grasp",
+  "obj_name": "bottle",
+  "max_lift": 0.003704677817180927,
+  "closes": [
+   {
+    "d_target": 0.022297999879115744,
+    "dz": 0.003489403863887769,
+    "d_extra": 0.14233266259636165
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200057,
+  "level": 30,
+  "object": 2,
+  "t_env": 18.551390683881984,
+  "obj_temp": 32.29051789193362,
+  "thermal_gap": 13.739127208051636,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9264623043776213,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   17.999455558431197,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9333952769792048,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "wineglass",
+  "max_lift": 0.10146005910045731,
+  "closes": [
+   {
+    "d_target": 0.0024108582904127447,
+    "dz": 0.008287137020041024,
+    "d_extra": 0.17866811360062645
+   },
+   {
+    "d_target": 0.0023698904614556627,
+    "dz": 0.004109486750166924,
+    "d_extra": 0.17581871700633273
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200058,
+  "level": 30,
+  "object": 3,
+  "t_env": 24.620876831006733,
+  "obj_temp": 18.32789458346793,
+  "thermal_gap": -6.292982247538803,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9192088846861376,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   24.962655505335633,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9311826402613304,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 1,
+  "outcome": "missed_grasp",
+  "obj_name": "jar",
+  "max_lift": 0.004394042565218224,
+  "closes": [
+   {
+    "d_target": 0.037843338017557564,
+    "dz": 0.01860605615153016,
+    "d_extra": 0.14643983101434732
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200059,
+  "level": 30,
+  "object": 4,
+  "t_env": 18.829048801531982,
+  "obj_temp": 11.717432172931325,
+  "thermal_gap": -7.1116166286006575,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.912291075114738,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   5,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   19.205726745490686,
+   18.606261299907892,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.8987030502419894,
+   0.9209888593228511,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 1,
+  "outcome": "success",
+  "obj_name": "flask",
+  "max_lift": 0.10030754197712097,
+  "closes": [
+   {
+    "d_target": 0.01966297290510166,
+    "dz": -0.0014083856047887588,
+    "d_extra": 0.183257356914372
+   },
+   {
+    "d_target": 0.00916155747401395,
+    "dz": -0.021929291724368166,
+    "d_extra": 0.17254749475538014
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200060,
+  "level": 30,
+  "object": 0,
+  "t_env": 23.208932899422027,
+  "obj_temp": 22.549914555047554,
+  "thermal_gap": -0.6590183443744746,
+  "is_crossover": 1,
+  "realistic": 0,
+  "obj_emis": 0.8801582484168154,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   23.281642381900856,
+   23.72011645924823,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9330145354496534,
+   0.9184798759850825,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "dropped",
+  "obj_name": "tumbler",
+  "max_lift": 0.049439878594566875,
+  "closes": [
+   {
+    "d_target": 0.008176008107749681,
+    "dz": 0.009613144123248277,
+    "d_extra": 0.1658496110726075
+   },
+   {
+    "d_target": 0.011678098889380184,
+    "dz": -0.003859598652086252,
+    "d_extra": 0.15967549289079905
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200061,
+  "level": 30,
+  "object": 1,
+  "t_env": 23.305797139956724,
+  "obj_temp": 39.98860898195196,
+  "thermal_gap": 16.68281184199524,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9275380169080323,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   22.558969978501125,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9191175964575128,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "missed_grasp",
+  "obj_name": "bottle",
+  "max_lift": 0.002915212171652623,
+  "closes": [
+   {
+    "d_target": 0.017378992246895642,
+    "dz": -0.0003034168180162389,
+    "d_extra": 0.18131105984060147
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200062,
+  "level": 30,
+  "object": 2,
+  "t_env": 22.930138560699547,
+  "obj_temp": 46.93820855728798,
+  "thermal_gap": 24.008069996588432,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9179138064565165,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   22.889573389778516,
+   23.231060332329996,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.897250984176668,
+   0.9449322515957993,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "wineglass",
+  "max_lift": 0.1002162670003209,
+  "closes": [
+   {
+    "d_target": 0.005795471525081913,
+    "dz": 0.002843349628541547,
+    "d_extra": 0.22828750375214804
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200063,
+  "level": 30,
+  "object": 3,
+  "t_env": 19.861126665252606,
+  "obj_temp": 28.74924017300364,
+  "thermal_gap": 8.888113507751033,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9446141553334251,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   19.40306070403938,
+   19.73460896654199,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9054210997142095,
+   0.9416010407364311,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 1,
+  "outcome": "success",
+  "obj_name": "jar",
+  "max_lift": 0.10281974654369139,
+  "closes": [
+   {
+    "d_target": 0.03071355497931526,
+    "dz": 0.013912634740738089,
+    "d_extra": 0.18892509997243304
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200064,
+  "level": 30,
+  "object": 4,
+  "t_env": 18.640571083676797,
+  "obj_temp": 6.647452946320779,
+  "thermal_gap": -11.993118137356017,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9196913631288577,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   17.71422078878149,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9020638468569087,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "flask",
+  "max_lift": 0.10586102346772701,
+  "closes": [
+   {
+    "d_target": 0.006488654254216465,
+    "dz": -0.0021647326632395214,
+    "d_extra": 0.19684157945300626
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200065,
+  "level": 30,
+  "object": 0,
+  "t_env": 18.335072139057573,
+  "obj_temp": 34.5809700113318,
+  "thermal_gap": 16.24589787227423,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9476382985563063,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   19.102938688400187,
+   -2.8581412665218053,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9434824924410625,
+   0.9293593711170571,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "tumbler",
+  "max_lift": 0.10240242799788879,
+  "closes": [
+   {
+    "d_target": 0.0060245154064212806,
+    "dz": 0.00849090932051752,
+    "d_extra": 0.17746303340763614
+   },
+   {
+    "d_target": 0.007980952413090004,
+    "dz": 0.02281369715322959,
+    "d_extra": 0.17412801886445675
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200066,
+  "level": 30,
+  "object": 1,
+  "t_env": 24.484221386345624,
+  "obj_temp": 3.751977109333211,
+  "thermal_gap": -20.732244277012413,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8890658157727508,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   -5.510580477436118,
+   23.523169599787195,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.8984025452021224,
+   0.934308339383521,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 1,
+  "outcome": "missed_grasp",
+  "obj_name": "bottle",
+  "max_lift": 6.073364388556324e-07,
+  "closes": [
+   {
+    "d_target": 0.07610629695347755,
+    "dz": -0.08159971104993283,
+    "d_extra": 0.2618985990287814
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200067,
+  "level": 30,
+  "object": 2,
+  "t_env": 20.37495846986573,
+  "obj_temp": 19.861326070577185,
+  "thermal_gap": -0.5136323992885461,
+  "is_crossover": 1,
+  "realistic": 0,
+  "obj_emis": 0.8689716420652605,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   21.083985722380746,
+   20.49504488036993,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.8811390346079672,
+   0.8931544719150977,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 1,
+  "outcome": "other",
+  "obj_name": "wineglass",
+  "max_lift": 5.646088707053631e-07,
+  "closes": [
+   {
+    "d_target": 0.1472116395929711,
+    "dz": 0.02555770501316526,
+    "d_extra": 0.18915410629619736
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200068,
+  "level": 30,
+  "object": 3,
+  "t_env": 22.854751910989524,
+  "obj_temp": 11.075467089684093,
+  "thermal_gap": -11.779284821305431,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8678771714144181,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   23.367161474770256,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.8856883780518839,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "jar",
+  "max_lift": 0.1002846212701532,
+  "closes": [
+   {
+    "d_target": 0.007357196536189624,
+    "dz": 0.0012714778545297317,
+    "d_extra": 0.16648552870901093
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200069,
+  "level": 30,
+  "object": 4,
+  "t_env": 23.8631580613802,
+  "obj_temp": 4.078642022471637,
+  "thermal_gap": -19.784516038908563,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.878589158385058,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   24.225662498517725,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.8816664942042632,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "flask",
+  "max_lift": 0.10240521061258179,
+  "closes": [
+   {
+    "d_target": 0.009544759195714321,
+    "dz": -0.0008092891698242288,
+    "d_extra": 0.16784494497019883
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200070,
+  "level": 30,
+  "object": 0,
+  "t_env": 23.950686909585492,
+  "obj_temp": -6.235516775614048,
+  "thermal_gap": -30.18620368519954,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8830141947772011,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   24.766008740858947,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9463444176339815,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "tumbler",
+  "max_lift": 0.10288332106974599,
+  "closes": [
+   {
+    "d_target": 0.0016756987893454234,
+    "dz": -0.0017010788814119104,
+    "d_extra": 0.30470333170182357
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200071,
+  "level": 30,
+  "object": 1,
+  "t_env": 23.4372973414993,
+  "obj_temp": 51.764988203063936,
+  "thermal_gap": 28.327690861564633,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9344525235045165,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   5,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   22.929541434002058,
+   23.56652065029392,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.8921947156000833,
+   0.9424482899382423,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "missed_grasp",
+  "obj_name": "bottle",
+  "max_lift": 0.0026151752487324487,
+  "closes": [
+   {
+    "d_target": 0.016338679250740548,
+    "dz": -2.3169370216929996e-05,
+    "d_extra": 0.19776924551913497
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200072,
+  "level": 30,
+  "object": 2,
+  "t_env": 18.139687601931943,
+  "obj_temp": 26.559316556946836,
+  "thermal_gap": 8.419628955014893,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8549907519110944,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   18.063640606346404,
+   18.5882314600311,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9352775753970369,
+   0.8950312916939207,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 1,
+  "outcome": "success",
+  "obj_name": "wineglass",
+  "max_lift": 0.10378368844493241,
+  "closes": [
+   {
+    "d_target": 0.028858219894020008,
+    "dz": 0.019635433322874665,
+    "d_extra": 0.21563004645239164
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200073,
+  "level": 30,
+  "object": 3,
+  "t_env": 21.178457691798947,
+  "obj_temp": 53.880140153468595,
+  "thermal_gap": 32.70168246166965,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8866158016314422,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   22.105571584139888,
+   20.29819854583433,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9085466676942817,
+   0.8884375336173095,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "jar",
+  "max_lift": 0.10494390016202604,
+  "closes": [
+   {
+    "d_target": 0.007843799967518944,
+    "dz": 0.0011217418502152965,
+    "d_extra": 0.1776011850957255
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200074,
+  "level": 30,
+  "object": 4,
+  "t_env": 18.897350226129877,
+  "obj_temp": 9.266983440287333,
+  "thermal_gap": -9.630366785842543,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.884899370967525,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   17.96725216380215,
+   40.435243988905356,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.925026627242242,
+   0.8925360956641797,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "missed_grasp",
+  "obj_name": "flask",
+  "max_lift": 0.002286924344007596,
+  "closes": [
+   {
+    "d_target": 0.0025264479273080054,
+    "dz": -0.0026314205977070737,
+    "d_extra": 0.22741601116666196
+   },
+   {
+    "d_target": 0.007783603359016598,
+    "dz": -0.0001407404379214494,
+    "d_extra": 0.2356444897776654
+   },
+   {
+    "d_target": 0.011174171514239568,
+    "dz": -0.0046880328137355876,
+    "d_extra": 0.24134359954098983
+   },
+   {
+    "d_target": 0.019051773680061973,
+    "dz": -0.00680278483777208,
+    "d_extra": 0.22974704379236552
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200075,
+  "level": 30,
+  "object": 0,
+  "t_env": 24.51589555298658,
+  "obj_temp": 14.771957675753594,
+  "thermal_gap": -9.743937877232987,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9157116241054046,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   24.509723948492343,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9449163868039065,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "tumbler",
+  "max_lift": 0.10475740338574142,
+  "closes": [
+   {
+    "d_target": 0.006857244963231928,
+    "dz": 0.0007764109510292605,
+    "d_extra": 0.2405884343691948
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200076,
+  "level": 30,
+  "object": 1,
+  "t_env": 25.448268397995243,
+  "obj_temp": -1.6695893590630142,
+  "thermal_gap": -27.117857757058257,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8695070817740483,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   24.966267807230807,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.8984632510005499,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "bottle",
+  "max_lift": 0.10228337152640145,
+  "closes": [
+   {
+    "d_target": 0.0036892297899346464,
+    "dz": 0.0014131063192595883,
+    "d_extra": 0.16607318300519272
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200077,
+  "level": 30,
+  "object": 2,
+  "t_env": 23.831826000545036,
+  "obj_temp": 6.0334216550330275,
+  "thermal_gap": -17.798404345512008,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.903670808906475,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   23.58435326011082,
+   -5.761783839661906,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9111999075235945,
+   0.9204145151911034,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 1,
+  "outcome": "missed_grasp",
+  "obj_name": "wineglass",
+  "max_lift": 0.004465193103211237,
+  "closes": [
+   {
+    "d_target": 0.028831275068058642,
+    "dz": 0.007564966570971193,
+    "d_extra": 0.1676100112817397
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200078,
+  "level": 30,
+  "object": 3,
+  "t_env": 18.101137429213633,
+  "obj_temp": 31.815070459781666,
+  "thermal_gap": 13.713933030568032,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9000807566611728,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   12.455931030195798,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.8904853049966559,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "jar",
+  "max_lift": 0.10375032323551017,
+  "closes": [
+   {
+    "d_target": 0.0058289130989388534,
+    "dz": 0.014236346500215713,
+    "d_extra": 0.21787663635641025
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200079,
+  "level": 30,
+  "object": 4,
+  "t_env": 21.19921097995692,
+  "obj_temp": 34.59007166594351,
+  "thermal_gap": 13.39086068598659,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.907543672121937,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   21.439114258627022,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9412015171481715,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "flask",
+  "max_lift": 0.10475218588571775,
+  "closes": [
+   {
+    "d_target": 0.00522423781702159,
+    "dz": -0.005593371787754486,
+    "d_extra": 0.1628521565262169
+   },
+   {
+    "d_target": 0.007197272934079939,
+    "dz": -0.0055399080123662015,
+    "d_extra": 0.1677727941349661
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200080,
+  "level": 30,
+  "object": 0,
+  "t_env": 25.55534484819715,
+  "obj_temp": -0.4207708139661648,
+  "thermal_gap": -25.976115662163316,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.881915425233399,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   8.074354493061744,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9024724141610183,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "tumbler",
+  "max_lift": 0.10434119225033137,
+  "closes": [
+   {
+    "d_target": 0.008323749144495681,
+    "dz": -0.0016555970934609698,
+    "d_extra": 0.3414050188986967
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200081,
+  "level": 30,
+  "object": 1,
+  "t_env": 20.67015817263109,
+  "obj_temp": -1.1071327276848812,
+  "thermal_gap": -21.777290900315972,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9462876795677552,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   5,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   4.0914353088967275,
+   -9.59648080747321,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9156662869050336,
+   0.8997660364549229,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 1,
+  "outcome": "other",
+  "obj_name": "bottle",
+  "max_lift": 2.5400810096595783e-07,
+  "closes": [
+   {
+    "d_target": 0.23924241499382548,
+    "dz": -0.06801459633084578,
+    "d_extra": 0.1474920164969765
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200082,
+  "level": 30,
+  "object": 2,
+  "t_env": 21.85785064561893,
+  "obj_temp": 16.172067935579605,
+  "thermal_gap": -5.685782710039327,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9122932870565527,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   21.873294220774813,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9124264951789094,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "wineglass",
+  "max_lift": 0.10355946238095545,
+  "closes": [
+   {
+    "d_target": 0.0063648022124659,
+    "dz": 0.0006032412319490615,
+    "d_extra": 0.22217853084435146
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200083,
+  "level": 30,
+  "object": 3,
+  "t_env": 19.26249235474084,
+  "obj_temp": 19.936133730654486,
+  "thermal_gap": 0.6736413759136484,
+  "is_crossover": 1,
+  "realistic": 0,
+  "obj_emis": 0.8898980444079978,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   -3.599684430283702,
+   19.236670189549407,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9168704568289606,
+   0.9263526091281468,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 1,
+  "outcome": "missed_grasp",
+  "obj_name": "jar",
+  "max_lift": 5.155272042589587e-12,
+  "closes": [
+   {
+    "d_target": 0.06807335815745112,
+    "dz": 0.07489841214091299,
+    "d_extra": 0.10140216318764426
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200084,
+  "level": 30,
+  "object": 4,
+  "t_env": 19.062956354300944,
+  "obj_temp": 35.128054563639125,
+  "thermal_gap": 16.06509820933818,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9419388484729233,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   19.450865312478037,
+   36.938820932411915,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9415169085643802,
+   0.9121460145436251,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "missed_grasp",
+  "obj_name": "flask",
+  "max_lift": 0.0016246166265585574,
+  "closes": [
+   {
+    "d_target": 0.008448236799176941,
+    "dz": 0.004904269232336778,
+    "d_extra": 0.20581013769286782
+   },
+   {
+    "d_target": 0.010771356843489592,
+    "dz": -0.00417464519639324,
+    "d_extra": 0.20865228542156747
+   },
+   {
+    "d_target": 0.017167564792686215,
+    "dz": 0.008376174742150133,
+    "d_extra": 0.21019365856730624
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200085,
+  "level": 30,
+  "object": 0,
+  "t_env": 21.01314999486255,
+  "obj_temp": 21.207508841466517,
+  "thermal_gap": 0.1943588466039643,
+  "is_crossover": 1,
+  "realistic": 0,
+  "obj_emis": 0.9284337496361943,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 1,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   20.058353443318804,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9181168253510349,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "tumbler",
+  "max_lift": 0.10470345212720268,
+  "closes": [
+   {
+    "d_target": 0.003237589170831921,
+    "dz": 0.0008100661526980607,
+    "d_extra": 0.2572787844224023
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200086,
+  "level": 30,
+  "object": 1,
+  "t_env": 21.367976805232125,
+  "obj_temp": 9.826583614102978,
+  "thermal_gap": -11.541393191129147,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9466588166103655,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   35.74042773379104,
+   21.33751937578518,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9122290320417172,
+   0.8989338743891733,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "bottle",
+  "max_lift": 0.10302302426455022,
+  "closes": [
+   {
+    "d_target": 0.002600844401507725,
+    "dz": 0.0021213914655739685,
+    "d_extra": 0.3246582542293033
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200087,
+  "level": 30,
+  "object": 2,
+  "t_env": 19.91568486114961,
+  "obj_temp": 36.089718486554744,
+  "thermal_gap": 16.17403362540513,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9316701554863968,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   5,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   20.572401744534464,
+   19.96639391676748,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9226541736898118,
+   0.9177671853755005,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "wineglass",
+  "max_lift": 0.10276430978694774,
+  "closes": [
+   {
+    "d_target": 0.006308785041923574,
+    "dz": 0.0012404566447019177,
+    "d_extra": 0.2654457434651457
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200088,
+  "level": 30,
+  "object": 3,
+  "t_env": 25.394104430880965,
+  "obj_temp": 59.19225616958891,
+  "thermal_gap": 33.79815173870794,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.941661434864661,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   -4.581745388698568,
+   24.7618911424977,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9061473027110489,
+   0.9382562404329489,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "jar",
+  "max_lift": 0.10594876310804938,
+  "closes": [
+   {
+    "d_target": 0.005476045232381393,
+    "dz": 0.00202382854977165,
+    "d_extra": 0.22684633735720408
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200089,
+  "level": 30,
+  "object": 4,
+  "t_env": 24.191276340045476,
+  "obj_temp": 39.57023941358758,
+  "thermal_gap": 15.378963073542105,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.86502221214942,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   24.858457180159597,
+   24.210909494565165,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9386991698872105,
+   0.9178558815518051,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "flask",
+  "max_lift": 0.10148623077511831,
+  "closes": [
+   {
+    "d_target": 0.009926026812112715,
+    "dz": -0.0022508003694811096,
+    "d_extra": 0.16977306401052492
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200090,
+  "level": 30,
+  "object": 0,
+  "t_env": 23.35179594906756,
+  "obj_temp": 55.4473928716926,
+  "thermal_gap": 32.095596922625035,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9143958962124302,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   5,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   23.498021688522588,
+   23.06084533835287,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.8970923608101791,
+   0.9049862994923974,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "tumbler",
+  "max_lift": 0.10885717712209872,
+  "closes": [
+   {
+    "d_target": 0.0024274127930596643,
+    "dz": -0.005070919529876899,
+    "d_extra": 0.21061633998071025
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200091,
+  "level": 30,
+  "object": 1,
+  "t_env": 19.804095941675815,
+  "obj_temp": 48.49575027511257,
+  "thermal_gap": 28.69165433343676,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9127006709771256,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   19.09880167041631,
+   18.859177604480493,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9486536454262748,
+   0.8850375962369313,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 1,
+  "outcome": "missed_grasp",
+  "obj_name": "bottle",
+  "max_lift": 0.0033751932871019658,
+  "closes": [
+   {
+    "d_target": 0.021170137522551265,
+    "dz": -0.017327389425661727,
+    "d_extra": 0.21804418021518585
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200092,
+  "level": 30,
+  "object": 2,
+  "t_env": 21.65208567744304,
+  "obj_temp": 38.912693796028336,
+  "thermal_gap": 17.2606081185853,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8774097677149548,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   22.606731986084803,
+   22.519061035193552,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.8977699378996941,
+   0.8953084451732138,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 1,
+  "outcome": "success",
+  "obj_name": "wineglass",
+  "max_lift": 0.10204668158211987,
+  "closes": [
+   {
+    "d_target": 0.0023716390256326323,
+    "dz": 0.006849320813493695,
+    "d_extra": 0.17999142859701356
+   },
+   {
+    "d_target": 0.004221434082244425,
+    "dz": 0.0021228050013675087,
+    "d_extra": 0.18487918066671916
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200093,
+  "level": 30,
+  "object": 3,
+  "t_env": 23.749209579180057,
+  "obj_temp": -10.185464707196115,
+  "thermal_gap": -33.93467428637617,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9035432003221983,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   5,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   0.2925136583043333,
+   23.854428769246777,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.936520672563228,
+   0.9296835795698419,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "jar",
+  "max_lift": 0.10262095227063972,
+  "closes": [
+   {
+    "d_target": 0.01026290521683906,
+    "dz": 0.004268497105528624,
+    "d_extra": 0.20480832370754673
+   },
+   {
+    "d_target": 0.020346056581531723,
+    "dz": 0.014600940007892027,
+    "d_extra": 0.2036233992159531
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200094,
+  "level": 30,
+  "object": 4,
+  "t_env": 18.4766944075802,
+  "obj_temp": 32.104443411362425,
+  "thermal_gap": 13.627749003782222,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8984193397814382,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   18.319591516992823,
+   28.530106634396773,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9088245039035331,
+   0.9141575182570961,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 1,
+  "outcome": "dropped",
+  "obj_name": "flask",
+  "max_lift": 0.08683518552943212,
+  "closes": [
+   {
+    "d_target": 0.021558958883498045,
+    "dz": 0.0019770514757248003,
+    "d_extra": 0.18432357277168054
+   },
+   {
+    "d_target": 0.011886373416000257,
+    "dz": 0.010348293722026503,
+    "d_extra": 0.18237358370307702
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200095,
+  "level": 30,
+  "object": 0,
+  "t_env": 23.308641304962894,
+  "obj_temp": 10.199537336400022,
+  "thermal_gap": -13.109103968562872,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9118343375202401,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   5,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   22.435351963599686,
+   24.12333304999497,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9132687615551783,
+   0.8950320752679354,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "tumbler",
+  "max_lift": 0.1061675979925563,
+  "closes": [
+   {
+    "d_target": 0.005630845623159531,
+    "dz": -0.004035108913088989,
+    "d_extra": 0.17371389601756984
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200096,
+  "level": 30,
+  "object": 1,
+  "t_env": 21.62249631112812,
+  "obj_temp": -12.924508999921951,
+  "thermal_gap": -34.54700531105007,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9492910974287928,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   22.532437860535797,
+   22.47341192025788,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.8865372376896364,
+   0.9183093969405554,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "missed_grasp",
+  "obj_name": "bottle",
+  "max_lift": 0.007464848758365245,
+  "closes": [
+   {
+    "d_target": 0.013712723152966752,
+    "dz": -0.012247739167705274,
+    "d_extra": 0.1774081249444543
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200097,
+  "level": 30,
+  "object": 2,
+  "t_env": 22.492776073123082,
+  "obj_temp": 46.225646759382656,
+  "thermal_gap": 23.732870686259577,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9277727871471876,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   5,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   23.28797781581839,
+   23.10086965768133,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.8992855708446775,
+   0.9173724417898232,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 1,
+  "outcome": "missed_grasp",
+  "obj_name": "wineglass",
+  "max_lift": 3.6522899713245516e-07,
+  "closes": [
+   {
+    "d_target": 0.055480926757816046,
+    "dz": 0.004534323163989745,
+    "d_extra": 0.10307737108250456
+   }
+  ],
+  "prefix": "test/",
+  "reward": 0.0
+ },
+ {
+  "split": 1,
+  "seed": 200098,
+  "level": 30,
+  "object": 3,
+  "t_env": 24.39955336004187,
+  "obj_temp": 36.29417276636059,
+  "thermal_gap": 11.89461940631872,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.9430590045646305,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   5,
+   4,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   35.41228752398227,
+   25.111341388089397,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.9461779337018533,
+   0.880507165993796,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "jar",
+  "max_lift": 0.1063961794168247,
+  "closes": [
+   {
+    "d_target": 0.004833711395154588,
+    "dz": 0.001785733188022831,
+    "d_extra": 0.18204413116281612
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ },
+ {
+  "split": 1,
+  "seed": 200099,
+  "level": 30,
+  "object": 4,
+  "t_env": 21.647600569737072,
+  "obj_temp": 11.382375792393262,
+  "thermal_gap": -10.26522477734381,
+  "is_crossover": 0,
+  "realistic": 0,
+  "obj_emis": 0.8839766329396695,
+  "alpha": 0.3,
+  "background": 0,
+  "lighting": 0,
+  "light_scale": 1.0,
+  "fill_level": 0.0,
+  "liquid_kind": -1,
+  "liquid_temp": NaN,
+  "n_distractors": 2,
+  "lookalike": 0,
+  "n_absorbers": 0,
+  "extra_ids": [
+   4,
+   5,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_temps": [
+   21.842717035775017,
+   21.70639645955113,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "extra_emis": [
+   0.883508476813758,
+   0.927764661885409,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "n_table_blobs": 0,
+  "glass_seethrough": 0,
+  "outcome": "success",
+  "obj_name": "flask",
+  "max_lift": 0.1043254170943473,
+  "closes": [
+   {
+    "d_target": 0.0033096082436331656,
+    "dz": 0.005498742378930582,
+    "d_extra": 0.17865988129290358
+   }
+  ],
+  "prefix": "test/",
+  "reward": 1.0
+ }
+]

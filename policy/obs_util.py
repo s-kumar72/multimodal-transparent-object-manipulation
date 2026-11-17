@@ -17,6 +17,8 @@ Besides the images it can produce two things the fusion models need:
   [depth step, thermal step, depth visible, thermal visible] measured where a glass mask says the glass is
   (visibility_cues); the last two are 0/1 flags, step > threshold. The mask is `glass_mask` in the raw dict when the
   dataset supplies it (policy/make_glass_masks.py), else predicted from the frame with `seg_ckpt` (policy/glass_seg.py).
+  `mask_noise: {drop: p, shift: k}` on the cue key degrades the predicted mask (degrade_mask; evaluation only, set by
+  eval.py --mask_noise, never in a training config).
 """
 import warnings
 
@@ -144,6 +146,29 @@ def visibility_cues(depth8, thermal, mask, noise=THERMAL_NOISE_COUNTS, ring=5, m
     return out.reshape(lead + (3,))
 
 
+def degrade_mask(mask, depth8, drop=0.0, shift=0, seed=0):
+    """Errors of the glass mask for robustness tests: each frame's mask is emptied with probability `drop` (the cues
+    then count the target as visible in both sensors) and otherwise moved by an offset drawn uniformly from
+    [-shift, shift]^2 pixels, vacated pixels empty. mask (..., H, W) bool, depth8 (..., H, W, 1). The draw is seeded
+    by the frame's depth image, so a rollout is reproducible and parallel envs draw independently."""
+    import zlib
+    m = np.array(mask, dtype=bool)
+    flat = m.reshape((-1,) + m.shape[-2:])
+    d = np.asarray(depth8).reshape((len(flat), -1))
+    H, W = flat.shape[-2:]
+    for i in range(len(flat)):
+        rng = np.random.default_rng([int(seed), zlib.crc32(np.ascontiguousarray(d[i]).tobytes())])
+        if rng.random() < drop:
+            flat[i] = False
+        elif shift:
+            dy, dx = (int(v) for v in rng.integers(-int(shift), int(shift) + 1, 2))
+            moved = np.zeros_like(flat[i])
+            moved[max(dy, 0):H + min(dy, 0), max(dx, 0):W + min(dx, 0)] = \
+                flat[i][max(-dy, 0):H + min(-dy, 0), max(-dx, 0):W + min(-dx, 0)]
+            flat[i] = moved
+    return flat.reshape(m.shape)
+
+
 VIS_DIM = 4                         # depth step, thermal step, depth visible, thermal visible
 
 
@@ -153,7 +178,8 @@ def compute_cues(raw, roi=DEFAULT_ROI, depth_ref=None, depth_thr=DEPTH_OBJECT_TH
     Uses thermal_raw (counts, before normalization) when present, else the 8-bit thermal image.
     With depth_ref ((H, W) uint8), the vector has a 7th entry, depth_object_cue.
     With vis = dict(thr=(depth, thermal), seg_ckpt=path or None) the last VIS_DIM entries are the target-visibility
-    cues; a frame whose mask is empty counts as visible in both sensors (nothing is switched off)."""
+    cues; a frame whose mask is empty counts as visible in both sensors (nothing is switched off). vis["mask_noise"]
+    (degrade_mask keyword arguments) is applied to a predicted mask only, never to a mask stored with the demos."""
     ref = next(v for k, v in raw.items() if k in ("rgb", "depth", "thermal", "thermal_raw"))
     lead = np.shape(ref)[:-3]
     n_base = CUE_DIM + (depth_ref is not None)
@@ -174,6 +200,8 @@ def compute_cues(raw, roi=DEFAULT_ROI, depth_ref=None, depth_thr=DEPTH_OBJECT_TH
         if mask is None:
             from policy.glass_seg import predict_glass_mask
             mask = predict_glass_mask(raw, vis["seg_ckpt"])
+            if vis.get("mask_noise"):
+                mask = degrade_mask(mask, raw["depth"], **vis["mask_noise"])
         if "thermal_raw" in raw:
             v = visibility_cues(raw["depth"], raw["thermal_raw"], mask, THERMAL_NOISE_COUNTS)
         else:
@@ -212,6 +240,8 @@ def cue_opts(obs_meta):
         opts["vis"] = {"thr": (float(thr[0]), float(thr[1])), "seg_ckpt": attr.get("seg_ckpt")}
         if attr.get("vis_raw"):      # the two measurements reach the encoder unnormalized (route=soft)
             opts["vis"]["raw"] = True
+        if attr.get("mask_noise"):   # robustness tests only (eval.py --mask_noise)
+            opts["vis"]["mask_noise"] = {k: float(v) for k, v in dict(attr.get("mask_noise")).items()}
     return opts
 
 
