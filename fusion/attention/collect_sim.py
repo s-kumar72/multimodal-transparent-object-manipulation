@@ -12,7 +12,7 @@ because sim/ loads its scene files by relative path. PYTHONPATH must include tha
 Writes <out>/<level>_<split>.npz, split in train | val | test_<test set>:
     rgb (N,96,96,3) u8 · depth (N,96,96,1) u8 (0 = no reading) · thermal (N,96,96,1) u8 (as the policy sees it)
     thermal_raw (N,96,96,1) u16 (hard-scenario only) · mask (N,96,96) u8 (fraction of the pixel covered by the target
-    glass x 255) · episode, seed, step, object, is_crossover, thermal_gap, lookalike (N,)
+    glass x 255) · episode, seed, step, object, is_crossover, thermal_gap, lookalike, glass_seethrough (N,)
 """
 import argparse
 import multiprocessing as mp
@@ -62,7 +62,7 @@ def _run(job):
     env, objects = _make_env(level, split, test_set)
     teacher = ScriptedTeacher()
     out = {k: [] for k in ["rgb", "depth", "thermal", "thermal_raw", "mask", "seed", "step", "object",
-                           "is_crossover", "thermal_gap", "lookalike"]}
+                           "is_crossover", "thermal_gap", "lookalike", "glass_seethrough"]}
     for seed in seeds:
         obs = env.reset(seed, obj=objects[seed % len(objects)] if objects else None)
         teacher.reset(env, np.random.default_rng(seed))
@@ -82,6 +82,7 @@ def _run(job):
                 out["is_crossover"].append(int(info.get("is_crossover", abs(gap) <= 1.0)))
                 out["thermal_gap"].append(float(gap))
                 out["lookalike"].append(int(any(n.startswith("la_") for n in getattr(env, "extra_z0", {}))))
+                out["glass_seethrough"].append(int(info.get("glass_seethrough", 0) or 0))
             if teacher.done():
                 break
             obs, _ = env.step(teacher.act())
