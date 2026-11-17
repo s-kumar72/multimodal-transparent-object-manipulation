@@ -18,6 +18,13 @@ distinguishable from `vis_route` at the same seed (0.705), and gains nothing fro
 So guidance needs the routing, and without guidance the routing is not shown to add to its training scheme: conclusion
 11 of rounds 3–5 is narrowed by conclusion 17. The rounds 3–5 section is kept as written.
 
+**Update, 11/17 04:29 – 14:28 KST (round 7, before "Files"):** two more seeds of the control change the round 6
+picture. Over three seeds each, `vis_route` is above its control without guidance (0.698 vs 0.657, p 0.036; weak at the
+seed level), and guidance at 3.0 gains +8.3 points with the routing against +2.5 without it (difference +5.8, 95%
++2.3 to +9.1), so conclusions 16–18 of round 6 are revised by conclusions 21–23. The scale 3.0 is an interior optimum
+on the validation episodes. Why guidance gains more with the routing is answered only in part. The round 6 section is
+kept as written.
+
 ## Setup
 
 - **Protocol** as in the benchmark: `L0_bench`, 500 demos (`results/data/sim_demos_L0_bench_500.zarr`), 101 epochs,
@@ -494,7 +501,7 @@ guided comparison without a gate; p values are not corrected for the number of c
 without the routing was not examined: on normal episodes both policies have all sensors on, yet `vis_route` gains
 there (seed 42: 42 gained, 14 lost at 3.0) and the control does not (29 / 23).
 
-### Next steps (proposals, not run)
+### Next steps (proposals of 11/17 04:10; 1–4 were then run, see round 7)
 
 1. Seeds 43 and 44 of the control (2 trainings, 3 evaluations each) to settle conclusion 17 and repeat conclusion 16.
 2. Validation at scales above 3.0 (4, 5, 7) on the same validation episodes, then the test evaluations of the selected
@@ -503,6 +510,262 @@ there (seed 42: 42 gained, 14 lost at 3.0) and the control does not (29 / 23).
    prediction on the same frames, `vis_route` against the control (no training).
 4. What lifts the control above `static_nohole`: the control without the rgb-only samples (`route_rgb_only_p=0`, 1 training).
 5. Partially visible targets and the third seed of learned attention weighting, as proposed above.
+
+## Round 7: control seeds, larger guidance scales, guidance probe, control without rgb-only samples (11/17 04:29 – 14:28 KST)
+
+### Runs
+
+All on `L0_bench`, rgbdt, 500 demos, 101 epochs, as above. The three trainings ran to epoch 100 without interruption;
+all 16 queued jobs finished at the first attempt. No training or evaluation code changed; one analysis script was
+added (`policy/analyze_guidance.py`).
+
+| run tag | what | overrides on `policy/train_gated.sh gate rgbdt` |
+|---|---|---|
+| `nogate_rgbonly_seed43`, `nogate_rgbonly_seed44` | second and third seed of the control of `vis_route` (sensors never switched off, 10% rgb-only training samples) | the `nogate_rgbonly` overrides + `training.seed=43` / `44` |
+| `nogate_allon` (seed 42) | the control without the rgb-only training samples: all three sensors on in every training sample (logged mean weights 1.0000). It has no rgb-only mode, so it cannot be guided | the `nogate_rgbonly` overrides with `route_rgb_only_p=0.0` |
+
+Evaluations and analysis:
+
+- **Validation**, `val100/<run>__g{400,500,700}/`: the validation episodes of round 6 with `--guidance` 4.0, 5.0, 7.0,
+  on the `vis_route` checkpoints of seeds 42 and 43.
+- **Test**, `n200/<run>[__guide15|__guide30]/`: 200 episodes per test set on the test seeds, as trained and with
+  `--guidance 1.5` / `3.0` for the two new control seeds, as trained for `nogate_allon`.
+- **Probe**, `guidance_probe/`: `policy/analyze_guidance.py` on the seed-42 checkpoints of `vis_route` and of the
+  control (no simulator).
+
+Fixed before the results: the scale rule (below); for the control, the three seeds are pooled (1200 episodes) and
+compared with `vis_route` over its three seeds on (a) success as trained, (b) the gain from guidance at 1.5 and 3.0
+within the control, (c) the difference of the two policies' gains (bootstrap over the test episodes); for the probe,
+the two measures listed in its section. Everything else in this round is marked exploratory.
+
+### Guidance scale above 3.0 (validation episodes)
+
+Rule, fixed before these evaluations: the round 6 rule over all eight scales (highest success pooled over both
+checkpoints and both test sets, ties to the smaller scale). If the selected scale is not 3.0, test evaluations with it
+are added; if it is 7.0, the grid is not extended again.
+
+| scale | pooled (400) | normal (300) | see-through (100) | crossover (44) | seed 42 (a) / (g) | seed 43 (a) / (g) | same episodes against 3.0 |
+|---|---|---|---|---|---|---|---|
+| 3.0 (round 6) | 318 = 0.795 | 0.840 | 0.660 | 0.727 | 89 / 74 | 88 / 67 | – |
+| 4.0 | 307 = 0.768 | 0.830 | 0.580 | 0.727 | 83 / 70 | 84 / 70 | gained 8, lost 19 (p 0.052) |
+| 5.0 | 303 = 0.758 | 0.813 | 0.590 | 0.705 | 80 / 75 | 83 / 65 | gained 10, lost 25 (p 0.017) |
+| 7.0 | 303 = 0.758 | 0.820 | 0.570 | 0.750 | 80 / 72 | 80 / 71 | gained 16, lost 31 (p 0.040) |
+
+**Selected: 3.0, unchanged**, now inside the grid (0.710, 0.745, 0.745, 0.773, **0.795**, 0.768, 0.758, 0.758 for 1.0 to
+7.0), so no test evaluations were added and the `guide30` results of round 6 stand. Unpaired, 4.0 to 7.0 against 3.0 is
+p 0.39 / 0.24 / 0.24 (Fisher). The scales above 3.0 stay above no guidance (0.710; same episodes: gained 48, lost 25,
+p 0.010 at 4.0; 50 / 31, p 0.045 at 5.0; 55 / 36, p 0.059 at 7.0). Most of the drop above 3.0 is on see-through
+episodes (0.660 → 0.58, 0.59, 0.57; normal 0.840 → 0.830, 0.813, 0.820).
+
+### Control over three seeds (1200 episodes)
+
+200 episodes per test set and seed. Last column: same checkpoints, same episodes, against the run as trained (sign test).
+
+| run | guidance | seed 42 / 43 / 44 (of 400) | all | normal (930) | see-through (270) | crossover (126) | against the run as trained |
+|---|---|---|---|---|---|---|---|
+| rgbd (two seeds, 800) | | 261 / 251 / – | 0.640 | 0.798 | 0.094 | 0.774 | |
+| rgbdt (two seeds, 800) | | 239 / 262 / – | 0.626 | 0.747 | 0.211 | 0.548 | |
+| **nogate_rgbonly** | – | 273 / 245 / 270 | 788 = **0.657** (0.63–0.68) | 0.695 | 0.526 | 0.500 | |
+| nogate_rgbonly | 1.5 | 272 / 250 / 288 | 810 = 0.675 | 0.716 | 0.533 | 0.500 | gained 84, lost 62 (p 0.082) |
+| nogate_rgbonly | 3.0 | 273 / 258 / 287 | 818 = 0.682 | 0.729 | 0.519 | 0.484 | gained 129, lost 99 (p 0.054) |
+| vis_route | – | 282 / 273 / 282 | 837 = 0.698 (0.67–0.72) | 0.741 | 0.548 | 0.643 | |
+| vis_route | 1.5 | 304 / 290 / 295 | 889 = 0.741 | 0.795 | 0.556 | 0.738 | gained 93, lost 41 (p 8e-6) |
+| vis_route | 3.0 | 311 / 305 / 320 | 936 = 0.780 | 0.840 | 0.574 | 0.778 | gained 160, lost 61 (p 2e-11) |
+
+- **(a) As trained, control against `vis_route`**: 0.657 vs 0.698, Fisher p 0.036; matched by training seed and test
+  episode, `vis_route` gained 126 and lost 77 (sign test p 7e-4). Normal 0.695 vs 0.741 (p 0.030), crossover 0.500 vs
+  0.643 (p 0.030), see-through 0.526 vs 0.548 (p 0.67). At the seed level (three values each) the difference is not
+  significant: 0.657 (sd 0.038) vs 0.698 (sd 0.013), Welch p 0.20, paired by seed p 0.11; the control varies more
+  between seeds (245–273 of 400) than `vis_route` (273–282).
+- **(b) Gain from guidance in the control**: +1.8 points at 1.5 (p 0.082) and +2.5 at 3.0 (p 0.054); per seed −1 / +5 /
+  +18 and 0 / +13 / +17 episodes, so the zero gain of seed 42 in round 6 was the lowest of three. The gain is on normal
+  episodes (3.0: gained 100, lost 68, sign test p 0.017; +3.4 points, bootstrap over episodes −0.0 to +6.9), none on
+  see-through (gained 29, lost 31) or crossover episodes (12 / 14).
+- **(c) Difference of the gains, `vis_route` minus control** (bootstrap over the 400 test episodes, seeds averaged):
+  +2.5 points at 1.5 (95% interval −0.1 to +5.2; per seed +5.8, +3.0, −1.2) and **+5.8 points at 3.0** (+2.3 to +9.1;
+  per seed +7.2, +4.8, +5.2). At 3.0 by group: normal +6.5 (+2.7 to +10.1), crossover +15.1 (+0.0 to +28.6),
+  see-through +3.3 (−4.4 to +11.1). Seed level at 3.0: gains of 29 / 32 / 38 episodes against 0 / 13 / 17, Welch p 0.028.
+- **With guidance, control against `vis_route`**: 0.675 vs 0.741 at 1.5 (Fisher p 5e-4); 0.682 vs 0.780 at 3.0
+  (p 7e-8; normal 0.729 vs 0.840, p 8e-9; crossover 0.484 vs 0.778, p 2e-6; see-through 0.519 vs 0.574, p 0.23; seed
+  level Welch p 0.025). The guided control is level with `vis_route` as trained (0.682 vs 0.698, p 0.43) except on
+  crossover episodes (0.484 vs 0.643, p 0.016).
+- **Control against the baselines** (their two seeds, 800 episodes): rgbdt 0.626 (p 0.17), rgbd 0.640 (p 0.44). Against
+  rgbdt: see-through 0.526 vs 0.211 (p 1e-11), normal 0.695 vs 0.747 (p 0.029), crossover 0.500 vs 0.548 (p 0.57);
+  against rgbd: normal 0.695 vs 0.798 (p 6e-6), crossover 0.500 vs 0.774 (p 9e-5). Per seed against the same-seed rgbdt:
+  273 vs 239 (p 0.015) at seed 42, 245 vs 262 (p 0.24) at seed 43. With `guide30` the control is 0.682 (rgbdt p 0.011,
+  rgbd p 0.059).
+- Weights of the control 1 / 1 / 1 in every evaluated step, all three seeds.
+- Per test set: control (a) 0.682, (g) 0.632; with `guide30` 0.715 / 0.648 (`vis_route` 0.732 / 0.663 and 0.807 / 0.753).
+- Failure outcomes over 1200 episodes: control as trained missed grasp 193, dropped 132, wrong height 55, other 25;
+  with `guide30` 167 / 114 / 63 / 32 (`vis_route`: 164 / 111 / 69 / 18 and 101 / 91 / 46 / 20).
+- 50 episodes per test set: seed 43 (a) 0.64, (g) 0.58; seed 44 0.62 / 0.62; three seeds 185/300 = 0.617 (normal 0.645,
+  see-through 0.515, crossover 0.500; `vis_route` 208/300 = 0.693).
+
+### Why guidance gains more with the routing: offline probe (no training)
+
+`policy/analyze_guidance.py` on the seed-42 checkpoints of `vis_route` and of the control, on expert sequences of the
+demo set (two clean frames and the expert's action chunk): the 25 demo episodes that were held out of training (the
+validation split of the dataset; 1390 sequences, 640 of them for the action level; 16 episodes with neither condition,
+8 see-through, 2 crossover, one of them both) and, for comparison, 3000 sequences of the training episodes (1024 for
+the action level).
+
+Measures, fixed before the probe was run:
+
+1. **Noise level.** `e_r`: the denoiser output with the policy's own sensor rule (the control: all sensors on), `e_0`:
+   with depth and thermal off, `d = e_r − e_0`, the direction along which guidance extrapolates. The least-squares
+   scale `s* = Σ⟨d, ε − e_0⟩ / Σ|d|²` (diffusion steps 5, 20, 40, 60, 80, 95; sequences with a sensor on) says how far
+   along `d` the true noise lies: above 1, guidance would lower the denoising error.
+2. **Action level.** The full 100-step sampler from the same initial noise and sampler noise for every scale; squared
+   error of the 8 executed action steps against the expert's (normalized units), relative to scale 1.
+
+Hypothesis: `s*` above 1 and a lower action error with guidance for `vis_route`, not for the control.
+
+Held-out episodes (95% intervals: bootstrap over episodes):
+
+| group (episodes) | policy | `s*` | action error relative to scale 1: rgb only | 1.5 | 3.0 | 5.0 | 7.0 |
+|---|---|---|---|---|---|---|---|
+| all (25) | vis_route | 0.86 (0.63–1.07) | 1.56 | 1.01 | 1.07 (0.99–1.20) | 1.10 | 1.17 |
+| | control | 0.74 (0.50–1.00) | 1.44 | 1.03 | 1.07 (0.99–1.16) | 1.09 | 1.16 |
+| neither (16) | vis_route | 1.01 (0.80–1.22) | 1.85 | 0.98 | 1.03 (0.92–1.20) | 1.06 | 1.09 |
+| | control | 0.98 (0.72–1.27) | 1.98 | 0.99 | 0.99 (0.91–1.10) | 1.00 | 1.02 |
+| see-through (8) | vis_route | 0.41 (0.15–0.70) | 1.10 | 1.06 | 1.09 (1.02–1.33) | 1.18 | 1.34 |
+| | control | 0.38 (0.15–0.67) | 0.82 | 1.10 | 1.21 (1.09–1.33) | 1.26 | 1.42 |
+| crossover (2) | vis_route | 0.81 (one episode with a sensor on) | 0.91 | 1.02 | 1.11 | 1.04 | 1.04 |
+| | control | 0.03 (−0.03–0.13) | 0.47 | 1.01 | 1.16 (1.04–1.23) | 1.21 | 1.30 |
+
+Training episodes: `s*` 0.99 (0.97–1.01) for `vis_route` and 1.00 (0.98–1.01) for the control, 0.98–1.11 in every
+group; the action error rises with the scale in both (×1.30 and ×1.24 at 3.0, ×2.1 and ×2.0 at 7.0).
+
+- **The hypothesis is not supported.** In neither policy does going further along `d` lower the denoising error or the
+  open-loop action error. Where both sensors show the glass ("neither"), scale 1 is the least-squares optimum in both
+  policies (`s*` 1.01 and 0.98) and the action error is flat up to 3.0 in both (1.03, 0.99). The closed-loop gain of
+  `vis_route` is therefore not a better one-shot imitation of the expert's chunk, and this probe does not separate the
+  two policies on normal scenes.
+- **Where a sensor does not show the glass, the control's sensor direction is of little use on held-out frames**: `s*`
+  0.38 (see-through) and 0.03 (crossover), and the rgb-only prediction has a lower action error than the full one
+  (×0.82, ×0.47). Guidance scales this direction up (error ×1.21 and ×1.16 at 3.0). In `vis_route` the unseen sensor is
+  off and `d` comes from the other one (error ×1.09 and ×1.11 at 3.0). Few held-out episodes (8 and 2).
+
+Exploratory, chosen after seeing the above:
+
+- **Spread across noise draws** (400 held-out sequences, 4 draws each, `*_k4`): guidance narrows the predicted joint targets in
+  both policies (standard deviation across draws 0.0076 → 0.0064 at 3.0 for `vis_route`, 0.0076 → 0.0054 for the
+  control; the gripper command does not change), so a sharper action distribution does not separate them either.
+- **First grasp attempt in the test evaluations** (`closes` in `episodes.json`: horizontal distance to the target and
+  height error of the tool at the first gripper close; "first attempt succeeds" = success with a single close). As
+  trained → `guide30`, three seeds per policy, matched by seed and episode; "difference" is the change of `vis_route`
+  minus the change of the control with a 95% interval (bootstrap over the test episodes).
+
+| group (episodes × seeds) | policy | first close, xy (cm) | first close, height error (cm) | first attempt succeeds | success |
+|---|---|---|---|---|---|
+| neither (274 × 3) | vis_route | 1.04 → 0.84 | 0.72 → 0.64 | 0.710 → 0.791 | 0.751 → 0.842 |
+| | control | 1.27 → 1.04 | 0.81 → 0.77 | 0.681 → 0.704 | 0.718 → 0.751 |
+| | difference | +0.03 (−0.06 to +0.15) | −0.04 (−0.09 to +0.03) | +5.7 points (+2.3 to +9.1) | +5.8 (+2.1 to +9.5) |
+| crossover (42 × 3) | vis_route | 1.35 → 1.23 | 1.02 → 0.75 | 0.603 → 0.706 | 0.643 → 0.778 |
+| | control | 1.91 → 2.44 | 1.37 → 1.52 | 0.468 → 0.444 | 0.500 → 0.484 |
+| | difference | −0.65 (−1.18 to −0.16) | −0.42 (−0.66 to −0.18) | +12.7 (−0.8 to +25.4) | +15.1 (+0.8 to +28.6) |
+| see-through (90 × 3) | vis_route | 1.99 → 2.48 | 1.12 → 1.08 | 0.515 → 0.507 | 0.548 → 0.574 |
+| | control | 2.01 → 2.63 | 1.26 → 1.31 | 0.485 → 0.474 | 0.526 → 0.519 |
+| | difference | −0.13 (−0.43 to +0.23) | −0.09 (−0.22 to +0.04) | +0.4 (−6.7 to +7.0) | +3.3 (−4.4 to +11.1) |
+
+  - Crossover: without the gate, guidance moves the first grasp away from the target (1.91 → 2.44 cm; with the gate
+    1.35 → 1.23), at every seed (difference −0.55, −0.83, −0.57 cm). This matches the probe: the thermal direction of
+    the control is useless on crossover frames and guidance scales it up.
+  - See-through: the first grasp moves away in both policies (+0.5 and +0.6 cm) and neither gains.
+  - Neither condition, where both policies have all sensors on: the grasp position improves equally (xy −0.20 and
+    −0.23 cm), yet the first attempt succeeds more often only with `vis_route` (+8.0 against +2.3 points; difference at
+    each seed +5.8, +5.1, +6.2). The larger gain of `vis_route` on normal scenes is reproducible over seeds and is not
+    explained by any measure here.
+
+### Control without the rgb-only samples (`nogate_allon`, seed 42, 400 episodes)
+
+| run | all | normal (310) | see-through (90) | crossover (42) | against `nogate_allon` (Fisher) |
+|---|---|---|---|---|---|
+| **nogate_allon** | 244 = **0.610** (0.56–0.66) | 0.632 | 0.533 | 0.452 | |
+| nogate_rgbonly (seed 42) | 273 = 0.682 | 0.710 | 0.589 | 0.500 | p 0.038 |
+| vis_route (seed 42) | 282 = 0.705 | 0.739 | 0.589 | 0.690 | p 0.006 |
+| static_nohole | 229 = 0.573 | 0.577 | 0.556 | 0.429 | p 0.31 |
+| gate_nohole | 250 = 0.625 | 0.665 | 0.489 | 0.452 | p 0.72 |
+| rgbdt | 239 = 0.598 | 0.706 | 0.222 | 0.571 | p 0.77 |
+| rgbd | 261 = 0.652 | 0.816 | 0.089 | 0.857 | p 0.24 |
+
+- Against the control with the rgb-only samples at the same seed: 0.610 vs 0.682; on the same episodes the control
+  gained 52 and lost 23 (sign test p 0.001); normal 0.632 vs 0.710 (p 0.049), see-through and crossover not different
+  (p 0.55, 0.83). The control's own seeds range from 0.613 to 0.682, so one seed does not settle this difference.
+- Not distinguishable from `static_nohole` (p 0.31; same episodes 59 / 44, p 0.17), `gate_nohole` or rgbdt overall.
+  See-through stays at 0.533 against 0.222 for rgbdt: that gain needs neither the routing nor the rgb-only samples.
+- Weights 1 / 1 / 1 in every evaluated step and 1.0000 in every training log line. Failures: missed grasp 77, dropped
+  43, wrong height 27, other 9.
+- 50 episodes per test set: (a) 0.56, (g) 0.56 (normal 0.577, see-through 0.500, crossover 0.250).
+
+### Related work checked (11/17)
+
+Search-engine check of abstracts; TAG, FDP and Evidence-Gated Regularization were read in more detail.
+
+- **Guidance on observations.** TAG (arXiv 2603.24584) guides a vision-language-action policy with the difference
+  between its prediction on the observation and on a target-erased one (trained with 10% erased observations; best
+  scale 1.25, large scales fail); RGB only, no sensor selection. FDP (arXiv 2509.16830) trains a base policy on a
+  prioritized modality and a residual on the others, with a priority fixed for the whole task, and has as a baseline
+  one model with the weaker modality dropped with probability 0.2 plus classifier-free guidance, which is the setting
+  of the control here. PoCo (RSS 2024) composes sensor-specific policies in the same way. Pearce et al. (ICLR 2023)
+  report that classifier-free guidance on observations harms behaviour cloning.
+- **Per-frame sensor evidence.** Evidence-Gated Regularization (arXiv 2609.03142) measures per frame how much of the
+  target each camera sees and uses it to switch two consistency losses, in training only (RGB and tactile; no sensor
+  is switched off at inference, no guidance). Selective Perception (arXiv 2602.15543) learns a router over camera,
+  thermal and tactile inputs from VLM labels. "Learning when to see and when to feel" (arXiv 2604.01414) gates
+  force / torque by contact and mixes modality-specific noise predictions. MS-Bot (arXiv 2408.01366) sets modality
+  priority by task stage.
+- **Thermal.** Safe-Night VLA (arXiv 2603.05754) feeds RGB, thermal and depth to a vision-language-action model;
+  RGB-thermal glass segmentation (arXiv 2204.05453) and TRansPose (arXiv 2307.05016) are perception work. No
+  manipulation policy for transparent objects on RGB, depth and thermal was found.
+- **Not found**: the same target-visibility gate in training and at inference combined with guidance toward the
+  sensors it keeps on, and a control showing that the gain from sensor guidance depends on that gate. Guidance on
+  observations by itself is not new (TAG, FDP's baseline).
+
+### Conclusions of round 7
+
+20. **The guidance scale 3.0 is an interior optimum on the validation episodes** (0.795; 0.768, 0.758, 0.758 at 4, 5
+    and 7; 5 and 7 are below 3.0 on the same episodes, p 0.017 and 0.040). The round 6 results with `guide30` stand;
+    the caveat "selected at the edge of its grid" is removed.
+21. **Without guidance the routing adds about 4 points over its control** (revises conclusion 17): 0.698 against 0.657
+    over three seeds each (Fisher p 0.036), on crossover (0.643 vs 0.500) and normal episodes (0.741 vs 0.695), not on
+    see-through ones (0.548 vs 0.526). The evidence is weak at the seed level (Welch p 0.20): the control's seeds
+    spread over 7 points, and seed 42, the only one in round 6, was its best.
+22. **Guidance gains about three times more with the routing; it is not without effect in the control** (revises
+    conclusion 16): +8.3 points for `vis_route` and +2.5 for the control at 3.0 (the control's gain: p 0.054, on normal
+    episodes only), difference +5.8 points (+2.3 to +9.1), +7.2 / +4.8 / +5.2 at the three seeds. At 1.5 the difference
+    (+2.5 points) no longer excludes 0. With guidance the gap is 0.780 against 0.682 (p 7e-8; seed level p 0.025).
+23. **The control is not above rgbdt over seeds** (revises conclusion 18): 0.657 against 0.626 (p 0.17) and against
+    rgbd 0.640 (p 0.44). Its profile is the one of round 6: see-through far above both baselines (0.526 vs 0.211 and
+    0.094), normal below both (0.695 vs 0.747 and 0.798).
+24. **Why guidance gains more with the routing is answered in part.** The hypothesis that extrapolating along the
+    sensor direction lowers the imitation error for `vis_route` only is not supported: on held-out expert sequences
+    scale 1 is the optimum for both policies. What the probe and the test episodes do show: where a sensor does not
+    show the glass, the control keeps that sensor on, its contribution there is useless on held-out frames, and
+    guidance scales it up, so that on crossover episodes the first grasp moves away from the target (1.91 → 2.44 cm,
+    all three seeds) while with the routing it does not (1.35 → 1.23 cm). On scenes where both sensors show the glass
+    the larger gain of `vis_route` (first attempt succeeds +8.0 against +2.3 points, all three seeds) is not explained.
+25. **The 10% rgb-only samples account for the control's margin over `static_nohole` at seed 42** (0.682 → 0.610
+    without them, p 0.038; `static_nohole` 0.573, p 0.31 against `nogate_allon`), on normal episodes. One seed, and
+    the difference is the size of the control's seed-to-seed range. The see-through gain over rgbdt (0.53 vs 0.22)
+    remains without the rgb-only samples and without the routing.
+
+Caveats: rgbd and rgbdt have two seeds; the guidance scale was selected for `vis_route` and applied to the control
+unchanged; seed-level tests have three values per side; the first-grasp and noise-draw analyses were chosen after
+seeing the results; the probe uses the seed-42 checkpoints and 25 held-out demo episodes (8 see-through, 2 crossover);
+`nogate_allon` has one seed; p values are not corrected for the number of comparisons.
+
+### Next steps (proposals; 1, 2 and 4 were approved on 11/17 and are run as round 8)
+
+1. Third seed of rgbd and rgbdt (2 trainings, 2 evaluations), so that every comparison has three seeds.
+2. Robustness of the gate decision (evaluations only): thresholds moved, masks degraded, flags flipped with a given
+   probability, for `vis_route` as trained and with `guide30`.
+3. A control with single-sensor dropout at the rates of the routing but independent of visibility (depth off in about
+   25% of the training samples, thermal in about 7%, plus the 10% rgb-only samples), then guidance: separates "trained
+   with single sensors off" from "off where the glass is not visible", the open question on normal scenes.
+4. An external baseline: composition of sensor-specific policies (PoCo / Modality-Composable Diffusion Policy style).
+5. The guidance scale of the control on the validation episodes (3.0 was chosen for `vis_route`).
+6. Partially visible targets and the third seed of learned attention weighting, as proposed above.
 
 ## Files
 
@@ -527,3 +790,8 @@ there (seed 42: 42 gained, 14 lost at 3.0) and the control does not (29 / 23).
 - Round 6 results: `L0_bench_rgbdt_500demos_{nogate_rgbonly,vis_route_seed44}/` and their `n200/` evaluations (as
   trained, `__guide15`, `__guide30`), `n200/<vis_route run>__guide30/`, `n200/L0_bench_rgbdt_500demos_vis_soft__{guide15,guide30}/`,
   and `val100/<vis_route run>__g{100,125,150,200,300}/` (validation seeds 200000–200099). No code was added.
+- Round 7 results: `L0_bench_rgbdt_500demos_{nogate_rgbonly_seed43,nogate_rgbonly_seed44,nogate_allon}/` and their
+  `n200/` evaluations (the control seeds as trained, `__guide15`, `__guide30`; `nogate_allon` as trained),
+  `val100/<vis_route run>__g{400,500,700}/`, and `guidance_probe/` (`<run>__{val,train}.json` summaries and `.npz`
+  per-sequence values of the first pass, `*_k4.*` of the pass with four noise draws). Code added:
+  `policy/analyze_guidance.py` (analysis only; nothing in training or evaluation changed).

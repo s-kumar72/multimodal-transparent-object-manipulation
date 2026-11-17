@@ -318,3 +318,63 @@ success by condition on a_in_distribution (successes/episodes):
 - thermal crossover: 0 34/44, 1 4/6
 - liquid: empty 38/50
 - depth see-through: 0 30/39, 1 8/11
+
+## L0_bench_rgbdt_500demos_nogate_rgbonly_seed43
+
+| test set | success | 95% CI | missed_grasp | other | dropped | wrong_height | wrong_object | timeout |
+|---|---|---|---|---|---|---|---|---|
+| a_in_distribution | 0.64 (32/50) | 0.50-0.76 | 0.20 | 0.00 | 0.06 | 0.10 | 0.00 | 0.00 |
+| g_heldout_all | 0.58 (29/50) | 0.44-0.71 | 0.24 | 0.06 | 0.08 | 0.04 | 0.00 | 0.00 |
+
+rollouts on (a) during training: ep0 0.00, ep25 0.50, ep50 0.66, ep75 0.64, ep100 0.60
+val loss: lowest 0.0101 at epoch 60, last 0.0145 at epoch 100; train loss last 0.0022
+
+success by condition on a_in_distribution (successes/episodes):
+- object: bottle 6/10, flask 4/10, jar 10/10, tumbler 6/10, wineglass 6/10
+- background: 0 32/50
+- lighting: 0 32/50
+- distractors: 1 10/16, 2 12/19, 3 10/15
+- look-alike: 0 32/50
+- thermal crossover: 0 28/44, 1 4/6
+- liquid: empty 32/50
+- depth see-through: 0 26/39, 1 6/11
+
+## L0_bench_rgbdt_500demos_nogate_rgbonly_seed44
+
+| test set | success | 95% CI | missed_grasp | other | dropped | wrong_height | wrong_object | timeout |
+|---|---|---|---|---|---|---|---|---|
+| a_in_distribution | 0.62 (31/50) | 0.48-0.74 | 0.18 | 0.00 | 0.16 | 0.04 | 0.00 | 0.00 |
+| g_heldout_all | 0.62 (31/50) | 0.48-0.74 | 0.24 | 0.04 | 0.08 | 0.02 | 0.00 | 0.00 |
+
+rollouts on (a) during training: ep0 0.00, ep25 0.56, ep50 0.62, ep75 0.66, ep100 0.70
+val loss: lowest 0.0090 at epoch 47, last 0.0113 at epoch 100; train loss last 0.0023
+
+success by condition on a_in_distribution (successes/episodes):
+- object: bottle 3/10, flask 6/10, jar 9/10, tumbler 7/10, wineglass 6/10
+- background: 0 31/50
+- lighting: 0 31/50
+- distractors: 1 10/16, 2 11/19, 3 10/15
+- look-alike: 0 31/50
+- thermal crossover: 0 28/44, 1 3/6
+- liquid: empty 31/50
+- depth see-through: 0 26/39, 1 5/11
+
+## L0_bench_rgbdt_500demos_nogate_allon
+
+| test set | success | 95% CI | missed_grasp | other | dropped | wrong_height | wrong_object | timeout |
+|---|---|---|---|---|---|---|---|---|
+| a_in_distribution | 0.56 (28/50) | 0.42-0.69 | 0.20 | 0.00 | 0.18 | 0.06 | 0.00 | 0.00 |
+| g_heldout_all | 0.56 (28/50) | 0.42-0.69 | 0.24 | 0.00 | 0.16 | 0.02 | 0.02 | 0.00 |
+
+rollouts on (a) during training: ep0 0.00, ep25 0.46, ep50 0.54, ep75 0.60, ep100 0.52
+val loss: lowest 0.0095 at epoch 48, last 0.0141 at epoch 100; train loss last 0.0022
+
+success by condition on a_in_distribution (successes/episodes):
+- object: bottle 5/10, flask 4/10, jar 9/10, tumbler 6/10, wineglass 4/10
+- background: 0 28/50
+- lighting: 0 28/50
+- distractors: 1 10/16, 2 9/19, 3 9/15
+- look-alike: 0 28/50
+- thermal crossover: 0 26/44, 1 2/6
+- liquid: empty 28/50
+- depth see-through: 0 21/39, 1 7/11
