@@ -1,0 +1,15 @@
+# Benchmark step 2 (results/hard_scenario/benchmark/): the benchmark level, set by the selection rule of the README
+# from the step 1 results. L0_distract with the glass at alpha 0.3 (alpha*, XML colour 0.8 / 0.9 / 1.0, tint 0), and in
+# a quarter of the episodes (glass_seethrough_p 0.25 = p*) depth sees through the glass: the glass pixels hold the
+# depth of the surface behind and have no holes, like a time-of-flight camera on clear glass. The other episodes keep
+# L0_distract's dot holes on the glass. meta/ep_level id 30.
+#   alpha*: rgb on test sets (a) + (g): alpha 0.2 0.24 (48/200), 0.3 0.33 (33/100), 0.4 0.48 (48/100); 0.3 is the
+#     closest to 0.40 (0.07 against 0.08).
+#   p* = (s_ok - 0.60) / (s_ok - r) with s_ok = 39/56 (rgbd of L0_distract_s50 on its normal episodes) and r = 0.33:
+#     0.263, rounded to 0.25 (inside 0.2-0.8).
+base: L0_distract.yaml
+name: L0_bench
+level: 30
+alpha: [0.3, 0.3]
+tint: 0.0
+glass_seethrough_p: 0.25

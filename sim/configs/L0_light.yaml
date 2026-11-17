@@ -1,0 +1,11 @@
+# Build-up round 2, level D3 (results/hard_scenario/build_up/): L0 (glass at the XML alpha 0.2, no tint) plus the
+# light of L0f_light (C3): train normal / dim / bright / backlight, held-out spot / dusk, intensity jitter 0.15 and
+# direction jitter 15 degrees. No distractors, table as in L0. Thermal of the hard levels (no effect on RGB policies).
+# meta/ep_level id 24.
+base: L0.yaml
+name: L0_light
+level: 24
+thermal: thermal/calibrated_v1_hard.yaml
+lighting: {train: [normal, dim, bright, backlight], test: [spot, dusk]}
+light_jitter: 0.15
+light_dir_jitter: 15

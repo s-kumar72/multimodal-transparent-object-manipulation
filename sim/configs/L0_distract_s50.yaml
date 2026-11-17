@@ -1,0 +1,11 @@
+# Benchmark step 1, level S5 (results/hard_scenario/benchmark/): L0_distract (glass at the XML alpha 0.2) where, in
+# half of the episodes (glass_seethrough_p 0.5), the depth sensor sees through the glass: the glass pixels hold the
+# depth of the table behind it and have no holes, so depth shows no trace of the target. This is what a time-of-flight
+# camera does on clear glass: the RealSense L515 of TRansPose has a reading on 86% of the glass pixels, and 95% of them
+# are off by more than 2 cm (median 132 mm), because it reports the surface behind the glass (real_data/README.md).
+# The other half of the episodes keep L0_distract's depth (dot holes on the glass, depth_defects: dots). meta/ep_level
+# id 29.
+base: L0_distract.yaml
+name: L0_distract_s50
+level: 29
+glass_seethrough_p: 0.5

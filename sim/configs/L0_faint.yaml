@@ -1,0 +1,7 @@
+# Diagnosis level (experiment 1a): L0 plus only the fainter, tinted glass of L1 (lever A), nothing else from L1.
+# Tells whether the faint glass alone causes the L0 -> L1 drop. meta/ep_level id 9.
+base: L0.yaml
+name: L0_faint
+level: 9
+alpha: [0.05, 0.1]
+tint: 0.05

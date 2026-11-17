@@ -1,0 +1,10 @@
+# Build-up level C2 (results/hard_scenario/build_up/): L0_faint plus the textured / coloured tables of hard_base.yaml
+# without the sky-blue one (train solid / checker / wood / noise, held-out stripes / marble / white) and their colour
+# jitter 0.1. No distractors, light as in L0. Thermal of the hard levels (no effect on RGB policies).
+# meta/ep_level id 18.
+base: L0_faint.yaml
+name: L0f_table
+level: 18
+thermal: thermal/calibrated_v1_hard.yaml
+background: {train: [solid, checker, wood, noise], test: [stripes, marble, white]}
+background_jitter: 0.1

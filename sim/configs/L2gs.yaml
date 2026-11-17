@@ -1,0 +1,9 @@
+# L2gs = L2g where, per episode, the depth sensor sees through the glass with probability glass_seethrough_p: no
+# holes or wrong depth on the glass, only the surface behind it, so depth shows no trace of the target. This stands
+# in for a time-of-flight / LiDAR camera (e.g. RealSense L515) on clear glass; the other episodes keep L2g's holes
+# and wrong depth of a structured-light / stereo camera. 0.5 mixes the two sensor behaviours half and half; it was
+# fixed before the experiments and is not tuned on their results. meta/ep_level id 13.
+base: L2g.yaml
+name: L2gs
+level: 13
+glass_seethrough_p: 0.5

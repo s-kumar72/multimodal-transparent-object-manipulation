@@ -1,0 +1,9 @@
+# Build-up round 2, level D1 (results/hard_scenario/build_up/): L0 (glass at the XML alpha 0.2, no tint) plus 1-3
+# opaque distractors, the distractor pools of hard_base.yaml (train mug / box / can / bowl, held-out opaque_bottle /
+# opaque_cup), as in L0f_distract (C1). Table and light stay as in L0. Thermal of the hard levels (no effect on RGB
+# policies). meta/ep_level id 22.
+base: L0.yaml
+name: L0_distract
+level: 22
+thermal: thermal/calibrated_v1_hard.yaml
+n_distractors: [1, 3]

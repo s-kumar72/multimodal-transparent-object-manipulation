@@ -1,0 +1,9 @@
+$ python sim/teacher_check.py --n 50 --levels L0f_distract L0f_table L0f_light L0f_scene --workers 16
+L0f_distract train teacher 50/50  tumbler 12/12 bottle 4/4 wineglass 10/10 jar 10/10 flask 14/14  | episodes that moved a distractor > 2 cm: 0
+L0f_distract test  teacher 50/50  tumbler 10/10 bottle 10/10 wineglass 10/10 jar 10/10 flask 10/10  | episodes that moved a distractor > 2 cm: 0
+L0f_table train teacher 50/50  tumbler 12/12 bottle 4/4 wineglass 10/10 jar 10/10 flask 14/14  | episodes that moved a distractor > 2 cm: 0
+L0f_table test  teacher 50/50  tumbler 10/10 bottle 10/10 wineglass 10/10 jar 10/10 flask 10/10  | episodes that moved a distractor > 2 cm: 0
+L0f_light train teacher 50/50  tumbler 12/12 bottle 4/4 wineglass 10/10 jar 10/10 flask 14/14  | episodes that moved a distractor > 2 cm: 0
+L0f_light test  teacher 50/50  tumbler 10/10 bottle 10/10 wineglass 10/10 jar 10/10 flask 10/10  | episodes that moved a distractor > 2 cm: 0
+L0f_scene train teacher 50/50  tumbler 12/12 bottle 4/4 wineglass 10/10 jar 10/10 flask 14/14  | episodes that moved a distractor > 2 cm: 0
+L0f_scene test  teacher 50/50  tumbler 10/10 bottle 10/10 wineglass 10/10 jar 10/10 flask 10/10  | episodes that moved a distractor > 2 cm: 0

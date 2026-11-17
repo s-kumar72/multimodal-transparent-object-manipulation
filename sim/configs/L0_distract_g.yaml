@@ -1,0 +1,8 @@
+# Build-up round 2, step 2 (results/hard_scenario/build_up/): L0_distract (L0 glass at the XML alpha 0.2 + 1-3 opaque
+# distractors), the level chosen in step 1, plus the structured depth defects of L2g (blobs) on the glass only, with the
+# defaults (missing 0.1-0.9 of the glass, wrong depth on 0-30% of the rest). No absorbers, table hole patches or edge
+# dropout, so the rest of the depth image is unchanged. meta/ep_level id 26.
+base: L0_distract.yaml
+name: L0_distract_g
+level: 26
+depth_defects: blobs
