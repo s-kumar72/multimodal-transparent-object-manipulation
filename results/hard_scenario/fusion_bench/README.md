@@ -25,6 +25,12 @@ seed level), and guidance at 3.0 gains +8.3 points with the routing against +2.5
 on the validation episodes. Why guidance gains more with the routing is answered only in part. The round 6 section is
 kept as written.
 
+**Update, 11/17 13:59 – 23:19 KST (round 8, before "Files"):** with a third seed of the baselines (rgbd 0.624, rgbdt
+0.613 over 1200 episodes each) `vis_route` stays above both, as trained (0.698) and with guidance (0.780). Wrong gate
+decisions injected at inference: small errors cost nothing, the costly error is a sensor left on where it does not
+show the glass, and switching thermal off in every step changes nothing measurable, so a benefit of the thermal sensor
+is not shown. A composition of separately trained rgbd and rgbt policies reaches 0.646, level with rgbd and rgbdt.
+
 ## Setup
 
 - **Protocol** as in the benchmark: `L0_bench`, 500 demos (`results/data/sim_demos_L0_bench_500.zarr`), 101 epochs,
@@ -767,6 +773,236 @@ seeing the results; the probe uses the seed-42 checkpoints and 25 held-out demo 
 5. The guidance scale of the control on the validation episodes (3.0 was chosen for `vis_route`).
 6. Partially visible targets and the third seed of learned attention weighting, as proposed above.
 
+## Round 8: third baseline seed, gate errors at inference, composition baseline (11/17 13:59 – 23:19 KST)
+
+### Runs
+
+Two trainings and 31 evaluations; all 33 queued jobs finished at the first attempt.
+
+- **Baselines, third seed**: `L0_bench_rgbd_500demos_seed44` and `L0_bench_rgbdt_500demos_seed44`, plain Diffusion
+  Policy with the benchmark command of seeds 42 and 43 and `training.seed=44`
+  (`GROUP=fusion_bench TAG=seed44 EXTRA="training.seed=44" bash scripts/run_experiment.sh L0_bench <rgbd|rgbdt> 500`),
+  epoch 100 without interruption. Their results are here, not in `benchmark/`; 200 episodes per test set in `n200/`.
+- **Gate errors**, `n200/L0_bench_rgbdt_500demos_vis_route__<tag>[_g30]/`: the `vis_route` checkpoint of seed 42 on
+  the test episodes with wrong visibility flags, as trained and with `--guidance 3.0` (19 evaluations; the row "both
+  always on" as trained is `__all_on` of rounds 3–5). Nothing is retrained.
+- **Composition**, `val100/compose_w{25,50,75}[_seed43]/`, `n200/compose_w75[_seed43]/`, `n200/compose_poe[_seed43]/`:
+  the plain rgbd, rgbt and rgb checkpoints of the benchmark (seeds 42 and 43) combined at inference (10 evaluations).
+
+Code added, all opt-in (`python -m policy.test_gating` passes; evaluations without the new options are unchanged
+apart from three `null` entries in `eval_log.json`):
+
+- `policy/eval.py`: `--gate_error flip=P` inverts each of the two visibility flags with probability P, independently
+  per decision step, environment and sensor; `--gate_error depth=0|1` / `thermal=0|1` forces a flag in every step;
+  `--vis_thr D,T` recomputes the flags with other thresholds than the 15 / 30 of training; `--mask_noise shift=K`
+  moves the predicted glass mask of each frame by an offset drawn uniformly from [−K, K]² pixels, `--mask_noise drop=P`
+  empties it with probability P (a frame without a mask counts as visible in both sensors). The flags are the only
+  path from the gate to the policy (the cue is not in the conditioning), so these cover every way the gate can be
+  wrong. Implemented in `policy/gated_policy.py` (`gate_error`) and `policy/obs_util.py` (`degrade_mask`).
+- `policy/compose_policy.py`, `policy/eval_compose.py`: composition of separately trained policies at the
+  noise-prediction level, eps = Σ w_i eps_i(x_t, t, obs_i), every member with its own encoder and observation keys,
+  one shared scheduler step (the distribution-level composition of Modality-Composable Diffusion Policy,
+  arXiv 2503.12466, and of the sensor policies of PoCo). With one-hot weights it reproduces a member exactly.
+
+Fixed before the results:
+
+- Baselines: all comparisons of round 7 are recomputed with three seeds on each side.
+- Gate errors: the eleven conditions of the table below, each as trained and with `guide30`, on seed 42 only; the
+  realized flag errors are reported with the success rates.
+- Composition: the weighted mean of rgbd and rgbt with rgbd weight 0.25, 0.5 or 0.75, selected on the validation
+  episodes of round 6 (highest success pooled over both seeds and both test sets, ties to 0.5), then evaluated on the
+  test episodes; the product rgbd × rgbt / rgb (weights 1, 1, −1) evaluated on the test episodes directly; seeds 42
+  and 43 (rgbt and rgb have no third seed).
+
+### Baselines over three seeds (1200 episodes)
+
+200 episodes per test set and seed. The `vis_route` and control rows are those of rounds 6 and 7.
+
+| run | guidance | seed 42 / 43 / 44 (of 400) | all | normal (930) | see-through (270) | crossover (126) | neither (822) |
+|---|---|---|---|---|---|---|---|
+| **rgbd** | | 261 / 251 / 237 | 749 = **0.624** (0.60–0.65) | 0.782 | 0.081 | 0.754 | 0.773 |
+| **rgbdt** | | 239 / 262 / 235 | 736 = **0.613** (0.59–0.64) | 0.731 | 0.207 | 0.476 | 0.757 |
+| nogate_rgbonly | – | 273 / 245 / 270 | 788 = 0.657 | 0.695 | 0.526 | 0.500 | 0.718 |
+| nogate_rgbonly | 3.0 | 273 / 258 / 287 | 818 = 0.682 | 0.729 | 0.519 | 0.484 | 0.751 |
+| vis_route | – | 282 / 273 / 282 | 837 = 0.698 (0.67–0.72) | 0.741 | 0.548 | 0.643 | 0.751 |
+| vis_route | 3.0 | 311 / 305 / 320 | 936 = 0.780 (0.76–0.80) | 0.840 | 0.574 | 0.778 | 0.842 |
+
+"Matched": the runs of the same training seed number on the same test episodes (sign test). Seed level: the three
+success counts per side, Welch t-test / t-test paired by seed number.
+
+| comparison | all (Fisher) | matched | seed level | normal | see-through | crossover |
+|---|---|---|---|---|---|---|
+| vis_route vs rgbd | 0.698 vs 0.624, p 2e-4 | gained 251, lost 163 (p 2e-5) | 0.036 / 0.065 | 0.741 vs 0.782 (p 0.044) | 0.548 vs 0.081 (p 1e-33) | 0.643 vs 0.754 (p 0.074) |
+| vis_route vs rgbdt | 0.698 vs 0.613, p 2e-5 | gained 249, lost 148 (p 5e-7) | 0.045 / 0.098 | 0.741 vs 0.731 (p 0.67) | 0.548 vs 0.207 (p 3e-16) | 0.643 vs 0.476 (p 0.011) |
+| vis_route, 3.0 vs rgbd | 0.780 vs 0.624, p 8e-17 | gained 282, lost 95 (p 1e-22) | 0.003 / 0.027 | 0.840 vs 0.782 (p 0.002) | 0.574 vs 0.081 (p 1e-36) | 0.778 vs 0.754 (p 0.77) |
+| vis_route, 3.0 vs rgbdt | 0.780 vs 0.613, p 7e-19 | gained 287, lost 87 (p 5e-26) | 0.006 / 0.033 | 0.840 vs 0.731 (p 1e-8) | 0.574 vs 0.207 (p 2e-18) | 0.778 vs 0.476 (p 1e-6) |
+| control vs rgbd | 0.657 vs 0.624, p 0.11 | gained 246, lost 207 (p 0.074) | 0.32 / 0.37 | 0.695 vs 0.782 (p 2e-5) | 0.526 vs 0.081 (p 4e-31) | 0.500 vs 0.754 (p 5e-5) |
+| control vs rgbdt | 0.657 vs 0.613, p 0.031 | gained 235, lost 183 (p 0.013) | 0.23 / 0.42 | 0.695 vs 0.731 (p 0.091) | 0.526 vs 0.207 (p 2e-14) | 0.500 vs 0.476 (p 0.80) |
+| control, 3.0 vs rgbd | 0.682 vs 0.624, p 0.004 | gained 254, lost 185 (p 0.001) | 0.11 / 0.23 | 0.729 vs 0.782 (p 0.010) | 0.519 vs 0.081 (p 3e-30) | 0.484 vs 0.754 (p 2e-5) |
+| control, 3.0 vs rgbdt | 0.682 vs 0.613, p 5e-4 | gained 239, lost 157 (p 4e-5) | 0.083 / 0.24 | 0.729 vs 0.731 (p 0.96) | 0.519 vs 0.207 (p 6e-14) | 0.484 vs 0.476 (p 1) |
+| rgbdt vs rgbd | 0.613 vs 0.624, p 0.61 | gained 149, lost 162 (p 0.50) | | 0.731 vs 0.782 (p 0.013) | 0.207 vs 0.081 (p 4e-5) | 0.476 vs 0.754 (p 9e-6) |
+
+- Seed 44 is the lowest seed of both baselines (rgbd 0.593, rgbdt 0.588), so their pooled values moved down from the
+  two-seed ones (rgbd 0.640 → 0.624, rgbdt 0.626 → 0.613). Standard deviation over seeds: rgbd 0.030, rgbdt 0.036,
+  control 0.038, `vis_route` 0.013 as trained and 0.019 with `guide30`.
+- `vis_route` as trained is above rgbd through the see-through episodes only; on normal episodes it is below rgbd
+  (0.741 vs 0.782, p 0.044). With `guide30` it is above rgbd on normal episodes too (0.840, p 0.002) and level on
+  crossover ones.
+- rgbdt against rgbd over three seeds: no difference overall; rgbdt is better on see-through episodes and worse on
+  normal and crossover ones (0.476 vs 0.754; 14/42 at seed 44).
+- Per test set: rgbd (a) 0.642, (g) 0.607; rgbdt 0.638 / 0.588 (`vis_route` 0.732 / 0.663, with `guide30` 0.807 / 0.753).
+- Failure outcomes over 1200 episodes: rgbd missed grasp 252, other 99, dropped 74, wrong height 25, wrong object 1;
+  rgbdt 221 / 82 / 100 / 58 / 3.
+- 50 episodes per test set, seed 44: rgbd (a) 0.62, (g) 0.44; rgbdt 0.70 / 0.60.
+
+### Gate errors at inference (`vis_route`, seed 42, 400 episodes per cell)
+
+Realized flag errors, as shares of the decision steps of the runs as trained (the guided runs are within 2 points of
+these). "Truth" is the episode label: depth should be off on see-through episodes, thermal on crossover episodes.
+
+| error | depth on, see-through | depth off, normal | thermal on, crossover | thermal off, otherwise |
+|---|---|---|---|---|
+| none | 0.1% | 0.6% | 1.0% | 0.6% |
+| flags flipped, 10% | 11.2% | 10.9% | 11.0% | 11.0% |
+| flags flipped, 30% | 31.0% | 29.3% | 31.1% | 29.6% |
+| depth always off | 0% | 100% | 3.5% | 1.0% |
+| thermal always off | 0.4% | 0.8% | 0% | 100% |
+| both always on | 100% | 0% | 100% | 0% |
+| thresholds × 0.5 (7.5 / 15) | 4.0% | 0.3% | 5.3% | 0.3% |
+| thresholds × 2 (30 / 60) | 0.0% | 1.6% | 1.0% | 8.6% |
+| mask shifted up to 1 px | 0.9% | 2.5% | 3.5% | 3.1% |
+| mask shifted up to 2 px | 1.1% | 38.5% | 5.8% | 21.7% |
+| mask missing in 30% of the frames | 31.5% | 0.6% | 30.8% | 0.7% |
+
+Success, with the same test episodes in every cell. "vs none": episodes lost / gained against the row "none" of the
+same guidance (sign test). The baselines at this seed on the same episodes are rgbdt 0.598 and rgbd 0.652.
+
+| error | as trained | normal (310) | see-through (90) | crossover (42) | vs none | guide 3.0 | normal | see-through | crossover | vs none |
+|---|---|---|---|---|---|---|---|---|---|---|
+| none | 282 = 0.705 | 0.739 | 0.589 | 0.690 | | 311 = 0.777 | 0.829 | 0.600 | 0.786 | |
+| flags flipped, 10% | 272 = 0.680 | 0.729 | 0.511 | 0.643 | 26 / 16 (p 0.16) | 301 = 0.752 | 0.826 | 0.500 | 0.667 | 31 / 21 (p 0.21) |
+| flags flipped, 30% | 244 = 0.610 | 0.684 | 0.356 | 0.524 | 54 / 16 (p 6e-6) | 272 = 0.680 | 0.803 | 0.256 | 0.548 | 59 / 20 (p 1e-5) |
+| depth always off | 230 = 0.575 | 0.568 | 0.600 | 0.500 | 62 / 10 (p 3e-10) | 257 = 0.642 | 0.658 | 0.589 | 0.500 | 69 / 15 (p 2e-9) |
+| thermal always off | 276 = 0.690 | 0.723 | 0.578 | 0.690 | 28 / 22 (p 0.48) | 306 = 0.765 | 0.835 | 0.522 | 0.762 | 39 / 34 (p 0.64) |
+| both always on | 234 = 0.585 | 0.703 | 0.178 | 0.381 | 63 / 15 (p 4e-8) | 252 = 0.630 | 0.784 | 0.100 | 0.262 | 68 / 9 (p 2e-12) |
+| thresholds × 0.5 | 289 = 0.723 | 0.758 | 0.600 | 0.762 | 2 / 9 (p 0.065) | 314 = 0.785 | 0.845 | 0.578 | 0.857 | 11 / 14 (p 0.69) |
+| thresholds × 2 | 282 = 0.705 | 0.742 | 0.578 | 0.714 | 7 / 7 (p 1) | 312 = 0.780 | 0.839 | 0.578 | 0.833 | 23 / 24 (p 1) |
+| mask shifted up to 1 px | 282 = 0.705 | 0.739 | 0.589 | 0.714 | 5 / 5 (p 1) | 316 = 0.790 | 0.855 | 0.567 | 0.857 | 15 / 20 (p 0.50) |
+| mask shifted up to 2 px | 266 = 0.665 | 0.694 | 0.567 | 0.690 | 31 / 15 (p 0.026) | 304 = 0.760 | 0.787 | 0.667 | 0.690 | 30 / 23 (p 0.41) |
+| mask missing, 30% | 261 = 0.652 | 0.726 | 0.400 | 0.595 | 39 / 18 (p 0.008) | 285 = 0.713 | 0.819 | 0.344 | 0.524 | 43 / 17 (p 0.001) |
+
+- **Small errors cost nothing measurable**: thresholds halved or doubled and a mask off by one pixel change at most 14
+  of 400 episodes as trained (net 0 to +7) and leave the guided result at 0.780–0.790.
+- **Random flips**: 10% costs 2.5 points in both settings (not significant); 30% costs 9.5 and 9.7 points and brings
+  the policy as trained to the level of the baselines (0.610; rgbdt 0.598, p 0.77), the guided one to 0.680.
+- **The costly error is a sensor left on where it does not show the glass.** On see-through episodes: 0.589 as
+  trained → 0.400 with depth on in 31% of the steps (mask missing), 0.356 (flips, 30%), 0.178 when always on. With
+  guidance the same errors cost more (0.600 → 0.344, 0.256, 0.100), and on crossover episodes with thermal always on
+  0.786 → 0.262: guidance scales up the contribution of a sensor that is wrongly on. Normal episodes change little
+  under the two errors that only switch sensors on (mask missing 0.726, always on 0.703, against 0.739 as trained;
+  0.819 and 0.784 against 0.829 guided).
+- **A sensor wrongly off costs less per step**: depth off in 38% of the normal steps and thermal in 22% (mask shifted
+  up to 2 px, half the width of the 4 px mask) lowers normal episodes from 0.739 to 0.694 (0.829 → 0.787 guided);
+  depth off in all steps lowers them to 0.568 (0.658 guided).
+- **Thermal always off changes nothing measurable**: 0.690 against 0.705 (28 lost, 22 gained, p 0.48), guided 0.765
+  against 0.777 (39 / 34, p 0.64). On the episodes where both sensors show the glass ("neither", 274) it is 0.726
+  against 0.745 as trained and 0.843 against 0.832 guided; on see-through episodes, where the policy then runs on
+  rgb alone, 0.578 against 0.589 (guided 0.522 against 0.600; 16 lost, 9 gained). Depth always off costs 13 points.
+- **The gain from guidance is kept under every error**: +6.0 to +9.5 points (sign test p < 0.01 each), +4.5 with both
+  sensors always on (p 0.033).
+- Against the baselines at seed 42 (Fisher): as trained the policy is above rgbdt for no error, flips at 10%, thermal
+  always off, both threshold changes and the 1 px shift (p ≤ 0.018), and no longer for the other five (p 0.057–0.77);
+  it is not significantly below rgbdt in any condition (lowest: depth always off 0.575, both always on 0.585), and
+  below rgbd only with depth always off (0.575 vs 0.652, p 0.029). Guided, it is above
+  rgbdt in every condition but depth always off and both always on (p 0.22, 0.38), and above rgbd (p ≤ 0.003) except
+  for flips at 30%, depth always off, both always on and mask missing (p 0.45, 0.82, 0.56, 0.081).
+
+### Composition of sensor-specific policies (seeds 42 and 43)
+
+Members: the plain rgbd, rgbt and rgb policies of the benchmark, same demos and action normalizer. Validation, 100
+episodes per test set and seed (seeds 200000–200099; `vis_route` as trained reaches 284/400 = 0.710 on them):
+
+| rgbd / rgbt weight | seed 42 (a) / (g) | seed 43 (a) / (g) | pooled (400) |
+|---|---|---|---|
+| 0.25 / 0.75 | 65 / 62 | 48 / 55 | 230 = 0.575 |
+| 0.5 / 0.5 | 69 / 70 | 58 / 59 | 256 = 0.640 |
+| 0.75 / 0.25 | 68 / 66 | 63 / 62 | **259 = 0.647** |
+
+**Selected: 0.75 / 0.25** by the fixed rule (three episodes above 0.5 / 0.5, which was not evaluated on the test
+episodes). Test, 200 episodes per test set and seed (800 per row; the other rows are the same two seeds):
+
+| policy | seed 42 / 43 (of 400) | all | normal (620) | see-through (180) | crossover (84) | neither (548) |
+|---|---|---|---|---|---|---|
+| rgb | 161 / 150 | 0.389 | 0.395 | 0.367 | 0.417 | 0.387 |
+| rgbt | 228 / 177 | 0.506 | 0.508 | 0.500 | 0.262 | 0.540 |
+| rgbd | 261 / 251 | 0.640 | 0.798 | 0.094 | 0.774 | 0.788 |
+| rgbdt | 239 / 262 | 0.626 | 0.747 | 0.211 | 0.548 | 0.763 |
+| **mean of rgbd and rgbt, 0.75 / 0.25** | 271 / 246 | 517 = **0.646** (0.61–0.68) | 0.779 | 0.189 | 0.667 | 0.781 |
+| **product rgbd × rgbt / rgb** | 240 / 179 | 419 = **0.524** (0.49–0.56) | 0.634 | 0.144 | 0.286 | 0.673 |
+| nogate_rgbonly | 273 / 245 | 0.647 | 0.681 | 0.533 | 0.488 | 0.703 |
+| vis_route | 282 / 273 | 0.694 | 0.734 | 0.556 | 0.655 | 0.743 |
+| vis_route, guide 3.0 | 311 / 305 | 0.770 | 0.827 | 0.572 | 0.762 | 0.832 |
+
+- **The weighted mean is at the level of its better member and of the joint rgbdt policy**: 0.646 against rgbd 0.640
+  (p 0.84; same episodes 53 gained, 48 lost) and rgbdt 0.626 (p 0.44); above rgbt (p 2e-8). On see-through episodes
+  it is 0.189, between rgbd (0.094, p 0.015) and rgbt (0.500, p 6e-10): a fixed weight cannot hand the scene to the
+  sensor that shows the glass.
+- **`vis_route` against the weighted mean**: 0.694 vs 0.646 as trained (Fisher p 0.049; same seeds and episodes
+  142 gained, 104 lost, p 0.018), through the see-through episodes (0.556 vs 0.189, p 6e-13); on normal episodes the
+  mean is ahead (0.779 vs 0.734, p 0.074). With `guide30`: 0.770 vs 0.646 (p 7e-8; 163 / 64, p 4e-11), normal 0.827
+  vs 0.779 (p 0.038), crossover 0.762 vs 0.667 (p 0.23).
+- **The product is below the better of its two sensor members**: 0.524, below rgbd (p 3e-6) and rgbdt (p 4e-5),
+  level with rgbt (0.506, p 0.52); crossover 0.286, see-through 0.144. Its two seeds differ by 61 episodes, as do
+  those of rgbt (51).
+- Per test set: mean (a) 0.675, (g) 0.618; product 0.535 / 0.512. Failure outcomes over 800 episodes: mean missed
+  grasp 182, dropped 57, other 27, wrong height 17; product 206 / 64 / 80 / 25, wrong object 6.
+
+### Conclusions of round 8
+
+26. **With three seeds of the baselines the result stands** (removes the first caveat of round 7): rgbd 0.624 and
+    rgbdt 0.613 over 1200 episodes each; `vis_route` 0.698 as trained (p 2e-4 and 2e-5; seed level p 0.036 and 0.045)
+    and 0.780 with guidance at 3.0 (p 8e-17 and 7e-19; seed level p 0.003 and 0.006). As trained the margin over rgbd
+    comes from the see-through episodes alone, with normal episodes below rgbd (0.741 vs 0.782, p 0.044); with
+    guidance `vis_route` is above rgbd on normal episodes as well (0.840).
+27. **The control is above rgbdt on pooled episodes, not at the seed level** (revises conclusion 23 in part): 0.657
+    against 0.613 (p 0.031; seed level p 0.23) and against rgbd 0.624 (p 0.11).
+28. **The gate tolerates small errors**: thresholds halved or doubled, a mask off by one pixel and 10% of the flags
+    flipped leave the guided result at 0.75–0.79 (0.777 without errors). With 30% of the flags flipped the policy as
+    trained falls to the level of the baselines (0.610) and the guided one to 0.680.
+29. **The error that matters is a sensor on where it does not show the glass, and guidance makes it worse there**:
+    see-through episodes fall from 0.59 to 0.40 / 0.36 / 0.18 with depth wrongly on in 31% / 31% / 100% of the steps,
+    and to 0.34 / 0.26 / 0.10 with guidance. A sensor wrongly off costs less (depth off in 38% of the normal steps:
+    −4.5 points on normal episodes). A gate for this policy should therefore lean towards "off" when unsure, and a
+    missing mask should not default to "on" as it does here.
+30. **Switching the thermal sensor off at inference changes nothing measurable in this checkpoint**: with thermal off
+    in every step the result is 0.690 (0.705) as trained and 0.765 (0.777) guided, also on the see-through episodes,
+    where the policy then acts on rgb alone (0.578 vs 0.589 as trained). Depth is the sensor the policy needs on normal scenes (always
+    off: 0.575). What the comparisons with rgbd and rgbdt show is the value of switching depth off where it sees
+    through the glass plus the rgb path of this policy; a benefit of thermal is not shown. One seed.
+31. **The gain from guidance does not depend on a correct gate**: +6.0 to +9.5 points under every error condition
+    (+4.5 with both sensors always on).
+32. **Composing sensor-specific policies does not reach `vis_route`**: the validation-selected mean of rgbd and rgbt
+    is 0.646, level with rgbd and rgbdt, below `vis_route` as trained (0.694, p 0.049) and with guidance (0.770,
+    p 7e-8), and its see-through success stays at 0.19; the product with the rgb prior divided out is 0.524.
+
+Caveats: the gate errors were run on seed 42 only, with one draw of the random errors, and the random errors are
+independent between decision steps (real mask errors persist over frames; the "always" rows bound that case); the
+composition has two seeds, members that are weak on their own (rgbt 0.506), three convex weights and one product,
+and a weight selected by three validation episodes; "matched" pairs runs by seed number only; seed-level tests have
+three values per side; p values are not corrected for the number of comparisons.
+
+### Next steps (proposals, not run)
+
+1. Does the policy need thermal at all? Follow-up of conclusion 30: the thermal-off evaluation on seeds 43 and 44
+   (4 evaluations), and a `vis_route` trained on rgb + depth only (three seeds, 3 trainings).
+2. The gate errors on seeds 43 and 44 (the 19 evaluations, twice).
+3. A gate that leans towards "off" (conclusion 29): a missing mask keeps the previous flags instead of switching both
+   sensors on; evaluations only.
+4. Composition with per-scene weights from the same visibility flags (rgbd where depth shows the glass, rgbt
+   otherwise), as a stronger external baseline; evaluations only. A third seed of rgbt and rgb (2 trainings) for it.
+5. Open from round 7: the control with visibility-independent single-sensor dropout; the control's own guidance
+   scale; partially visible targets; the third seed of learned attention weighting.
+
 ## Files
 
 - `L0_bench_rgbdt_500demos_<tag>/`: `train_logs.json.txt`, `curve.json`, and per test set `eval_log.json` and
@@ -795,3 +1031,10 @@ seeing the results; the probe uses the seed-42 checkpoints and 25 held-out demo 
   `val100/<vis_route run>__g{400,500,700}/`, and `guidance_probe/` (`<run>__{val,train}.json` summaries and `.npz`
   per-sequence values of the first pass, `*_k4.*` of the pass with four noise draws). Code added:
   `policy/analyze_guidance.py` (analysis only; nothing in training or evaluation changed).
+- Round 8 results: `L0_bench_{rgbd,rgbdt}_500demos_seed44/` (plain baselines, third seed) and their `n200/`
+  evaluations; `n200/L0_bench_rgbdt_500demos_vis_route__{flip10,flip30,doff,toff,thr050,thr200,mshift1,mshift2,mdrop30}[_g30]/`
+  and `__allon_g30/` (`eval_log.json` records `gate_error`, `vis_thr`, `mask_noise`); `val100/compose_w{25,50,75}[_seed43]/`
+  and `n200/compose_{w75,poe}[_seed43]/` (`eval_log.json` records the member checkpoints and weights). Code added,
+  all opt-in: `policy/eval.py` (`--gate_error`, `--vis_thr`, `--mask_noise`), `policy/gated_policy.py` (`gate_error`),
+  `policy/obs_util.py` (`degrade_mask`, `mask_noise`), `policy/compose_policy.py`, `policy/eval_compose.py`, tests in
+  `policy/test_gating.py`.
