@@ -15,7 +15,8 @@
 # Runs (RUNS). The name says the training data, plus an optional variant:
 #   data:     sim | real | real2sim (real, then sim) | mix (sim + real)
 #   variant:  ws (learned per-sensor weights, the main model) | static (fixed equal weights) | rgb (RGB only)
-#             rgbd | rgbt | softmax | paper (Huo et al.'s exact fusion)
+#             rgbd | rgbt | softmax | paper (Huo et al.'s exact fusion); ablations (fusion/ABLATIONS.md):
+#               nohole | stx (see-through corruption) | supst (see-through gate labels) | nocues | nosup
 #   default:  mix_ws sim real real2sim mix mix_static mix_rgb   (without real data: sim_ws sim sim_static sim_rgb)
 #
 # Main settings (environment variables): RUNS, STAGES, GPUS (default: all), ITERS (20000), BATCH (64),
@@ -175,6 +176,25 @@ run_seg() {   # name
         rgbt)    extra+=(--modalities rgb thermal) ;;
         *) echo "unknown variant $variant in $name"; exit 1 ;;
     esac
+    local augs=() tok                                   # variants combine with "_", e.g. mix_ws_stx_supst
+    for tok in ${variant//_/ }; do
+        case $tok in
+             static)  extra+=(--gate_mode static) ;;
+             softmax) extra+=(--gate_norm softmax) ;;
+             ws)      extra+=(--fusion_mode weighted_sum --gate_norm softmax) ;;
+             paper)   extra+=(--no_cues --gate_sup 0 --gate_logit_max 0) ;;
+             rgb)     extra+=(--modalities rgb) ;;
+             rgbd)    extra+=(--modalities rgb depth) ;;
+             rgbt)    extra+=(--modalities rgb thermal) ;;
+             nocues)  extra+=(--no_cues) ;;                                    # ablation S5
+             nosup)   extra+=(--gate_sup 0) ;;                                 # ablation S6
+             nohole)  augs+=(depth_holes=0 depth_wrong=0) ;;                   # ablation S1
+             stx)     augs+=(depth_holes=0 depth_wrong=0 depth_seethrough=0.3) ;;   # ablation S2
+             supst)   extra+=(--sup_seethrough) ;;                             # ablation S3
+             *) echo "unknown variant $tok in $name"; exit 1 ;;
+        esac
+    done
+    [ ${#augs[@]} -gt 0 ] && extra+=(--aug "${augs[@]}")
     [ -n "$INIT_THERMAL" ] && [ "$data" != real2sim ] && extra+=(--init_thermal "$INIT_THERMAL")
     local evalargs=(--eval "${SIM_EVAL[@]}" "${REAL_EVAL[@]}")
     [ "$data" = paper ] && evalargs=()
