@@ -1505,6 +1505,44 @@ not what a policy trained with the gate would do; p values are not corrected for
 2. `learn_labels` on seeds 43 and 44 (open from round 10).
 3. Keep the rule as the gate of the method and report rounds 10 and 11 as what a learned gate reaches.
 
+## Round 12: trained gates on three seeds, two-stage training (started 11/19 02:18 KST)
+
+### Plan (written before the results)
+
+Requirement for the gate from here on: it is decided by training, not by thresholds set by hand; supervision by the
+labels of the simulator is allowed.
+
+Trainings (L0_bench, rgbdt, 500 demos, 101 epochs, the `vis_route` settings with `route=learned`):
+
+- `learn_labels_seed43`, `learn_labels_seed44`: the label-trained gate of round 10, unchanged, on the other two seeds.
+- `learn_twostage` (seed 42): the second stage of round 11. The gate fitted after training
+  (`gate_fit/L0_bench_rgbdt_500demos_learn_heldout.pt`) is loaded and not trained (`policy.gate_train=frozen`); the
+  policy is trained on all 475 training demos with the sensors switched by that gate (p > 0.5) and 10% rgb-only
+  samples, as `vis_route` is trained with the rule.
+- `learn_labels_bal` (seed 42): `learn_labels` with the two label classes of each sensor weighted equally in every
+  batch (`policy.gate_balance=true`), aimed at the thermal decision on crossover scenes (left on in 16% of the
+  decisions in round 10; 32 of the 475 training demos are crossover demos).
+
+Form of the gate for the two-stage run, checked without labels before the training
+(`fit_gate.py --select --draws 32`, `gate_fit/L0_bench_rgbdt_500demos_learn_heldout_select.json`): a linear gate or
+the MLP, 300 to 10,000 steps, weight decay 0 or 0.01, compared by the gate loss on demos left out of the fit (5 folds
+over the 93 held-out demos). The lowest left-out loss is the MLP at 3000 steps (−0.003451; linear at 10,000 steps
+−0.003417), with the decisions of the gate of round 11 (on the left-out demos depth agrees with the rule in 95.7%
+of the steps, thermal in 52.1%); in every setting thermal agrees in 46–52%. The thermal decision of round 11 is
+therefore not an artefact of the fit, and the gate of round 11 is used unchanged.
+
+Evaluations: 200 episodes per test set, as trained and with guidance 3.0 (the scale selected for `vis_route` in
+round 6; no other scale is tried on the test episodes). Diagnostics: `learn_labels` of seed 42 switched by the flags
+of the rule (`__flags[_g30]`), and thermal off at inference (`--drop thermal`) for the label-trained gates.
+
+Criteria:
+
+- Label-trained gate over three seeds (1200 episodes): decisions agree with the rule in at least 95% for each
+  sensor, and success is not more than 3 points below `vis_route` on the same seeds (0.698 and 0.780): at least
+  0.668 as trained and 0.750 with guidance.
+- `learn_twostage` and `learn_labels_bal` at seed 42: the limits of round 10 (0.675 as trained, 0.747 with
+  guidance). A variant that meets them is run on seeds 43 and 44.
+
 ## Files
 
 - `L0_bench_rgbdt_500demos_<tag>/`: `train_logs.json.txt`, `curve.json`, and per test set `eval_log.json` and
