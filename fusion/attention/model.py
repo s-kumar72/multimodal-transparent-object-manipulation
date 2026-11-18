@@ -331,22 +331,34 @@ def seg_loss(out, target, valid, side_weight=0.5, iou_weight=1.0):
     return loss.mean()
  
  
-def gate_reliability_loss(out, unreliable, labelled):
+def gate_reliability_loss(out, unreliable, labelled, glass_region=None, mask=None):
     """Optional auxiliary loss that tells the gates which sensor is unreliable when it is known: a blanked sensor, a
     thermal image with its contrast removed (training corruption) or a sim frame in thermal crossover -> target 0;
     an untouched sensor -> 1; partly corrupted ones (depth holes, low light) are not labelled. BCE on the mean gate
     logit over the image, so the logit reads as a reliability score and the softmax / sigmoid of it as the weight.
-    unreliable, labelled: (B, M) bool."""
+    unreliable, labelled: (B, M) bool.
+    
+    Two additional parameters added:
+    - glass_region & associated mask - for a sensor marked in glass_region (depth in a see-through frame), the gate score is averaged over the glass squares
+        only instead of over the full image, because depth is only wrong on the glass and fine on the rest of the scene.
+    """
     lg = out.get("gate_logits")
     if lg is None:
         return lg
     lab = labelled.bool() & out["avail"].bool()
+    score = lg.float().mean((2, 3))
+    if glass_region is not None and mask is not None and glass_region.any():
+        tok = F.adaptive_max_pool2d((mask >= 0.5).float(), lg.shape[-2:])
+        mass = tok.sum((2, 3))
+        local = (lg.float() * tok).sum((2, 3)) / mass.clamp(min=1)
+        region = glass_region.bool()
+        score = torch.where(region, local, score)
+        lab = lab & ~(region & (mass == 0))
     if not lab.any():
         return lg.sum() * 0
-    score = lg.float().mean((2, 3))
     return F.binary_cross_entropy_with_logits(score[lab], (~unreliable[lab]).float())
  
- 
+
 def build_model(cfg=None, **overrides):
     return GlassFusionNet(**{**(cfg or {}), **overrides})
  
@@ -356,7 +368,12 @@ def load_checkpoint(path, map_location="cpu", **overrides):
     ck = torch.load(path, map_location=map_location, weights_only=False)
     cfg = {**ck["model_cfg"], "pretrained_rgb": False, "pretrained_other": False, **overrides}
     model = GlassFusionNet(**cfg)
-    model.load_state_dict(ck["model"])
+    arch = {k for k in overrides if k not in ("pretrained_rgb", "pretrained_other")}
+    if arch:
+        missing, unexpected = model.load_state_dict(ck["model"], strict=False)
+        print(f"[fusion] {path} with overrides {sorted(arch)}: {len(missing)} new, {len(unexpected)} unused tensors")
+    else:
+        model.load_state_dict(ck["model"])
     return model, ck
  
  

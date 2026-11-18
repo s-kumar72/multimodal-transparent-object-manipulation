@@ -1,7 +1,7 @@
 """
 Evaluate a glass-segmentation checkpoint on sim / real sources, clean and under sensor corruptions.
 
-  python -m fusion.evaluate --ckpt data/fusion/runs/mix/best.pt --eval "sim:data/fusion/sim/L4b_test_*.npz" \
+  python -m fusion.attention.evaluate --ckpt data/fusion/runs/mix/best.pt --eval "sim:data/fusion/sim/L4b_test_*.npz" \
       real:rgbt_glass:test --out data/fusion/runs/mix/eval.json
 
 Metrics per source (masks binarized at 0.5; sim ground truth is the fraction of the pixel covered, so >= 0.5):
@@ -10,7 +10,13 @@ Metrics per source (masks binarized at 0.5; sim ground truth is the fraction of 
   mae, ber   mean absolute error of the probability map; balanced error rate (%)
   loc        images with glass whose most-confident pixel is on the glass (within 2 px): "selects the right object"
   gate_<m>   mean fusion gate of modality m over all tokens, gate_fg_<m> over tokens on glass
-             (the learned reliability weight; compare clean vs thermal_crossover / depth_holes)
+             (the learned reliability weight; compare clean vs thermal_crossover / depth_holes / depth_seethrough)
+
+Sim frames are also split by episode type (needs glass_seethrough param from collect_sim.py):
+    miou_normal / miou_seethrough / miou_crossover          per-image IoU of each group
+    gate_fg_<m>_normal / gate_fg_<m>_seethrough             weight of modality m on the glass in each group
+    auc_depth_seethrough                                    how well the depth weight on the glass separates normal from see-through frames
+    auc_thermal_crossover                                   the same for the thermal weight, contrast vs. crossover frames (0.5 = no separation, 1 = perfect)
 """
 import argparse
 import json
@@ -20,10 +26,10 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
-from fusion.data import MODS, Augment, SegArrays, collate, expand_sources, load_source, source_name
+from fusion.attention.data import MODS, Augment, SegArrays, collate, expand_sources, load_source, source_name
 
 CORRUPTIONS = {"thermal_crossover": (2, dict(thermal_crossover=1.0)), "depth_holes": (1, dict(depth_holes=1.0)),
-               "thermal_blank": (2, dict(blank=1.0))}
+               "thermal_blank": (2, dict(blank=1.0)), "depth_seethrough": (1, dict(depth_seethrough=1.0))}
 
 
 class CorruptedEval(SegArrays):
@@ -50,6 +56,38 @@ class CorruptedEval(SegArrays):
         np.random.set_state(st)
         return item
 
+def _auc(pos, neg):
+    pos, neg = np.asarray(pos, float), np.asarray(neg, float)
+    pos, neg = pos[~np.isnan(pos)], neg[~np.isnan(neg)]
+    if len(pos) == 0 or len(neg) == 0:
+        return float("nan")
+    return float((pos[:, None] > neg[None, :]).mean() + 0.5 * (pos[:, None] == neg[None, :]).mean())
+
+def group_stats(per_img, mods):
+    """
+    Per-image IoU of the normal/ see-through/ crossover frames (sim; NaN for real data), the sensor weights on 
+    the glass in normal and see through frames, and two AUCs: depth weight on the glass higher in normal than in 
+    see-through frames, thermal weight on the glass higher without than with crossover (0.5 = no separation).
+    """
+    iou, st, xo = (np.asarray(per_img[k], float) for k in ("iou", "st", "xo"))
+    G = np.asarray(per_img["g_fg"], float).reshape(len(iou), -1)
+    out = {}
+
+    for name, sel in (("normal", st == 0), ("seethrough", st == 1), ("crossover", xo == 1)):
+        x = iou[sel]
+        out[f"miou_{name}"] = float(np.nanmean(x)) if np.isfinite(x).any() else float("nan")
+    for k, m in enumerate(mods):
+        for name, sel in (("normal", st == 0), ("seethrough", st == 1)):
+            x = G[sel, k]
+            out[f"gate_fg_{m}_{name}"] = float(np.nanmean(x)) if np.isfinite(x).any() else float("nan")
+    if "depth" in mods:
+        k = mods.index("depth")
+        out["auc_depth_seethrough"] = _auc(G[st == 0, k], G[st == 1, k])
+    if "thermal" in mods:
+        k = mods.index("thermal")
+        out["auc_thermal_crossover"] = _auc(G[xo == 0, k], G[xo == 1, k])
+    
+    return out
 
 @torch.no_grad()
 def evaluate(model, loader, device, amp_dtype=None, max_batches=None):
@@ -59,6 +97,7 @@ def evaluate(model, loader, device, amp_dtype=None, max_batches=None):
     ious, locs = [], []
     g_sum, g_fg, g_n, g_fg_n = torch.zeros(len(mods)), torch.zeros(len(mods)), 0, torch.zeros(len(mods))
     g_x = {0: [torch.zeros(len(mods)), 0], 1: [torch.zeros(len(mods)), 0]}   # by is_crossover
+    per_img = {"iou": [], "st": [], "xo": [], "g_fg": []}
     for bi, b in enumerate(loader):
         if max_batches and bi >= max_batches:
             break
@@ -90,6 +129,13 @@ def evaluate(model, loader, device, amp_dtype=None, max_batches=None):
         fg_tok = F.adaptive_max_pool2d(gt, g.shape[-2:])                    # tokens touching glass
         g_fg += (g * fg_tok).sum((0, 2, 3))
         g_fg_n += fg_tok.sum()
+        img_iou = (inter / union.clamp(min=1)).masked_fill(~has, float("nan"))
+        g_fg_img = (g * fg_tok).sum((2, 3)) / fg_tok.sum((2, 3)).clamp(min=1)          # (B, M) gate on the glass
+        g_fg_img = g_fg_img.masked_fill(fg_tok.sum((2, 3)) == 0, float("nan"))
+        per_img["iou"] += img_iou.tolist()
+        per_img["st"] += b.get("is_seethrough", torch.full((len(g),), float("nan"))).tolist()
+        per_img["xo"] += b["is_crossover"].tolist()
+        per_img["g_fg"] += g_fg_img.tolist()
         for c in (0, 1):
             sel = b["is_crossover"] == c
             if sel.any():
@@ -105,6 +151,7 @@ def evaluate(model, loader, device, amp_dtype=None, max_batches=None):
         for c, name in ((0, "contrast"), (1, "crossover")):
             if g_x[c][1]:
                 r[f"gate_{m}_{name}"] = (g_x[c][0][k] / g_x[c][1]).item()
+    r.update(group_stats(per_img, mods))
     model.train()
     return r
 
@@ -124,7 +171,7 @@ def eval_sets(specs, modalities, size, crop, corruptions=(), **load_kw):
 
 
 def main():
-    from fusion.model import load_checkpoint
+    from fusion.attention.model import load_checkpoint
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--ckpt", required=True)
     p.add_argument("--eval", nargs="+", required=True)

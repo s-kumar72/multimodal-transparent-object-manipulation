@@ -1,7 +1,7 @@
 """
 Tables comparing segmentation runs (data/fusion/runs/*/final.json) -> markdown.
 
-  python -m fusion.summarize --runs data/fusion/runs --out results/fusion/summary.md
+  python -m fusion.attention.summarize --runs data/fusion/runs --out results/fusion/summary.md
 """
 import argparse
 import json
@@ -97,6 +97,20 @@ def main():
         if a_ and f_ and a_.get("gate_thermal") is not None:
             L.append(f"| {n} | {fmt(a_.get('gate_thermal'))} | {fmt(f_.get('gate_thermal'))} | "
                      f"{fmt(a_.get('iou'), True)} | {fmt(f_.get('iou'), True)} |")
+    rows = [(n, g[n].get((col, ""))) for n in runs]
+    rows = [(n, d) for n, d in rows if d and d.get("miou_seethrough") is not None]
+    if rows:
+        L += ["", "## Depth weight vs. see-through glass (sim test set a, levels with see-through episodes)", "",
+               "Per-image IoU (%) of normal / see-through / crossover frames, depth weight on the glass in normal → "
+               "see-through frames, and the AUCs of the weights on the glass (depth: normal > see-through; thermal: "
+               "contrast > crossover; 0.5 = no separation). Needs sim frames collected with glass_seethrough.", "",
+               "| run | IoU normal | IoU see-through | IoU crossover | depth weight on glass | AUC depth | AUC thermal |",
+               "|---|---|---|---|---|---|---|"]
+        for n, d in rows:
+            L.append(f"| {n} | {fmt(d.get('miou_normal'), True)} | {fmt(d.get('miou_seethrough'), True)} | "
+                      f"{fmt(d.get('miou_crossover'), True)} | {fmt(d.get('gate_fg_depth_normal'))} → "
+                      f"{fmt(d.get('gate_fg_depth_seethrough'))} | {fmt(d.get('auc_depth_seethrough'))} | "
+                      f"{fmt(d.get('auc_thermal_crossover'))} |")
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     Path(a.out).write_text("\n".join(L) + "\n")
     print("\n".join(L))
