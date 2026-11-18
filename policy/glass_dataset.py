@@ -90,7 +90,7 @@ def _box_blur(x, r):
 class GlassImageDataset(BaseImageDataset):
     def __init__(self, zarr_path, shape_meta, horizon=1, pad_before=0, pad_after=0,
                  n_obs_steps=None, seed=42, val_ratio=0.0, max_train_episodes=None,
-                 augment=None, with_meta=True, n_cue_fit_frames=2000):
+                 augment=None, with_meta=True, n_cue_fit_frames=2000, gate_split=0):
         super().__init__()
         self.obs_meta = dict(shape_meta["obs"])
         self.has_cue = "cue" in self.obs_meta
@@ -125,6 +125,11 @@ class GlassImageDataset(BaseImageDataset):
 
         meta = self.replay_buffer.meta
         self.ep_meta = {k: np.asarray(meta[k][:], dtype=np.float32) for k in META_KEYS if with_meta and k in meta}
+        if gate_split:      # every gate_split-th episode is marked: GatedDiffusionPolicy gate_train=heldout keeps these
+            # out of the policy's loss and trains the routing gate on them
+            assert with_meta, "gate_split marks episodes in the batch meta"
+            self.ep_meta["ep_gate_split"] = (np.arange(self.replay_buffer.n_episodes) % int(gate_split) == 0) \
+                .astype(np.float32)
         self.augment = Corruption(**augment) if augment else None
         self.seed = seed
         self.n_cue_fit_frames = n_cue_fit_frames

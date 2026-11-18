@@ -374,9 +374,219 @@ def test_visibility_route():
         assert 0.4 < wrong < 0.6, wrong
         assert torch.equal(obs2["cue"][:, :, -2:], cue[:, None, -2:].expand(B, 2, 2))
         policy.gate_error, policy._ge_gen = None, None
+        # a frame without a mask (flags on, steps 0) keeps the last flags that came with a mask (eval.py --route_hold)
+        lost = dict(obs2, cue=torch.zeros_like(obs2["cue"]))
+        lost["cue"][..., -2:] = 1
+        policy.reset()
+        policy.predict_action(lost)
+        assert (enc.last_w == 1).all()                                    # default: no mask switches both sensors on
+        policy.route_hold = True
+        policy.reset()
+        policy.predict_action(lost)
+        assert last_w() == [[1, 0, 0]] * 4                                # no mask seen yet in the episode: rgb only
+        seen2 = dict(obs2, cue=obs2["cue"].clone())
+        seen2["cue"][..., -4:-2] = 40.0                                   # frames with a mask: non-zero steps
+        policy.predict_action(seen2)
+        assert last_w() == [[1, 1, 1], [1, 0, 1], [1, 1, 0], [1, 0, 0]]
+        policy.predict_action(lost)
+        assert last_w() == [[1, 1, 1], [1, 0, 1], [1, 1, 0], [1, 0, 0]]   # held
+        half = dict(obs2, cue=seen2["cue"].clone())
+        half["cue"][:, 0, -2:] = torch.tensor([0., 0.])                   # older frame: nothing visible, with a mask
+        half["cue"][:, 1] = lost["cue"][:, 1]                             # current frame: no mask -> takes the older one
+        policy.predict_action(half)
+        assert last_w() == [[1, 0, 0]] * 4
+        policy.reset()
+        policy.predict_action(lost)
+        assert last_w() == [[1, 0, 0]] * 4                                # reset forgets the held flags
+        assert torch.equal(lost["cue"][..., -2:], torch.ones(B, 2, 2))    # the input is not changed
+        policy.route_hold = False
     assert enc.route_eval == "visible" and policy._guide_cond is None
+    # a policy without the thermal image (rgb + depth): depth visibility only; the thermal entries are not measured
+    no_t = {k: v for k, v in raw.items() if k not in ("thermal", "thermal_raw")}
+    c2 = compute_cues(no_t, DEFAULT_ROI, vis=vis)
+    assert np.allclose(c2[:, -4], seen[:, -4]) and (c2[:, -2] == 1).all() and (c2[:, -3] == 0).all()
+    assert (compute_cues({k: v for k, v in through.items() if "thermal" not in k}, DEFAULT_ROI, vis=vis)[:, -2] == 0).all()
+    meta2 = copy.deepcopy(meta)
+    del meta2["obs"]["thermal"]
+    enc2 = GatedObsEncoder(meta2, _resnet(), crop_shape=(84, 84), use_group_norm=True, imagenet_norm=True,
+                           dropout_mode="none", route="visible", route_rgb_only_p=0.0)
+    t2 = {k: v for k, v in t.items() if k != "thermal"}
+    for mode in (True, False):
+        enc2.train(mode)
+        out2 = enc2(t2)
+        assert enc2.mods == ["rgb", "depth"] and enc2.last_w.tolist() == [[1, 1], [1, 0], [1, 1], [1, 0]], enc2.last_w
+    assert out2.shape == (B, 2 * 512 + 2 + 7) and torch.allclose(out2[1, 512:1024], torch.zeros(512))
     print("ok visibility route: cues at the mask, flags, sensors switched by the flags, eval rules, latch, guidance, "
-          "gate_error, mask_noise")
+          "gate_error, mask_noise, route_hold, rgb + depth only")
+
+
+def test_learned_route():
+    """route=learned: a hard gate decided by a trained gate (labels or held-out demos), GatedDiffusionPolicy gate_train."""
+    import copy
+    try:
+        from diffusers.schedulers.scheduling_ddpm import DDPMScheduler
+    except ImportError:
+        print("ok learned route (skipped: diffusers not installed)")
+        return
+    from diffusion_policy.common.normalize_util import get_image_range_normalizer
+    from diffusion_policy.model.common.normalizer import LinearNormalizer, SingleFieldLinearNormalizer
+    from policy.gated_obs_encoder import GatedObsEncoder
+    from policy.gated_policy import GatedDiffusionPolicy
+    meta = copy.deepcopy(SHAPE_META)
+    meta["obs"]["cue"]["shape"] = [CUE_DIM + 4]
+    meta["obs"]["cue"]["vis_thr"] = [15, 30]
+    def make(gate_train, **kw):
+        torch.manual_seed(0)
+        enc = GatedObsEncoder(meta, _resnet(), crop_shape=(84, 84), use_group_norm=True, imagenet_norm=True,
+                              dropout_mode="none", route="learned", route_rgb_only_p=0.0, route_explore=0.1)
+        sched = DDPMScheduler(num_train_timesteps=10, beta_schedule="squaredcos_cap_v2", prediction_type="epsilon")
+        pol = GatedDiffusionPolicy(meta, sched, enc, horizon=16, n_action_steps=8, n_obs_steps=2, num_inference_steps=2,
+                                   diffusion_step_embed_dim=32, down_dims=(64, 128), gate_loss_weight=0, aux_weight=0.1,
+                                   aux_hidden=32, log_every=0, gate_train=gate_train, **kw)
+        norm = LinearNormalizer()
+        norm.fit({"action": torch.randn(64, 7), "joints": torch.randn(64, 7)}, last_n_dims=1, mode="limits")
+        norm["cue"] = SingleFieldLinearNormalizer.create_identity()
+        for k in ("rgb", "depth", "thermal"):
+            norm[k] = get_image_range_normalizer()
+        pol.set_normalizer(norm)
+        return enc, pol
+    B, T = 4, 16
+    rng = np.random.default_rng(0)
+    obs = {k: torch.from_numpy(np.stack([to_policy_obs(fake_raw(T=T, rng=rng), SHAPE_META["obs"])[k] for _ in range(B)]))
+           for k in ("rgb", "depth", "thermal", "joints")}
+    obs["cue"] = torch.randn(B, T, CUE_DIM + 4)
+    obs["cue"][..., -2:] = 1                                               # the flags must not reach the gate
+    labels = {"ep_glass_seethrough": torch.tensor([0., 1., 0., 1.]), "ep_is_crossover": torch.tensor([0., 0., 1., 1.])}
+
+    # encoder: p = 0.5 before training, forced decisions, the gate's own decision at inference, the eval rules
+    enc, pol = make("labels")
+    frame = {k: v[:, 0] for k, v in obs.items()}
+    enc.eval()
+    enc(frame)
+    assert torch.allclose(enc.last_p, torch.full((B, 2), 0.5)) and enc.last_w.tolist() == [[1, 0, 0]] * B
+    other = dict(frame, cue=frame["cue"].clone())
+    other["cue"][:, -2:] = 0
+    enc(other)
+    assert torch.allclose(enc.last_p, torch.full((B, 2), 0.5))             # flags zeroed in the gate's input anyway
+    enc.route_force = torch.tensor([[1., 1.], [0., 1.], [1., 0.], [0., 0.]])
+    for mode in (True, False):
+        enc.train(mode)
+        enc(frame)
+        assert enc.last_w.tolist() == [[1, 1, 1], [1, 0, 1], [1, 1, 0], [1, 0, 0]], enc.last_w
+    enc.route_force = None
+    with torch.no_grad():
+        enc.gate["depth"][-1].bias.fill_(5.0)
+        enc.gate["thermal"][-1].bias.fill_(-5.0)
+    enc.eval()
+    enc(frame)
+    assert enc.last_w.tolist() == [[1, 1, 0]] * B and (enc.last_p[:, 0] > 0.99).all()
+    enc.train()
+    draws = torch.stack([(enc(frame), enc.last_w.clone())[1] for _ in range(60)])
+    assert 0.8 < draws[..., 1].mean() < 0.97 and 0.03 < draws[..., 2].mean() < 0.2      # explored: p clipped to 0.1 / 0.9
+    enc.eval()
+    for rule, want in (("all_on", [1, 1, 1]), ("rgb_only", [1, 0, 0])):
+        enc.route_eval = rule
+        enc(frame)
+        assert enc.last_w.tolist() == [want] * B
+    enc.route_eval = "visible"
+
+    # labels: cross-entropy on the gate, sensors switched by the labels during training
+    enc, pol = make("labels")
+    pol.train()
+    batch = {"obs": obs, "action": torch.randn(B, T, 7), "meta": dict(labels)}
+    loss = pol.compute_loss(batch)
+    loss.backward()
+    assert enc.last_w.view(B, 2, 3)[:, -1].tolist() == [[1, 1, 1], [1, 0, 1], [1, 1, 0], [1, 0, 0]]
+    gb = enc.gate["depth"][-1].weight.grad      # (the bias gradient is 0 here: p = 0.5 and the labels are half / half)
+    assert gb is not None and gb.abs().sum() > 0 and enc.gate["thermal"][-1].weight.grad.abs().sum() > 0
+    assert enc.route_force is None and int(pol.train_steps) == 1
+    opt = torch.optim.Adam(list(enc.gate.parameters()), lr=0.05)
+    for _ in range(30):
+        opt.zero_grad()
+        pol.compute_loss(batch).backward()
+        opt.step()
+    pol.eval()
+    with torch.no_grad():
+        pol.compute_loss(batch)                                            # validation path: the gate decides
+    # (the gate can separate the four samples only through their random cue entries: enough for a fit check)
+    assert ((enc.last_p.view(B, 2, 2).mean(1) > 0.5).float() == torch.stack(
+        [1 - labels["ep_glass_seethrough"], 1 - labels["ep_is_crossover"]], -1)).all()
+
+    # heldout: marked episodes train the gate only; the others train the policy only
+    def grads(actions, split, start=0):
+        enc, pol = make("heldout", gate_start_step=start)
+        pol.train()
+        torch.manual_seed(1)
+        loss = pol.compute_loss({"obs": obs, "action": actions, "meta": dict(labels, ep_gate_split=split)})
+        loss.backward()
+        g = lambda t: None if t.grad is None else t.grad.clone()
+        return g(next(pol.model.parameters())), g(enc.gate["depth"][-1].weight), g(enc.gate["thermal"][-1].weight), enc
+    act = torch.randn(B, T, 7)
+    split = torch.tensor([0., 0., 1., 1.])
+    gu, gd, gt, enc = grads(act, split)
+    assert gu is not None and gu.abs().sum() > 0 and gd.abs().sum() > 0 and gt.abs().sum() > 0
+    assert enc.route_force is None and enc.training
+    act2 = act.clone()
+    act2[2:] += 1.0                                                        # change the held-out samples only
+    gu2, gd2, _, _ = grads(act2, split)
+    assert torch.allclose(gu, gu2) and not torch.allclose(gd, gd2)         # policy gradient untouched, gate gradient moved
+    gu3, gd3, _, _ = grads(act, torch.ones(B))
+    assert (gu3 is None or gu3.abs().sum() == 0) and gd3.abs().sum() > 0   # all held out: nothing for the policy
+    _, gd4, _, _ = grads(act, split, start=5)
+    assert gd4 is None or gd4.abs().sum() == 0                             # before gate_start_step the gate is not trained
+    print("ok learned route: p = 0.5 at start, forced / sampled / own decisions, labels fit the gate, "
+          "held-out samples move the gate only")
+
+
+def test_switch_composition():
+    """ComposedPolicy with switch_key: member 1 where the depth flag is on, member 2 otherwise, per environment."""
+    try:
+        from diffusers.schedulers.scheduling_ddpm import DDPMScheduler
+    except ImportError:
+        print("ok switch composition (skipped: diffusers not installed)")
+        return
+    from diffusion_policy.common.normalize_util import get_image_range_normalizer
+    from diffusion_policy.model.common.normalizer import LinearNormalizer
+    from diffusion_policy.policy.diffusion_unet_image_policy import DiffusionUnetImagePolicy
+    from policy.compose_policy import ComposedPolicy
+    from policy.shared_crop_encoder import SharedCropObsEncoder
+    torch.manual_seed(0)
+    members, keys = [], []
+    for sensor in ("depth", "thermal"):
+        meta = {"obs": {k: SHAPE_META["obs"][k] for k in ("rgb", sensor, "joints")}, "action": {"shape": [7]}}
+        enc = SharedCropObsEncoder(meta, _resnet(), crop_shape=(84, 84), use_group_norm=True, imagenet_norm=True)
+        sched = DDPMScheduler(num_train_timesteps=10, beta_schedule="squaredcos_cap_v2", prediction_type="epsilon")
+        pol = DiffusionUnetImagePolicy(meta, sched, enc, horizon=16, n_action_steps=8, n_obs_steps=2,
+                                       num_inference_steps=3, diffusion_step_embed_dim=32, down_dims=(64, 128))
+        norm = LinearNormalizer()
+        gen = torch.Generator().manual_seed(1)
+        norm.fit({"action": torch.randn(64, 7, generator=gen), "joints": torch.randn(64, 7, generator=gen)},
+                 last_n_dims=1, mode="limits")
+        for k in ("rgb", sensor):
+            norm[k] = get_image_range_normalizer()
+        pol.set_normalizer(norm)
+        members.append(pol.eval())
+        keys.append(list(meta["obs"]))
+    B = 4
+    obs = {k: torch.from_numpy(np.stack([to_policy_obs(fake_raw(T=2, holes=0.0, rng=np.random.default_rng(i)),
+                                                       SHAPE_META["obs"])[k] for i in range(B)]))
+           for k in ("rgb", "depth", "thermal", "joints")}
+    cue = torch.zeros(B, 2, CUE_DIM + 4)
+    cue[:, :, -2] = torch.tensor([1., 0., 1., 0.])[:, None]                # depth shows the glass in envs 0 and 2
+    cue[:, 0, -2] = 1 - cue[:, 0, -2]                                      # the older frame does not decide
+    obs["cue"] = cue
+    def act(policy):
+        torch.manual_seed(5)
+        return policy.predict_action(obs)["action"]
+    first, second = act(ComposedPolicy(members, [1, 0], keys)), act(ComposedPolicy(members, [0, 1], keys))
+    sw = ComposedPolicy(members, [0, 0], keys, switch_key="cue")
+    sw.w_trace = []
+    sw.reset()
+    out = act(sw)
+    assert not torch.allclose(first, second)
+    assert torch.allclose(out[[0, 2]], first[[0, 2]], atol=1e-6) and torch.allclose(out[[1, 3]], second[[1, 3]], atol=1e-6)
+    assert sw.w_trace[0][0]["w"].tolist() == [[1, 0], [0, 1], [1, 0], [0, 1]]
+    print("ok switch composition: member 1 where depth shows the glass, member 2 elsewhere, weights traced")
 
 
 def test_soft_route_and_norm():
@@ -516,4 +726,6 @@ if __name__ == "__main__":
     test_depth_object_cue()
     test_visibility_route()
     test_soft_route_and_norm()
+    test_learned_route()
+    test_switch_composition()
     print("all ok")
