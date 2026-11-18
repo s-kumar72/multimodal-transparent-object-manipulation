@@ -1,0 +1,55 @@
+# Rows of the ablation table (python -m fusion.ablation_table, see fusion/ABLATIONS.md).
+# Each row pools the runs listed under `runs` (one per training seed; the seed is read from a _seedNN suffix, no
+# suffix = 42). A run is "<root>:<run folder>", where the folder holds <test set>/episodes.json from policy/eval.py.
+# Rows whose runs do not exist yet are shown as "not run", so this file can list the whole plan up front.
+baseline: rgbdt (static fusion)
+test_sets: [a_in_distribution, g_heldout_all]
+roots:
+  bench: results/hard_scenario/fusion_bench/n200        # 200-episode re-evaluations of the first round
+  abl: results/hard_scenario/fusion_ablations/n200       # 200-episode evaluations of the ablations
+
+rows:
+  # ---------------------------------------------------------------- reference points
+  - {section: "Baselines (DP, one ResNet per sensor)", name: "rgb",
+     runs: [bench:L0_bench_rgb_500demos, bench:L0_bench_rgb_500demos_seed43]}
+  - {section: "Baselines (DP, one ResNet per sensor)", name: "rgbd",
+     runs: [bench:L0_bench_rgbd_500demos, bench:L0_bench_rgbd_500demos_seed43]}
+  - {section: "Baselines (DP, one ResNet per sensor)", name: "rgbt",
+     runs: [bench:L0_bench_rgbt_500demos, bench:L0_bench_rgbt_500demos_seed43]}
+  - {section: "Baselines (DP, one ResNet per sensor)", name: "rgbdt (static fusion)",
+     runs: [bench:L0_bench_rgbdt_500demos, bench:L0_bench_rgbdt_500demos_seed43]}
+  - {section: "Other method", name: "cue gating",
+     runs: [bench:L0_bench_rgbdt_500demos_cuegate, bench:L0_bench_rgbdt_500demos_cuegate_seed43]}
+  - {section: "Learned attention weighting (ours)", name: "P0 fusion (mix_ws init)",
+     runs: [bench:L0_bench_rgbdt_500demos_fusion, bench:L0_bench_rgbdt_500demos_fusion_seed43,
+            abl:L0_bench_rgbdt_500demos_fusion_seed44]}
+
+  # ---------------------------------------------------------------- does pre-training help?
+  - {section: "Pre-training and fine-tuning", name: "P1 no pre-training (scratch)",
+     runs: [abl:L0_bench_rgbdt_500demos_fusion_scratch, abl:L0_bench_rgbdt_500demos_fusion_scratch_seed43]}
+  - {section: "Pre-training and fine-tuning", name: "P2 frozen segmenter",
+     runs: [abl:L0_bench_rgbdt_500demos_fusion_frozen, abl:L0_bench_rgbdt_500demos_fusion_frozen_seed43]}
+  - {section: "Pre-training and fine-tuning", name: "P3 frozen for 10k steps",
+     runs: [abl:L0_bench_rgbdt_500demos_fusion_warm, abl:L0_bench_rgbdt_500demos_fusion_warm_seed43]}
+  - {section: "Pre-training and fine-tuning", name: "P4 anchor to pre-trained",
+     runs: [abl:L0_bench_rgbdt_500demos_fusion_anchor, abl:L0_bench_rgbdt_500demos_fusion_anchor_seed43]}
+
+  # ---------------------------------------------------------------- do the reliability weights matter?
+  - {section: "Reliability weights", name: "P5 fixed equal weights",
+     runs: [abl:L0_bench_rgbdt_500demos_fusion_static, abl:L0_bench_rgbdt_500demos_fusion_static_seed43]}
+  - {section: "Reliability weights", name: "P6 weight supervision (flags)",
+     runs: [abl:L0_bench_rgbdt_500demos_fusion_gatesup, abl:L0_bench_rgbdt_500demos_fusion_gatesup_seed43]}
+  - {section: "Reliability weights", name: "P7 thermal corruption in policy training",
+     runs: [abl:L0_bench_rgbdt_500demos_fusion_aug, abl:L0_bench_rgbdt_500demos_fusion_aug_seed43]}
+
+  # ---------------------------------------------------------------- what the policy reads (grasp precision)
+  - {section: "Readout", name: "P8 global features only",
+     runs: [abl:L0_bench_rgbdt_500demos_fusion_global, abl:L0_bench_rgbdt_500demos_fusion_global_seed43]}
+  - {section: "Readout", name: "P9 + full-res keypoint + spatial softmax",
+     runs: [abl:L0_bench_rgbdt_500demos_fusion_kp, abl:L0_bench_rgbdt_500demos_fusion_kp_seed43]}
+
+  # ---------------------------------------------------------------- sensors and pre-training data
+  - {section: "Sensors and pre-training data", name: "P10 rgbd only (no thermal)",
+     runs: [abl:L0_bench_rgbd_500demos_fusion, abl:L0_bench_rgbd_500demos_fusion_seed43]}
+  - {section: "Sensors and pre-training data", name: "P11 init from see-through-aware segmenter (S4)",
+     runs: [abl:L0_bench_rgbdt_500demos_fusion_stx, abl:L0_bench_rgbdt_500demos_fusion_stx_seed43]}
