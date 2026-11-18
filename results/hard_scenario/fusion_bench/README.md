@@ -1543,6 +1543,11 @@ Criteria:
 - `learn_twostage` and `learn_labels_bal` at seed 42: the limits of round 10 (0.675 as trained, 0.747 with
   guidance). A variant that meets them is run on seeds 43 and 44.
 
+Deviation from the plan (11/19 03:02 KST, before any result): `learn_labels_bal` was started at 02:42 and stopped at
+epoch 1. With four trainings the free memory fell to 17 GB (each training holds 17–24 GB here), next to another
+long training on the machine; three trainings and one evaluation at a time are run instead. Its epoch-0 checkpoint
+was removed. The variant is not run in this round.
+
 ## Files
 
 - `L0_bench_rgbdt_500demos_<tag>/`: `train_logs.json.txt`, `curve.json`, and per test set `eval_log.json` and
