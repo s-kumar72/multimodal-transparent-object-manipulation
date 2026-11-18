@@ -154,7 +154,7 @@ python -m fusion.ablation_table --spec fusion/ablations/ablations.yaml --out res
 This writes four files:
 
 - `table.md`, for GitHub;
-- `table.tex`, a booktabs table for the report (needs `\usepackage{booktabs}`);
+- `table.tex`, a booktabs table for report (needs `\usepackage{booktabs}`);
 - `table.csv`, every number with its 95% interval;
 - `table.png`, success per group with intervals.
 
