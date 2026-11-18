@@ -1,7 +1,7 @@
 """
-Train the reliability-aware RGB-D-T glass segmentation network (fusion/model.py) on sim and / or real data.
+Train the reliability-aware RGB-D-T glass segmentation network (fusion/attention/model.py) on sim and / or real data.
 
-  python -m fusion.train_seg --name mix --modalities rgb depth thermal \
+  python -m fusion.attention.train_seg --name mix --modalities rgb depth thermal \
       --train "sim:data/fusion/sim/*_train.npz" real:rgbt_glass:train real:mju_glass:train \
       --val "sim:data/fusion/sim/*_val.npz" real:rgbt_glass:val \
       --eval "sim:data/fusion/sim/*_test_*.npz" real:rgbt_glass:test --iters 20000
@@ -59,7 +59,7 @@ def parse():
                    help="minmax: per-frame min-max of the raw counts, same as the real loader; env: as the policy sees it")
     p.add_argument("--real_root", default=None)
     p.add_argument("--no_aug", action="store_true", help="no sensor corruptions")
-    p.add_argument("--aug", nargs="*", default=[], metavar="NAME=P", help="probabilities of single corruptions (fusion/data.py Augment), e.g. depth_holes=0 "
+    p.add_argument("--aug", nargs="*", default=[], metavar="NAME=P", help="probabilities of single corruptions (fusion/attention/data.py Augment), e.g. depth_holes=0 "
 +                        "depth_seethrough=0.3")
     p.add_argument("--sup_seethrough", action="store_true",
                    help="gate loss: depth is unreliable on the glass in see-through frames (sim flag or the "

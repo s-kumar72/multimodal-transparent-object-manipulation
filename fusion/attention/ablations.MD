@@ -21,7 +21,7 @@ method. Only two things have been run for learned attention weighting so far: th
 
 ## The ablations
 
-Blue tags (S) change the segmentation pre-training (`fusion/train_seg.py`, a fraction of a policy run). Orange tags (P)
+Blue tags (S) change the segmentation pre-training (`fusion/attention/train_seg.py`, a fraction of a policy run). Orange tags (P)
 change the policy training (about 5 h per run on one GPU, from the first round). Every P run is trained with seeds 42 and 43 by default. One seed can't be trusted here as the full model's two seeds differ by 18 points.
 
 ### QUESTION 1: Does pre-training help, and does policy training keep it?
@@ -101,7 +101,7 @@ see-through frames, and an AUC for how well that weight separates the two (0.5 =
 
 ## Running them
 
-Everything is in `fusion/ablations/run_ablations.sh`. It uses `scripts/run_experiment.sh`, the same protocol as the
+Everything is in `fusion/attention/run_ablations.sh`. It uses `scripts/run_experiment.sh`, the same protocol as the
 first round (500 demos, 101 epochs, last checkpoint, test sets a and g). After training, each run is re-evaluated
 with 200 episodes per test set, with the sensor weights saved at every step (`--save_w`). That gives 800 episodes
 per row over two seeds, matching the first round.
@@ -115,13 +115,13 @@ per row over two seeds, matching the first round.
 ```bash
 # segmentation runs first (new sim frames with the see-through flag; not timed yet)
 DATA=data/fusion_v2 SIM_LEVELS=L0_bench \
-  RUNS="mix_ws mix_ws_nohole mix_ws_stx mix_ws_supst mix_ws_stx_supst mix_ws_nocues mix_ws_nosup" bash fusion/train.sh
+  RUNS="mix_ws mix_ws_nohole mix_ws_stx mix_ws_supst mix_ws_stx_supst mix_ws_nocues mix_ws_nosup" bash fusion/attention/train.sh
 
 # policy runs, tier by tier; DRY=1 prints the commands without running anything
-DRY=1 TIER=1 bash fusion/ablations/run_ablations.sh
-TIER=1 PER_GPU=2 bash fusion/ablations/run_ablations.sh
-TIER=2 PER_GPU=2 bash fusion/ablations/run_ablations.sh
-TIER=3 PER_GPU=2 bash fusion/ablations/run_ablations.sh      # after S4 exists
+DRY=1 TIER=1 bash fusion/attention/run_ablations.sh
+TIER=1 PER_GPU=2 bash fusion/attention/run_ablations.sh
+TIER=2 PER_GPU=2 bash fusion/attention/run_ablations.sh
+TIER=3 PER_GPU=2 bash fusion/attention/run_ablations.sh      # after S4 exists
 ```
 
 `SEG_CKPT` points at the `mix_ws` checkpoint used in the first round (default `data/fusion/runs/mix_ws/best.pt`),
@@ -137,10 +137,10 @@ GPU=0 TAG=fusion_anchor_seed43 TRAIN=scripts/train_fusion_policy.sh GROUP=fusion
 ```
 
 The two first-round fusion checkpoints were trained before the weight logging existed. They can be re-evaluated with
-it through `fusion/eval_fusion.py`, which takes the same options as `policy/eval.py`:
+it through `fusion/attention/eval_fusion.py`, which takes the same options as `policy/eval.py`:
 
 ```bash
-python -m fusion.eval_fusion -c data/runs/L0_bench_rgbdt_500demos_fusion/checkpoints/latest.ckpt \
+python -m fusion.attention.eval_fusion -c data/runs/L0_bench_rgbdt_500demos_fusion/checkpoints/latest.ckpt \
   -o results/hard_scenario/fusion_ablations/n200/L0_bench_rgbdt_500demos_fusion --level L0_bench --n_test 200 \
   --n_envs 10 --test_set a_in_distribution --test_set g_heldout_all --save_w
 ```
@@ -148,7 +148,7 @@ python -m fusion.eval_fusion -c data/runs/L0_bench_rgbdt_500demos_fusion/checkpo
 ## The results table
 
 ```bash
-python -m fusion.ablation_table --spec fusion/ablations/ablations.yaml --out results/hard_scenario/fusion_ablations/table
+python -m fusion.attention.ablation_table --spec fusion/attention/ablations.yaml --out results/hard_scenario/fusion_ablations/table
 ```
 
 This writes four files:
@@ -176,26 +176,26 @@ How to read it:
 - With 12 ablations, a single p < 0.05 can happen by chance. A result is worth trusting when both seeds point the
   same way.
 
-New rows go into `fusion/ablations/ablations.yaml`, as a name and the run folders, one per seed.
+New rows go into `fusion/attention/ablations.yaml`, as a name and the run folders, one per seed.
 
 ## Location of ablations in code
 
 | ablation | switch | file |
 |---|---|---|
-| P1 | `policy.obs_encoder.pretrained=null` + `model_cfg` | `fusion/policy_encoder.py` |
-| P2, P3 | `freeze_segmenter`, `freeze_steps` | `fusion/policy_encoder.py` |
-| P4 | `obs_encoder.anchor=true`, `policy.anchor_weight` | `fusion/policy_encoder.py`, `fusion/fusion_policy.py` |
-| P5 | `obs_encoder.model_overrides={gate_mode:static}` | `fusion/policy_encoder.py`, `fusion/model.py` |
-| P6 | `policy.gate_sup_weight`, `gate_sup_anneal_steps` | `fusion/fusion_policy.py` |
+| P1 | `policy.obs_encoder.pretrained=null` + `model_cfg` | `fusion/attention/policy_encoder.py` |
+| P2, P3 | `freeze_segmenter`, `freeze_steps` | `fusion/attention/policy_encoder.py` |
+| P4 | `obs_encoder.anchor=true`, `policy.anchor_weight` | `fusion/attention/policy_encoder.py`, `fusion/attention/fusion_policy.py` |
+| P5 | `obs_encoder.model_overrides={gate_mode:static}` | `fusion/attention/policy_encoder.py`, `fusion/attention/model.py` |
+| P6 | `policy.gate_sup_weight`, `gate_sup_anneal_steps` | `fusion/attention/fusion_policy.py` |
 | P7 | `task.dataset.augment={...}` | `policy/glass_dataset.py` (cue-gating branch, unchanged) |
-| P8, P9 | `obs_encoder.readout=[...]`, `ssm_keypoints` | `fusion/policy_encoder.py` |
+| P8, P9 | `obs_encoder.readout=[...]`, `ssm_keypoints` | `fusion/attention/policy_encoder.py` |
 | P10 | variant `rgbd` of `scripts/train_fusion_policy.sh` | — |
-| S1, S2 | `train_seg.py --aug depth_holes=0 depth_wrong=0 [depth_seethrough=0.3]` | `fusion/data.py` (`Augment`) |
-| S3 | `train_seg.py --sup_seethrough` | `fusion/data.py`, `fusion/model.py` (`gate_reliability_loss`) |
-| S5, S6 | `--no_cues`, `--gate_sup 0` | `fusion/model.py`, `fusion/train_seg.py` |
-| table | `python -m fusion.ablation_table` | `fusion/ablation_table.py`, `fusion/ablations/ablations.yaml` |
-| figures | `python fusion/ablations/make_figures.py` | `fusion/ablations/` |
+| S1, S2 | `train_seg.py --aug depth_holes=0 depth_wrong=0 [depth_seethrough=0.3]` | `fusion/attention/data.py` (`Augment`) |
+| S3 | `train_seg.py --sup_seethrough` | `fusion/attention/data.py`, `fusion/attention/model.py` (`gate_reliability_loss`) |
+| S5, S6 | `--no_cues`, `--gate_sup 0` | `fusion/attention/model.py`, `fusion/attention/train_seg.py` |
+| table | `python -m fusion.attention.ablation_table` | `fusion/attention/ablation_table.py`, `fusion/attention/ablations.yaml` |
+| figures | `python fusion/attention/helpers/make_figures.py` | `fusion/attention/helpers/` |
 
 All switches default to the first-round behavior, so existing checkpoints and commands work unchanged.
-`fusion/collect_sim.py` now also stores each frame's `glass_seethrough` flag. Sim frames collected before this change
+`fusion/attention/collect_sim.py` now also stores each frame's `glass_seethrough` flag. Sim frames collected before this change
 don't have it, which is why the S runs use a new `DATA` folder.

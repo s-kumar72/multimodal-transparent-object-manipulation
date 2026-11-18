@@ -1,7 +1,7 @@
 """
 Evaluate a glass-segmentation checkpoint on sim / real sources, clean and under sensor corruptions.
 
-  python -m fusion.evaluate --ckpt data/fusion/runs/mix/best.pt --eval "sim:data/fusion/sim/L4b_test_*.npz" \
+  python -m fusion.attention.evaluate --ckpt data/fusion/runs/mix/best.pt --eval "sim:data/fusion/sim/L4b_test_*.npz" \
       real:rgbt_glass:test --out data/fusion/runs/mix/eval.json
 
 Metrics per source (masks binarized at 0.5; sim ground truth is the fraction of the pixel covered, so >= 0.5):
@@ -58,7 +58,7 @@ class CorruptedEval(SegArrays):
 
 def _auc(pos, neg):
     pos, neg = np.asarray(pos, float), np.asarray(neg, float)
-    pos, neg = pos[~np.isnan(pos)], neg=[~np.isnan(neg)]
+    pos, neg = pos[~np.isnan(pos)], neg[~np.isnan(neg)]
     if len(pos) == 0 or len(neg) == 0:
         return float("nan")
     return float((pos[:, None] > neg[None, :]).mean() + 0.5 * (pos[:, None] == neg[None, :]).mean())
@@ -70,7 +70,7 @@ def group_stats(per_img, mods):
     see-through frames, thermal weight on the glass higher without than with crossover (0.5 = no separation).
     """
     iou, st, xo = (np.asarray(per_img[k], float) for k in ("iou", "st", "xo"))
-    G = np.asarray(per_img["g_fg"]. float).reshape(len(iou), -1)
+    G = np.asarray(per_img["g_fg"], float).reshape(len(iou), -1)
     out = {}
 
     for name, sel in (("normal", st == 0), ("seethrough", st == 1), ("crossover", xo == 1)):

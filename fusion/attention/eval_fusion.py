@@ -1,18 +1,18 @@
 """
 policy/eval.py for fusion-encoder checkpoints, with --save_w for all of them.
 
-New checkpoints (policy class fusion.fusion_policy.FusionDiffusionPolicy) already work with policy/eval.py --save_w.
+New checkpoints (policy class fusion.attention.fusion_policy.FusionDiffusionPolicy) already work with policy/eval.py --save_w.
 Checkpoints trained before that class existed use DP's plain DiffusionUnetImagePolicy, which has no weight trace;
 this wrapper adds it (only when the encoder is a FusionObsEncoder) and then runs policy/eval.py unchanged, with the
 same options:
-  python -m fusion.eval_fusion -c <ckpt> -o <out> --level L0_bench --n_test 200 --n_envs 10 \
+  python -m fusion.attention.eval_fusion -c <ckpt> -o <out> --level L0_bench --n_test 200 --n_envs 10 \
       --test_set a_in_distribution --test_set g_heldout_all --save_w
 Run from the repo root with the PYTHONPATH of policy/train.sh (repo, sim/, ../diffusion_policy).
 """
 from diffusion_policy.policy.diffusion_unet_image_policy import DiffusionUnetImagePolicy
 
-from fusion.fusion_policy import record_w
-from fusion.policy_encoder import FusionObsEncoder
+from fusion.attention.fusion_policy import record_w
+from fusion.attention.policy_encoder import FusionObsEncoder
 
 
 def patch():

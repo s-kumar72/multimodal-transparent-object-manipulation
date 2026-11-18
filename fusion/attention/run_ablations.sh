@@ -1,13 +1,13 @@
 #!/bin/bash
-# Ablations of the learned attention weighting (fusion/ABLATIONS.md) on L0_bench (can be run on several GPUs at once).
+# Ablations of the learned attention weighting (fusion/attention/ablations.MD) on L0_bench (can be run on several GPUs at once).
 # Same protocol as results/hard_scenario/fusion_bench: 500 demos, 101 epochs, last checkpoint, test sets (a) and (g)
 # with 50 episodes during training (scripts/run_experiment.sh), then a re-evaluation with 200 episodes per test set
 # and the sensor weights saved per step (--save_w) -> results/hard_scenario/fusion_ablations/n200/<run>/.
 # Run from the repo root, Diffusion Policy at ../diffusion_policy (or DP_ROOT):
 #
-#   TIER=1 bash fusion/ablations/run_ablations.sh                 # tier 1 on GPUs 0-3
-#   TIER=2 GPUS="0 1" PER_GPU=2 bash fusion/ablations/run_ablations.sh
-#   ONLY="fusion_frozen fusion_anchor" bash fusion/ablations/run_ablations.sh    # just these tags (both seeds)
+#   TIER=1 bash fusion/attention/run_ablations.sh                 # tier 1 on GPUs 0-3
+#   TIER=2 GPUS="0 1" PER_GPU=2 bash fusion/attention/run_ablations.sh
+#   ONLY="fusion_frozen fusion_anchor" bash fusion/attention/run_ablations.sh    # just these tags (both seeds)
 #
 # Settings: TIER (1 | 2 | 3 | all; default 1), GPUS ("0 1 2 3"), PER_GPU (runs at once per GPU, 1; A6000s fit 2),
 # SEEDS ("42 43"), SEG_CKPT (segmentation checkpoint the encoder starts from; data/fusion/runs/mix_ws/best.pt),
@@ -92,4 +92,4 @@ wait
 [ "${DRY:-0}" = 1 ] && { cat data/runs/abl_queue_*.log; exit 0; }
 echo "$(date): all queues done"
 grep -h "FAILED" data/runs/abl_queue_*.log || echo "no failed runs"
-python -m fusion.ablation_table --spec fusion/ablations/ablations.yaml --out results/hard_scenario/fusion_ablations/table
+python -m fusion.attention.ablation_table --spec fusion/attention/ablations.yaml --out results/hard_scenario/fusion_ablations/table

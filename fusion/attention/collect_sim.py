@@ -4,11 +4,11 @@ of the target glass, along scripted-teacher episodes (so the arm is in view and 
 Does not change sim/: the mask comes from one extra segmentation render with the env's own renderer.
 
 Works with main's scene (--levels main) and with the sim/hard-scenario levels (L0 L1 L2 L3 L3b L4 L4b ...).
-fusion/train.sh runs this script automatically. To run it manually, the working directory must be the top folder of
+fusion/attention/train.sh runs this script automatically. To run it manually, the working directory must be the top folder of
 the repo copy that contains the wanted sim/ (for the hard levels: data/worktrees/sim_hard, created by train.sh),
 because sim/ loads its scene files by relative path. PYTHONPATH must include that folder, its sim/ and this repo.
 
-  python -m fusion.collect_sim --levels L1 L2 L3b L4b --n_train 400 --out data/fusion/sim
+  python -m fusion.attention.collect_sim --levels L1 L2 L3b L4b --n_train 400 --out data/fusion/sim
 Writes <out>/<level>_<split>.npz, split in train | val | test_<test set>:
     rgb (N,96,96,3) u8 · depth (N,96,96,1) u8 (0 = no reading) · thermal (N,96,96,1) u8 (as the policy sees it)
     thermal_raw (N,96,96,1) u16 (hard-scenario only) · mask (N,96,96) u8 (fraction of the pixel covered by the target

@@ -1,7 +1,7 @@
 """
 Tables comparing segmentation runs (data/fusion/runs/*/final.json) -> markdown.
 
-  python -m fusion.summarize --runs data/fusion/runs --out results/fusion/summary.md
+  python -m fusion.attention.summarize --runs data/fusion/runs --out results/fusion/summary.md
 """
 import argparse
 import json

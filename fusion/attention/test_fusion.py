@@ -1,5 +1,5 @@
 """
-CPU smoke tests for fusion/ (no data, no GPU, no Diffusion Policy needed):  python -m fusion.test_fusion
+CPU smoke tests for fusion/ (no data, no GPU, no Diffusion Policy needed):  python -m fusion.attention.test_fusion
 """
 import numpy as np
 import torch
@@ -105,7 +105,7 @@ def test_ablation_readouts_and_freeze():
 
 
 def test_seethrough_corruption_and_region_loss():
-    from fusion.model import gate_reliability_loss
+    from fusion.attention.model import gate_reliability_loss
     n, S = 2, 96
     arr = dict(rgb=np.zeros((n, S, S, 3), np.uint8), depth=np.full((n, S, S, 1), 100, np.uint8),
                thermal=np.zeros((n, S, S, 1), np.uint8), mask=np.zeros((n, S, S), np.uint8),

@@ -1,6 +1,6 @@
 """
-Figures of the fusion architecture with the ablations marked where they act (fusion/ABLATIONS.md).
-  python fusion/ablations/make_figures.py          -> fusion/ablations/fig_*.png and .pdf
+Figures of the fusion architecture with the ablations marked where they act (fusion/attention/ablations.MD).
+  python fusion/attention/helpers/make_figures.py          -> fusion/attention/helpers/fig_*.png and .pdf
 """
 from pathlib import Path
 
@@ -74,7 +74,7 @@ def fig_architecture():
     # ---------------- stage 1
     c.box(2, 3, 62, 86, fc=BLUE_BG, ec="none", r=2.5)
     c.text(5, 86, "Stage 1 · segmentation pre-training", size=11.5, weight="bold", color=BLUE, ha="left")
-    c.text(5, 82.6, "fusion/train_seg.py · per-frame glass masks", size=8.5, color=INK2, ha="left")
+    c.text(5, 82.6, "fusion/attention/train_seg.py · per-frame glass masks", size=8.5, color=INK2, ha="left")
     c.node(6, 70, 54, 9, "Sim frames + real images", "L0_bench (see-through, crossover) · RGB-T Glass · TRansPose …")
     c.node(6, 58, 54, 9, "Training corruptions", "thermal contrast · depth holes · see-through depth · dropout")
     c.tag(10.5, 58, "S1", BLUE)
@@ -105,7 +105,7 @@ def fig_architecture():
     c.box(68, 3, 100, 86, fc=ORANGE_BG, ec="none", r=2.5)
     c.text(71, 86, "Stage 2 · Diffusion Policy with the fusion encoder", size=11.5, weight="bold", color=ORANGE,
            ha="left")
-    c.text(71, 82.6, "scripts/train_fusion_policy.sh · fusion/policy_encoder.py · fusion/fusion_policy.py",
+    c.text(71, 82.6, "scripts/train_fusion_policy.sh · fusion/attention/policy_encoder.py · fusion/attention/fusion_policy.py",
            size=8.5, color=INK2, ha="left")
     c.node(72, 70, 50, 9, "Observations (96 px, 2 frames)", "RGB · depth · thermal · joints (500 L0_bench demos)")
     c.tag(119, 79, "P10", ORANGE)

@@ -1,4 +1,4 @@
-# Rows of the ablation table (python -m fusion.ablation_table, see fusion/ABLATIONS.md).
+# Rows of the ablation table (python -m fusion.attention.ablation_table, see fusion/attention/ablations.MD).
 # Each row pools the runs listed under `runs` (one per training seed; the seed is read from a _seedNN suffix, no
 # suffix = 42). A run is "<root>:<run folder>", where the folder holds <test set>/episodes.json from policy/eval.py.
 # Rows whose runs do not exist yet are shown as "not run", so this file can list the whole plan up front.

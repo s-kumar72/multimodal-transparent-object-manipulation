@@ -1,5 +1,5 @@
 """
-Diffusion Policy with the fusion encoder (fusion/policy_encoder.py) with optional training terms for the ablations.
+Diffusion Policy with the fusion encoder (fusion/attention/policy_encoder.py) with optional training terms for the ablations.
 With both weights at 0 (the default) the loss and inference are exactly DP's DiffusionUnetImagePolicy.
 
   anchor_weight     distillation toward the frozen pretrained segmentation network (glass mask + sensor weights),
@@ -15,7 +15,7 @@ see-through / other samples and w_thermal on crossover / other samples (when the
 Evaluation: like policy/gated_policy.py, set policy.w_trace = [] before a rollout and predict_action appends the
 mean sensor weights at every decision; policy/eval.py --save_w does this and stores them in episodes.json.
 Checkpoints trained before this class existed (plain DiffusionUnetImagePolicy) get the same trace through
-fusion/eval_fusion.py.
+fusion/attention/eval_fusion.py.
 """
 import torch
 import torch.nn.functional as F

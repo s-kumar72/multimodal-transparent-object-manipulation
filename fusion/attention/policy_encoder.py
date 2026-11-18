@@ -5,11 +5,10 @@ MultiImageObsEncoder (one ResNet per modality, features concatenated = "static f
 Per observation frame:
     rgb / depth / thermal ─► GlassFusionNet.encode ─► fused map ẑ = Σ_m w_m ⊙ f_m  (reliability-weighted)
                                                  └─► decoder ─► glass probability map p
-    feature = Linear([avgpool(ẑ), Σ p·ẑ / Σ p (glass-attention pooling), centroid of p (x, y), area of p,
-                      mean gate of each modality]) ++ joints
+    feature = Linear([readout parts]) ++ joints
 
-So the policy gets a global scene feature, a feature of "the glass the segmenter picked" and where it is, and how
-much each sensor is trusted. Optionally initialized from a train_seg.py checkpoint (pretrained=...).
+With the default readout the policy gets a global scene feature, a feature of "the glass the segmenter picked" and
+where it is, and how much each sensor is trusted. Optionally initialized from a train_seg.py checkpoint (pretrained=...).
 
 Readout parts (`readout`, in this order; the default is the original encoder's):
     avg       ẑ averaged over the image                                  (d)
@@ -22,12 +21,12 @@ Readout parts (`readout`, in this order; the default is the original encoder's):
     ssm       spatial softmax of ẑ: K learned keypoints (x, y)           (2K)  ablation: grasp precision
 Default: avg mask centroid area max gates (mask_pool=False: avg gates).
 
-Ablation switches (all off by default; fusion/ABLATIONS.md):
+Ablation switches (all off by default; fusion/attention/ablations.MD):
     freeze_segmenter      the fusion network is not trained with the policy (frozen, eval mode)
     freeze_steps          frozen for the first N training steps, then trained with the policy
     anchor                keeps a frozen copy of the pretrained network and stores a distillation loss (mask + gates
                           of the copy) in last_anchor; FusionDiffusionPolicy adds it with anchor_weight
-    model_overrides       options of fusion/model.py applied when loading `pretrained` (e.g. {gate_mode: static})
+    model_overrides       options of fusion/attention/model.py applied when loading `pretrained` (e.g. {gate_mode: static})
 After each forward: last_w (B, M) mean gate per sensor, last_gate_logit (B, M) mean gate score, for logging and for
 policy/eval.py --save_w.
 
@@ -38,7 +37,7 @@ Differences from MultiImageObsEncoder:
   * thermal_renorm="minmax" re-applies per-frame min-max to thermal, so sim levels with the calibrated "centered"
     thermal see the same normalization as the segmentation training data (train_seg.py --sim_thermal minmax).
 
-Used from fusion/config/train_glass_fusion_image.yaml; see fusion/README.md.
+Used from fusion/attention/config/train_glass_fusion_image.yaml; see fusion/attention/README.md.
 """
 import copy
 

@@ -1,26 +1,26 @@
 #!/bin/bash
-# Trains and tests the glass-fusion models. Full writeup in fusion/RUNNING.md.
+# Trains and tests the glass-fusion models. Full writeup in fusion/attention/RUNNING.md.
 #
-#   bash fusion/train.sh                                   # all stages; finished work is skipped
-#   STAGES="seg summary" RUNS="mix_ws" bash fusion/train.sh   # one run only
+#   bash fusion/attention/train.sh                                   # all stages; finished work is skipped
+#   STAGES="seg summary" RUNS="mix_ws" bash fusion/attention/train.sh   # one run only
 #
 # Stages, in order:
 #   setup    check packages, GPUs and rendering; check out the sim/hard-scenario branch into data/worktrees/sim_hard
 #   sim      render sim training and test images with glass masks
 #   real     check for the real datasets (DOWNLOAD_REAL=1 downloads them)
 #   seg      train one model per run in RUNS (in parallel, one queue per GPU) and test it
-#   summary  write the results table to results/fusion/summary.md
+#   summary  write the results table to results/fusion/summary.md (summary_<folder>.md for another DATA folder)
 #   policy   optional, not run by default: train Diffusion Policy with a trained model as its image encoder
 #
 # Runs (RUNS). The name says the training data, plus an optional variant:
 #   data:     sim | real | real2sim (real, then sim) | mix (sim + real)
 #   variant:  ws (learned per-sensor weights, the main model) | static (fixed equal weights) | rgb (RGB only)
-#             rgbd | rgbt | softmax | paper (Huo et al.'s exact fusion); ablations (fusion/ABLATIONS.md):
+#             rgbd | rgbt | softmax | paper (Huo et al.'s exact fusion); ablations (fusion/attention/ablations.MD):
 #               nohole | stx (see-through corruption) | supst (see-through gate labels) | nocues | nosup
 #   default:  mix_ws sim real real2sim mix mix_static mix_rgb   (without real data: sim_ws sim sim_static sim_rgb)
 #
 # Main settings (environment variables): RUNS, STAGES, GPUS (default: all), ITERS (20000), BATCH (64),
-# DOWNLOAD_REAL (0), TRANSPARENT_DATA_ROOT (real data folder). The rest are listed in fusion/RUNNING.md.
+# DOWNLOAD_REAL (0), TRANSPARENT_DATA_ROOT (real data folder). The rest are listed in fusion/attention/RUNNING.md.
 
 set -euo pipefail
 REPO=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
@@ -50,7 +50,7 @@ DATA=$(realpath -m "$DATA")          # absolute: some steps run from the sim che
 mkdir -p "$DATA/logs"
 LOG="$DATA/logs/train_$(date +%Y%m%d_%H%M%S).log"
 exec > >(tee -a "$LOG") 2>&1
-echo "== fusion/train.sh $(date)  repo $REPO  ($(git rev-parse --abbrev-ref HEAD) @ $(git rev-parse --short HEAD))"
+echo "== fusion/attention/train.sh $(date)  repo $REPO  ($(git rev-parse --abbrev-ref HEAD) @ $(git rev-parse --short HEAD))"
 echo "   stages: $STAGES   log: $LOG"
 has() { [[ " $STAGES " == *" $1 "* ]]; }
 
@@ -106,7 +106,7 @@ fi
 # ------------------------------------------------------------------ sim frames
 if has sim; then
     echo "== sim: levels $SIM_LEVELS, $N_TRAIN_EPS train / $N_VAL_EPS val episodes per level, $N_TEST_EPS per test set"
-    sim_py -m fusion.collect_sim --levels $SIM_LEVELS --n_train "$N_TRAIN_EPS" --n_val "$N_VAL_EPS" \
+    sim_py -m fusion.attention.collect_sim --levels $SIM_LEVELS --n_train "$N_TRAIN_EPS" --n_val "$N_VAL_EPS" \
         --n_test "$N_TEST_EPS" --stride "$STRIDE" --workers "$WORKERS" --out "$DATA/sim"
 fi
 
@@ -165,17 +165,6 @@ run_seg() {   # name
         *) echo "unknown run $name"; exit 1 ;;
     esac
     if [[ $data == real* || $data == mix ]] && [ -z "$REAL" ]; then echo "== $name: no real data, skipping"; return; fi
-    case $variant in
-        "") ;;
-        static)  extra+=(--gate_mode static) ;;
-        softmax) extra+=(--gate_norm softmax) ;;
-        ws)      extra+=(--fusion_mode weighted_sum --gate_norm softmax) ;;
-        paper)   extra+=(--no_cues --gate_sup 0 --gate_logit_max 0) ;;
-        rgb)     extra+=(--modalities rgb) ;;
-        rgbd)    extra+=(--modalities rgb depth) ;;
-        rgbt)    extra+=(--modalities rgb thermal) ;;
-        *) echo "unknown variant $variant in $name"; exit 1 ;;
-    esac
     local augs=() tok                                   # variants combine with "_", e.g. mix_ws_stx_supst
     for tok in ${variant//_/ }; do
         case $tok in
@@ -199,7 +188,7 @@ run_seg() {   # name
     local evalargs=(--eval "${SIM_EVAL[@]}" "${REAL_EVAL[@]}")
     [ "$data" = paper ] && evalargs=()
     echo "== $name: train ${train[*]}"
-    $PY -m fusion.train_seg --name "$name" --out_dir "$DATA/runs" --train "${train[@]}" --val "${val[@]}" \
+    $PY -m fusion.attention.train_seg --name "$name" --out_dir "$DATA/runs" --train "${train[@]}" --val "${val[@]}" \
         "${evalargs[@]}" --iters "$iters" --batch_size "$BATCH" --workers "$WORKERS" \
         --real_root "$REAL_ROOT" "${extra[@]}" ${SEG_EXTRA:-}
 }
@@ -215,7 +204,7 @@ if has seg; then
         WORKERS=$(( $(nproc) / NG > 2 ? $(nproc) / NG : 2 ))      
         if [ ${#REAL_TRAIN[@]} -gt 0 ]; then                       
             echo "== caching real data"
-            $PY -c "import sys; from fusion.data import load_source
+            $PY -c "import sys; from fusion.attention.data import load_source
 for s in sys.argv[1:]: load_source(s, 96, real_root='$REAL_ROOT')" "${REAL_TRAIN[@]}" "${REAL_VAL[@]}" "${REAL_EVAL[@]}"
         fi
         mapfile -t QUEUES < <($PY - "$NG" $RUNS <<'PY'
@@ -253,7 +242,9 @@ fi
 
 if has summary; then
     echo "== summary"
-    $PY -m fusion.summarize --runs "$DATA/runs" --out results/fusion/summary.md
+    out=results/fusion/summary.md                                  # first round; other DATA folders get their own file
+    [ "$(basename "$DATA")" = fusion ] || out=results/fusion/summary_$(basename "$DATA").md     # e.g. summary_fusion_v2.md
+    $PY -m fusion.attention.summarize --runs "$DATA/runs" --out "$out"
 fi
 
 # ------------------------------------------------------------------ policy (opt-in)
@@ -283,7 +274,7 @@ if has policy; then
     OUT=$REPO/data/outputs/fusion_policy/${POLICY_LEVEL}_rgbdt_fusion_${POLICY_INIT}
     echo "== policy: Diffusion Policy + fusion encoder ($POLICY_INIT) on $POLICY_LEVEL -> $OUT"
     (cd "$SIM_DIR" && PYTHONPATH="$SIM_DIR:$SIM_DIR/sim:$DP_ROOT:$REPO:${PYTHONPATH:-}" SDL_VIDEODRIVER=dummy \
-        WANDB_MODE=${WANDB_MODE:-offline} $PY "$DP_ROOT/train.py" --config-dir="$REPO/fusion/config" \
+        WANDB_MODE=${WANDB_MODE:-offline} $PY "$DP_ROOT/train.py" --config-dir="$REPO/fusion/attention/config" \
         --config-name=train_glass_fusion_image task.zarr_path="$DEMOS" task.env_runner.level="$POLICY_LEVEL" \
         "$INIT_ARG" training.num_epochs="$POLICY_EPOCHS" task.env_runner.n_test=50 \
         exp_name="${POLICY_LEVEL}_rgbdt_fusion_${POLICY_INIT}" hydra.run.dir="$OUT" ${POLICY_EXTRA:-})
