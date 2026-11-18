@@ -204,8 +204,10 @@ def compute_cues(raw, roi=DEFAULT_ROI, depth_ref=None, depth_thr=DEPTH_OBJECT_TH
                 mask = degrade_mask(mask, raw["depth"], **vis["mask_noise"])
         if "thermal_raw" in raw:
             v = visibility_cues(raw["depth"], raw["thermal_raw"], mask, THERMAL_NOISE_COUNTS)
-        else:
+        elif "thermal" in raw:
             v = visibility_cues(raw["depth"], raw["thermal"], mask, THERMAL_NOISE_UINT8)
+        else:       # no thermal image in the sample (a policy trained on rgb + depth): only the depth entries count
+            v = visibility_cues(raw["depth"], np.zeros_like(raw["depth"]), mask, THERMAL_NOISE_UINT8)
         found = v[..., 2] > 0
         out[..., n_base:n_base + 2] = v[..., :2]
         out[..., n_base + 2] = np.where(found, v[..., 0] > vis["thr"][0], True)

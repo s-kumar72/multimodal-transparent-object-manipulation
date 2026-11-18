@@ -15,7 +15,8 @@ Robustness of a route=visible gate (all off by default; the test-set folder name
 condition its own output folder): --gate_error flip=0.1 inverts each visibility flag with that probability at every
 decision, --gate_error depth=0 (or thermal=0, =1) forces a flag; --vis_thr 7.5,15 recomputes the flags with other
 thresholds than the ones of training; --mask_noise drop=0.3 / shift=2 degrades the predicted glass mask the flags are
-measured on (policy/obs_util.py degrade_mask).
+measured on (policy/obs_util.py degrade_mask). --route_hold: a frame without a glass mask keeps the flags of the last
+frame that had one (both off before the first) instead of switching both sensors on.
 
 Test episode k uses seed test_start_seed + k; the object is seed % 5, so n_test=50 gives 10 episodes per object.
 The seeds 100000-100049 are the ones evaluated during training; any other range gives new scenes drawn the same way.
@@ -44,16 +45,20 @@ OmegaConf.register_new_resolver("eval", eval, replace=True)
 @click.option("--test_set", "test_sets", multiple=True, help="test set name(s) from sim/configs/manifest.json")
 @click.option("--drop", "drops", multiple=True, help="image modality switched off at inference (repeatable)")
 @click.option("--save_w", is_flag=True, help="store gate weights and cues per decision step in episodes.json")
-@click.option("--route", default=None, type=click.Choice(["visible", "depth_first", "all_on", "rgb_only"]),
-              help="routing rule at inference for a route=visible encoder (default: as trained)")
+@click.option("--route", default=None, type=click.Choice(["visible", "depth_first", "all_on", "rgb_only", "flags"]),
+              help="routing rule at inference for a route=visible encoder (default: as trained); flags: a "
+                   "route=learned encoder switched by the thresholded visibility flags instead of its gate")
+@click.option("--gate_state", default=None,
+              help="route=learned: replace the gate by one fitted after training (file written by policy/fit_gate.py)")
 @click.option("--route_latch", is_flag=True, help="keep the first step's visibility flags for the whole episode")
 @click.option("--guidance", default=1.0, type=float,
               help="s: denoise with eps_rgb + s (eps_routed - eps_rgb) (route=visible encoders; 1 = off)")
 @click.option("--gate_error", default=None, help="wrong visibility flags: flip=P and / or depth=0|1, thermal=0|1 (comma separated)")
 @click.option("--vis_thr", default=None, help="DEPTH,THERMAL visibility thresholds at inference (default: as trained)")
 @click.option("--mask_noise", default=None, help="errors of the predicted glass mask: drop=P and / or shift=K (comma separated)")
+@click.option("--route_hold", is_flag=True, help="no glass mask in a frame: keep the last flags instead of both on")
 def main(checkpoint, output_dir, n_test, test_start_seed, n_envs, n_vis, device, level, test_sets, drops, save_w,
-         route, route_latch, guidance, gate_error, vis_thr, mask_noise):
+         route, gate_state, route_latch, guidance, gate_error, vis_thr, mask_noise, route_hold):
 
     payload = torch.load(open(checkpoint, "rb"), pickle_module=dill, weights_only=False, map_location="cpu")
     cfg = payload["cfg"]
@@ -69,7 +74,11 @@ def main(checkpoint, output_dir, n_test, test_start_seed, n_envs, n_vis, device,
     if route:
         assert getattr(encoder, "route", "none") != "none", "--route needs an encoder trained with route=visible / soft"
         assert encoder.route == "visible" or route != "depth_first", "depth_first is a rule of route=visible"
+        assert encoder.route == "learned" or route != "flags", "flags replaces the trained gate of route=learned"
         encoder.route_eval = route
+    if gate_state:
+        assert getattr(encoder, "route", "none") == "learned", "--gate_state needs an encoder trained with route=learned"
+        encoder.gate.load_state_dict(torch.load(gate_state, map_location="cpu")["gate"])
     if route_latch or guidance != 1.0:
         assert getattr(encoder, "route", "none") != "none", "--route_latch / --guidance need route=visible / soft"
         assert encoder.route == "visible" or not route_latch, "--route_latch needs route=visible"
@@ -89,6 +98,11 @@ def main(checkpoint, output_dir, n_test, test_start_seed, n_envs, n_vis, device,
             cue_cfg.vis_thr = vis_thr
         if mask_noise:
             cue_cfg.mask_noise = mask_noise
+    if route_hold:
+        assert getattr(encoder, "route", "none") == "visible", "--route_hold needs route=visible"
+        thr = cfg.task.env_runner.shape_meta.obs.cue.vis_thr
+        assert min(float(v) for v in thr) >= 0, "--route_hold tells a missing mask by flags on with zero steps"
+        policy.route_hold = True
     suffix = ("_drop_" + "_".join(sorted(drops))) if drops else ""
 
     runner_cfg = cfg.task.env_runner
@@ -120,8 +134,8 @@ def main(checkpoint, output_dir, n_test, test_start_seed, n_envs, n_vis, device,
             policy.w_trace = None
         result = {"checkpoint": str(checkpoint), "level": level, "test_set": name, "n_test": n_test,
                   "test_start_seed": test_start_seed, "drop": sorted(drops), "route": route,
-                  "route_latch": route_latch, "guidance": guidance,
-                  "gate_error": gate_error, "vis_thr": vis_thr, "mask_noise": mask_noise,
+                  "gate_state": gate_state, "route_latch": route_latch, "guidance": guidance,
+                  "gate_error": gate_error, "vis_thr": vis_thr, "mask_noise": mask_noise, "route_hold": route_hold,
                   **{k: plain(v) for k, v in sorted(log.items())}}
         (out / "eval_log.json").write_text(json.dumps(result, indent=2))
         (out / "episodes.json").write_text(json.dumps(records, indent=1))

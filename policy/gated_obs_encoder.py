@@ -30,12 +30,21 @@ Options (all in the config under policy.obs_encoder):
                    at the glass mask, raw units: the cue key needs vis_raw; thr = the cue's vis_thr; tau = route_tau).
                    a (init 1) and b (init 0) are learned with the policy, so training can sharpen, soften or shift the
                    gate; with a = 1, b = 0 the weight is 0.5 at the threshold of route=visible. rgb stays at 1.
+                   learned: on / off as with visible, but decided by a gate that is trained (GatedDiffusionPolicy
+                   gate_train): p_m = sigmoid(MLP_m(cue)) for depth and thermal, the cue given WITHOUT its two
+                   thresholded flags. Training: the decision is sampled, on with probability p clipped to
+                   [route_explore, 1 - route_explore], or forced by the policy (route_force); inference: on when
+                   p > 0.5. The decision is hard, so the imitation loss gives the gate no gradient: what trains it is
+                   the policy's gate loss on last_p.
   route_tau        [depth, thermal] width of the soft gate in the units of the measurements (route=soft).
-  route_rgb_only_p training only, with route=visible / soft: extra probability of switching off depth and thermal together.
+  route_rgb_only_p training only, with route=visible / soft / learned: extra probability of switching off depth and
+                   thermal together.
+  route_explore    route=learned, training: the sampled decision keeps at least this probability of each state.
   gate_norm        none | max. max: the learned sigmoid weights are divided by the largest one of the frame, so the most
                    trusted sensor has w = 1 and the others are relative to it (the weights cannot all shrink together).
 At inference `route_eval` picks the rule: visible (as trained) | depth_first (thermal only when depth does not show
-the target; route=visible only) | all_on (no routing) | rgb_only.
+the target; route=visible only) | all_on (no routing) | rgb_only | flags (route=learned only: the thresholded
+flags of route=visible decide instead of the trained gate).
 After each forward the encoder keeps last_w (B, M), last_z {m: (B, D)} and last_drop (B, M) for the policy's
 auxiliary losses and for logging; force_drop = {"thermal"} switches a sensor off at inference (eval.py --drop).
 """
@@ -52,9 +61,10 @@ class GatedObsEncoder(SharedCropObsEncoder):
                  cue_key="cue", gate_input="cue", cross_modal_cue=True, gate_hidden=32, gate_act="sigmoid",
                  w_in_cond=True, cue_in_cond=False, missing="learned", dropout_mode="targeted", dropout_p=0.3,
                  dropout_p_other=0.1, rgb_gate_bias=2.0, route="none", route_rgb_only_p=0.0, route_tau=None,
-                 gate_norm="none"):
+                 gate_norm="none", route_explore=0.0):
         assert not share_rgb_model, "the gate needs one encoder per modality"
-        assert route in ("none", "visible", "soft") and gate_norm in ("none", "max")
+        assert route in ("none", "visible", "soft", "learned") and gate_norm in ("none", "max")
+        assert route != "learned" or (gate_input == "cue" and cross_modal_cue), "route=learned gates on the full cue"
         assert gate_input in ("cue", "feature", "both") and gate_act in ("sigmoid", "softmax")
         assert missing in ("learned", "zero") and dropout_mode in ("none", "random", "targeted")
         super().__init__(shape_meta, rgb_model, resize_shape=resize_shape, crop_shape=crop_shape,
@@ -67,6 +77,7 @@ class GatedObsEncoder(SharedCropObsEncoder):
         assert cross_modal_cue or n_cue_all == CUE_DIM, "per-modality cue slices assume the 6-vector"
         assert route == "none" or n_cue_all >= CUE_DIM + 4, "route=visible needs the visibility cues (vis_thr)"
         self.route, self.route_rgb_only_p, self.route_eval = route, route_rgb_only_p, "visible"
+        self.route_explore, self.route_force, self.last_p = float(route_explore), None, None
         self.gate_norm = gate_norm
         if route == "soft":
             cue_attr = shape_meta["obs"][cue_key]
@@ -175,6 +186,36 @@ class GatedObsEncoder(SharedCropObsEncoder):
                     drop[:, i] |= off
         return drop
 
+    def _learned_route(self, cue):
+        """route=learned -> (B, M) bool sensors to switch off, (B, 2) gate probabilities [depth, thermal] (with graph).
+        route_force ((B, 2), 1 = on) replaces the gate's own decision; route_eval all_on / rgb_only as for visible."""
+        B, dev = cue.shape[0], cue.device
+        c = cue.clone()
+        c[:, -2:] = 0                                                       # no thresholded flags in the gate's input
+        p = torch.cat([torch.sigmoid(self.gate[m](c)) if m in self.gate else torch.ones(B, 1, dtype=cue.dtype, device=dev)
+                       for m in ("depth", "thermal")], -1)
+        if self.route_force is not None:
+            on = self.route_force.to(p.dtype) > 0.5
+        elif self.training:
+            e = self.route_explore
+            on = torch.rand_like(p) < p.detach().clamp(e, 1 - e)
+        elif self.route_eval == "flags":                                    # the rule of route=visible, not the gate
+            on = cue[:, -2:] > 0.5
+        else:
+            on = p > 0.5
+        rule = "visible" if self.training else self.route_eval
+        drop = torch.zeros(B, len(self.mods), dtype=torch.bool, device=dev)
+        for i, m in enumerate(self.mods):
+            if m == "rgb" or rule == "all_on":
+                continue
+            drop[:, i] = True if rule == "rgb_only" else ~on[:, ("depth", "thermal").index(m)]
+        if self.training and self.route_rgb_only_p > 0:
+            off = torch.rand(B, device=dev) < self.route_rgb_only_p
+            for i, m in enumerate(self.mods):
+                if m != "rgb":
+                    drop[:, i] |= off
+        return drop, p
+
     def _soft_weights(self, cue):
         """(B, M) continuous weights from the two visibility measurements (cue entries -4, -3, raw units)."""
         B = cue.shape[0]
@@ -202,7 +243,10 @@ class GatedObsEncoder(SharedCropObsEncoder):
             z[m] = self.key_model_map[m](self.key_transform_map[m](img))
 
         logits = self._logits(z, cue)
-        drop = self._route_mask(cue) if self.route != "none" else self._dropout_mask(logits)
+        if self.route == "learned":
+            drop, self.last_p = self._learned_route(cue)
+        else:
+            drop = self._route_mask(cue) if self.route != "none" else self._dropout_mask(logits)
         if self.force_drop:
             for i, m in enumerate(self.mods):
                 if m in self.force_drop:
@@ -213,7 +257,7 @@ class GatedObsEncoder(SharedCropObsEncoder):
                 z[m] = torch.where(drop[:, i:i + 1], fill, z[m])
             if self.gate_input != "cue":                                     # gate sees the replaced features
                 logits = self._logits(z, cue)
-        if self.route == "visible":
+        if self.route in ("visible", "learned"):
             w = (~drop).to(logits.dtype)
         elif self.route == "soft":
             w = self._soft_weights(cue) * (~drop).to(logits.dtype)
