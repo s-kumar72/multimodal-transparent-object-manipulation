@@ -44,6 +44,7 @@ OmegaConf.register_new_resolver("eval", eval, replace=True)
 @click.option("--level", default=None, help="scene level (default: the training config's task.env_runner.level)")
 @click.option("--test_set", "test_sets", multiple=True, help="test set name(s) from sim/configs/manifest.json")
 @click.option("--drop", "drops", multiple=True, help="image modality switched off at inference (repeatable)")
+@click.option("--no_drop_suffix", is_flag=True, help="with --drop: keep the plain test-set folder names (give the condition its own -o)")
 @click.option("--save_w", is_flag=True, help="store gate weights and cues per decision step in episodes.json")
 @click.option("--route", default=None, type=click.Choice(["visible", "depth_first", "all_on", "rgb_only", "flags"]),
               help="routing rule at inference for a route=visible encoder (default: as trained); flags: a "
@@ -57,7 +58,7 @@ OmegaConf.register_new_resolver("eval", eval, replace=True)
 @click.option("--vis_thr", default=None, help="DEPTH,THERMAL visibility thresholds at inference (default: as trained)")
 @click.option("--mask_noise", default=None, help="errors of the predicted glass mask: drop=P and / or shift=K (comma separated)")
 @click.option("--route_hold", is_flag=True, help="no glass mask in a frame: keep the last flags instead of both on")
-def main(checkpoint, output_dir, n_test, test_start_seed, n_envs, n_vis, device, level, test_sets, drops, save_w,
+def main(checkpoint, output_dir, n_test, test_start_seed, n_envs, n_vis, device, level, test_sets, drops, no_drop_suffix, save_w,
          route, gate_state, route_latch, guidance, gate_error, vis_thr, mask_noise, route_hold):
 
     payload = torch.load(open(checkpoint, "rb"), pickle_module=dill, weights_only=False, map_location="cpu")
@@ -103,7 +104,7 @@ def main(checkpoint, output_dir, n_test, test_start_seed, n_envs, n_vis, device,
         thr = cfg.task.env_runner.shape_meta.obs.cue.vis_thr
         assert min(float(v) for v in thr) >= 0, "--route_hold tells a missing mask by flags on with zero steps"
         policy.route_hold = True
-    suffix = ("_drop_" + "_".join(sorted(drops))) if drops else ""
+    suffix = ("_drop_" + "_".join(sorted(drops))) if drops and not no_drop_suffix else ""
 
     runner_cfg = cfg.task.env_runner
     runner_cfg.n_train, runner_cfg.n_train_vis = 0, 0

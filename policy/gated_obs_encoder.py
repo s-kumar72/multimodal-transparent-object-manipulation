@@ -78,6 +78,7 @@ class GatedObsEncoder(SharedCropObsEncoder):
         assert route == "none" or n_cue_all >= CUE_DIM + 4, "route=visible needs the visibility cues (vis_thr)"
         self.route, self.route_rgb_only_p, self.route_eval = route, route_rgb_only_p, "visible"
         self.route_explore, self.route_force, self.last_p = float(route_explore), None, None
+        self.route_sample = True      # route=learned, training: sample the decision (False: p > 0.5, a gate that is not trained)
         self.gate_norm = gate_norm
         if route == "soft":
             cue_attr = shape_meta["obs"][cue_key]
@@ -100,7 +101,8 @@ class GatedObsEncoder(SharedCropObsEncoder):
         self.gate = nn.ModuleDict()
         for m in self.mods:
             in_dim = {"cue": n_cue, "feature": self.feat_dim[m], "both": n_cue + self.feat_dim[m]}[gate_input]
-            mlp = nn.Sequential(nn.Linear(in_dim, gate_hidden), nn.Mish(), nn.Linear(gate_hidden, 1))
+            mlp = nn.Sequential(nn.Linear(in_dim, gate_hidden), nn.Mish(), nn.Linear(gate_hidden, 1)) if gate_hidden \
+                else nn.Sequential(nn.Linear(in_dim, 1))                     # gate_hidden=0: a linear gate
             nn.init.zeros_(mlp[-1].weight)
             nn.init.constant_(mlp[-1].bias, rgb_gate_bias if m == "rgb" else 0.0)
             self.gate[m] = mlp
@@ -196,7 +198,7 @@ class GatedObsEncoder(SharedCropObsEncoder):
                        for m in ("depth", "thermal")], -1)
         if self.route_force is not None:
             on = self.route_force.to(p.dtype) > 0.5
-        elif self.training:
+        elif self.training and self.route_sample:
             e = self.route_explore
             on = torch.rand_like(p) < p.detach().clamp(e, 1 - e)
         elif self.route_eval == "flags":                                    # the rule of route=visible, not the gate

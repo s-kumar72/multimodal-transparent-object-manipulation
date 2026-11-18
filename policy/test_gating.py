@@ -512,6 +512,18 @@ def test_learned_route():
     assert ((enc.last_p.view(B, 2, 2).mean(1) > 0.5).float() == torch.stack(
         [1 - labels["ep_glass_seethrough"], 1 - labels["ep_is_crossover"]], -1)).all()
 
+    # gate_balance: with 3 of 4 samples "depth visible" the single "not visible" sample weighs as much as the other three
+    lab3 = {"ep_glass_seethrough": torch.tensor([0., 1., 0., 0.]), "ep_is_crossover": torch.tensor([0., 0., 0., 0.])}
+    def bias_grad(balance):
+        enc, pol = make("labels", gate_balance=balance)
+        pol.train()
+        pol.compute_loss({"obs": obs, "action": torch.zeros(B, T, 7), "meta": dict(lab3)}).backward()
+        return float(enc.gate["depth"][-1].bias.grad), float(enc.gate["thermal"][-1].bias.grad)
+    gd_plain, gt_plain = bias_grad(False)        # p = 0.5: d BCE / d logit = p - y, mean over samples
+    gd_bal, gt_bal = bias_grad(True)
+    assert abs(gd_plain - (-0.25) / 2) < 1e-6 and abs(gd_bal) < 1e-6        # balanced: the two classes cancel at p = 0.5
+    assert abs(gt_plain - (-0.5) / 2) < 1e-6 and abs(gt_bal - (-0.25) / 2) < 1e-6   # one class only: half the weight
+
     # heldout: marked episodes train the gate only; the others train the policy only
     def grads(actions, split, start=0):
         enc, pol = make("heldout", gate_start_step=start)
@@ -576,8 +588,44 @@ def test_learned_route():
     hist = fit_gate(enc.gate, cue, L, steps=300, lr=0.01)
     p = gate_probs(enc.gate, cue).mean(1)
     assert hist[-1] < before and ((p[:, 0] > 0.5) == good).float().mean() > 0.95 and (p[:, 1] < 0.5).all()
+
+    # frozen: the fitted gate is loaded, not trained, and switches the sensors by p > 0.5 in training as at inference
+    import os
+    import tempfile
+    src, _ = make("labels")
+    with torch.no_grad():
+        src.gate["depth"][0].weight.normal_()
+        src.gate["depth"][-1].weight.normal_()
+        src.gate["thermal"][-1].bias.fill_(-3.0)
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "gate.pt")
+        torch.save({"gate": src.gate.state_dict()}, path)
+        enc, pol = make("frozen", gate_state=path)
+    assert all(torch.equal(a, b) for a, b in zip(enc.gate.state_dict().values(), src.gate.state_dict().values()))
+    assert not any(q.requires_grad for q in enc.gate.parameters()) and enc.route_sample is False
+    pol.train()
+    batch = {"obs": obs, "action": act, "meta": dict(labels)}
+    loss = pol.compute_loss(batch)
+    loss.backward()
+    want = (enc.last_p > 0.5).float()                                       # (B * To, 2): depth, thermal
+    assert torch.equal(enc.last_w[:, 1:], want) and (want[:, 1] == 0).all() and 0 < want[:, 0].mean() < 1
+    for _ in range(3):                                                     # no sampling: the same decisions every pass
+        pol.compute_loss(batch)
+        assert torch.equal(enc.last_w[:, 1:], want)
+    assert next(pol.model.parameters()).grad.abs().sum() > 0 and all(q.grad is None for q in enc.gate.parameters())
+    pol.eval()
+    with torch.no_grad():
+        pol.compute_loss(batch)
+    assert torch.equal(enc.last_w[:, 1:], want) and enc.route_force is None
+    lin = GatedObsEncoder(meta, _resnet(), crop_shape=(84, 84), use_group_norm=True, imagenet_norm=True,
+                          dropout_mode="none", route="learned", gate_hidden=0)
+    assert [len(g) for g in lin.gate.values()] == [1, 1, 1] and lin.gate["depth"][0].out_features == 1
+    lin.eval()
+    lin(frame)
+    assert torch.allclose(lin.last_p, torch.full((B, 2), 0.5))
     print("ok learned route: p = 0.5 at start, forced / sampled / own decisions, labels fit the gate, "
-          "held-out samples move the gate only, flags rule at inference, gate fitted after training")
+          "held-out samples move the gate only, flags rule at inference, gate fitted after training, frozen gate, "
+          "linear gate")
 
 
 def test_switch_composition():

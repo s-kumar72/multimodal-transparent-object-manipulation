@@ -30,7 +30,9 @@ Inference options for an encoder with route=visible (policy/gated_obs_encoder.py
 
 Training the gate of an encoder with route=learned (gate_train; the decision is hard, so the imitation loss of the
 samples the policy is trained on cannot move the gate):
-  labels    the gate is a classifier of "the glass is visible in this sensor", trained with a cross-entropy on the
+  labels    (gate_balance=true: the two label classes of a sensor weigh the same in every batch, so the rare
+            "not visible" class is not outvoted)
+            the gate is a classifier of "the glass is visible in this sensor", trained with a cross-entropy on the
             episode labels of the simulator (depth: not see-through, thermal: no crossover). During training the
             sensors are switched by the labels, at inference by the gate.
   heldout   no labels. The episodes the dataset marks (gate_split, batch meta ep_gate_split) are left out of the
@@ -39,6 +41,9 @@ samples the policy is trained on cannot move the gate):
             loss_gate = sum_m p_m (L_on,m - L_off,m). A sensor is kept where it lowers the loss on demos the policy
             was not fitted to, which is what the training loss cannot tell (it is lower with every sensor on).
             The gate loss starts after gate_start_step training steps.
+  frozen    two-stage training: the gate was fitted before (policy/fit_gate.py) and is loaded from gate_state
+            ({"gate": state dict}); it is not trained here. The sensors are switched by its decision (p > 0.5)
+            during training and at inference, and every demo trains the policy, as with route=visible.
 """
 import torch
 import torch.nn as nn
@@ -52,12 +57,19 @@ from diffusion_policy.policy.diffusion_unet_image_policy import DiffusionUnetIma
 class GatedDiffusionPolicy(DiffusionUnetImagePolicy):
     def __init__(self, *args, gate_loss_weight=0.1, gate_anneal_steps=20000, gate_tau=5.0,
                  aux_weight=0.1, aux_hidden=256, log_every=500, gate_depth_target="none", gate_train="none",
-                 gate_start_step=2000, **kwargs):
+                 gate_start_step=2000, gate_state=None, gate_balance=False, **kwargs):
         super().__init__(*args, **kwargs)
-        assert gate_depth_target in ("none", "seethrough") and gate_train in ("none", "labels", "heldout")
+        assert gate_depth_target in ("none", "seethrough") and gate_train in ("none", "labels", "heldout", "frozen")
+        assert (gate_train == "frozen") == (gate_state is not None), "gate_state is the gate of gate_train=frozen"
         assert (gate_train != "none") == (getattr(self.obs_encoder, "route", "none") == "learned"), \
             "gate_train labels / heldout goes with an encoder with route=learned"
         self.gate_train, self.gate_start_step = gate_train, gate_start_step
+        self.gate_balance = bool(gate_balance)       # gate_train=labels: both label classes weigh the same per sensor
+        if gate_train == "frozen":
+            self.obs_encoder.gate.load_state_dict(torch.load(gate_state, map_location="cpu")["gate"])
+            for q in self.obs_encoder.gate.parameters():
+                q.requires_grad_(False)
+            self.obs_encoder.route_sample = False          # training switches by p > 0.5, as inference does
         self.gate_loss_weight, self.gate_anneal_steps, self.gate_tau = gate_loss_weight, gate_anneal_steps, gate_tau
         self.gate_depth_target = gate_depth_target
         self.aux_weight, self.log_every = aux_weight, log_every
@@ -122,7 +134,7 @@ class GatedDiffusionPolicy(DiffusionUnetImagePolicy):
         if self.gate_train == "labels":
             assert visible is not None, "gate_train=labels needs ep_glass_seethrough / ep_is_crossover in the batch meta"
             enc.route_force = visible[:, None, :].expand(B, To, 2).reshape(B * To, 2)
-        else:
+        elif self.gate_train == "heldout":
             assert "ep_gate_split" in meta, "gate_train=heldout needs the dataset's gate_split"
             held = meta["ep_gate_split"].float() > 0.5
         try:
@@ -149,7 +161,12 @@ class GatedDiffusionPolicy(DiffusionUnetImagePolicy):
 
         if self.gate_train == "labels":
             tgt = visible[:, None, :].expand(B, To, 2)
-            l_gate = F.binary_cross_entropy(p, tgt)
+            if self.gate_balance:       # per sensor, "visible" and "not visible" each carry half of the weight of the batch
+                share = tgt.mean((0, 1), keepdim=True)
+                wgt = torch.where(tgt > 0.5, 0.5 / share.clamp(min=1e-6), 0.5 / (1 - share).clamp(min=1e-6))
+                l_gate = (F.binary_cross_entropy(p, tgt, reduction="none") * wgt).mean()
+            else:
+                l_gate = F.binary_cross_entropy(p, tgt)
             loss = loss + l_gate
             terms["gate_bce"] = l_gate.detach()
             terms["gate_acc"] = ((p > 0.5) == (tgt > 0.5)).float().mean().detach()
