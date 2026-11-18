@@ -24,7 +24,7 @@ from diffusion_policy.common.sampler import SequenceSampler, downsample_mask, ge
 from diffusion_policy.dataset.base_dataset import BaseImageDataset
 from diffusion_policy.model.common.normalizer import LinearNormalizer, SingleFieldLinearNormalizer
 
-from policy.obs_util import compute_cues, cue_opts, cue_roi, to_policy_obs
+from policy.obs_util import compute_cues, cue_opts, cue_roi, glass_location, to_policy_obs
 
 META_KEYS = ("ep_thermal_gap", "ep_is_crossover", "ep_t_env", "ep_obj_temp", "ep_level", "ep_liquid_fill",
              "ep_glass_seethrough")
@@ -96,7 +96,7 @@ class GlassImageDataset(BaseImageDataset):
         self.has_cue = "cue" in self.obs_meta
         self.roi = cue_roi(self.obs_meta)
         self.cue_opts = cue_opts(self.obs_meta)
-        data_keys = [k for k in self.obs_meta if k != "cue"]
+        data_keys = [k for k in self.obs_meta if k not in ("cue", "glass_loc")]
         available = zarr_data_keys(zarr_path)
         if self.has_cue and "thermal" in self.obs_meta and "thermal_raw" in available:
             data_keys.append("thermal_raw")
@@ -108,6 +108,14 @@ class GlassImageDataset(BaseImageDataset):
             assert len(masks) == self.replay_buffer.n_steps, (mask_path, len(masks), self.replay_buffer.n_steps)
             self.replay_buffer.root["data"]["glass_mask"] = masks
             data_keys.append("glass_mask")
+        loc_attr = self.obs_meta.get("glass_loc")
+        if loc_attr is not None:       # where the glass mask is, per frame, as a low_dim observation (glass_location)
+            loc_path = loc_attr.get("glass_mask") or mask_path
+            assert loc_path is not None, "glass_loc needs glass_mask on its key or on the cue key"
+            loc_masks = masks if loc_path == mask_path else np.load(loc_path)
+            assert len(loc_masks) == self.replay_buffer.n_steps, (loc_path, len(loc_masks), self.replay_buffer.n_steps)
+            self.replay_buffer.root["data"]["glass_loc"] = glass_location(loc_masks)
+            data_keys.append("glass_loc")
 
         val_mask = get_val_mask(n_episodes=self.replay_buffer.n_episodes, val_ratio=val_ratio, seed=seed)
         train_mask = downsample_mask(mask=~val_mask, max_n=max_train_episodes, seed=seed)

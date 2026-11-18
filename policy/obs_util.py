@@ -19,6 +19,12 @@ Besides the images it can produce two things the fusion models need:
   dataset supplies it (policy/make_glass_masks.py), else predicted from the frame with `seg_ckpt` (policy/glass_seg.py).
   `mask_noise: {drop: p, shift: k}` on the cue key degrades the predicted mask (degrade_mask; evaluation only, set by
   eval.py --mask_noise, never in a training config).
+  `seg_mods: [rgb, depth]` on the cue key: the sensors the segmentation network may use for a predicted mask (default:
+  all it was trained with; evaluation only, set by eval.py --seg_mods).
+* the glass location (`glass_loc` key, type low_dim, shape [5]): [found, centre x, centre y, width, height] of the glass
+  mask of the frame as fractions of the frame (glass_location), so the policy is told where the segmentation network
+  sees the glass. The dataset computes it from stored masks (`glass_mask: <.npy>` on the glass_loc key, else the cue
+  key's masks); the eval env predicts the mask with `seg_ckpt` and optionally `seg_mods` of the glass_loc key.
 """
 import warnings
 
@@ -170,6 +176,31 @@ def degrade_mask(mask, depth8, drop=0.0, shift=0, seed=0):
 
 
 VIS_DIM = 4                         # depth step, thermal step, depth visible, thermal visible
+LOC_DIM = 5                         # found, centre x, centre y, width, height of the glass mask
+
+
+def glass_location(mask, min_pixels=5):
+    """Where the glass mask is. mask (..., H, W) bool or (..., H, W, 1) uint8 -> (..., LOC_DIM) float32:
+    [found, centre x, centre y, width, height]; the centre is the centroid and width / height the bounding box, all as
+    fractions of the frame (x to the right, y down). Zeros when the mask has fewer than min_pixels pixels."""
+    m = np.asarray(mask)
+    if m.shape[-1] == 1:
+        m = m[..., 0]
+    m = m.astype(bool)
+    lead, (H, W) = m.shape[:-2], m.shape[-2:]
+    f = m.reshape((-1, H, W))
+    out = np.zeros((len(f), LOC_DIM), np.float32)
+    cols, rows = f.sum(1), f.sum(2)                   # pixels per column (n, W) and per row (n, H)
+    px = cols.sum(1)
+    ok = px >= min_pixels
+    if ok.any():
+        c, r, n = cols[ok], rows[ok], px[ok].astype(np.float32)
+        out[ok, 0] = 1.0
+        out[ok, 1] = (c * (np.arange(W) + 0.5)).sum(1) / n / W
+        out[ok, 2] = (r * (np.arange(H) + 0.5)).sum(1) / n / H
+        out[ok, 3] = (W - np.argmax(c[:, ::-1] > 0, 1) - np.argmax(c > 0, 1)) / W
+        out[ok, 4] = (H - np.argmax(r[:, ::-1] > 0, 1) - np.argmax(r > 0, 1)) / H
+    return out.reshape(lead + (LOC_DIM,))
 
 
 def compute_cues(raw, roi=DEFAULT_ROI, depth_ref=None, depth_thr=DEPTH_OBJECT_THR, vis=None):
@@ -199,7 +230,7 @@ def compute_cues(raw, roi=DEFAULT_ROI, depth_ref=None, depth_thr=DEPTH_OBJECT_TH
         mask = raw.get("glass_mask")
         if mask is None:
             from policy.glass_seg import predict_glass_mask
-            mask = predict_glass_mask(raw, vis["seg_ckpt"])
+            mask = predict_glass_mask(raw, vis["seg_ckpt"], mods=vis.get("seg_mods"))
             if vis.get("mask_noise"):
                 mask = degrade_mask(mask, raw["depth"], **vis["mask_noise"])
         if "thermal_raw" in raw:
@@ -244,15 +275,38 @@ def cue_opts(obs_meta):
             opts["vis"]["raw"] = True
         if attr.get("mask_noise"):   # robustness tests only (eval.py --mask_noise)
             opts["vis"]["mask_noise"] = {k: float(v) for k, v in dict(attr.get("mask_noise")).items()}
+        if attr.get("seg_mods") is not None:   # sensors the segmentation network may use (eval.py --seg_mods)
+            opts["vis"]["seg_mods"] = [str(m) for m in attr.get("seg_mods")]
     return opts
+
+
+def _loc_mask(raw, obs_meta):
+    """Predicted glass mask for the glass_loc observation, and whether the cue can use the same one (same checkpoint
+    and sensors, no mask noise), so that the eval env runs the segmentation network once per frame."""
+    from policy.glass_seg import predict_glass_mask
+    attr = obs_meta["glass_loc"]
+    mods = [str(m) for m in attr.get("seg_mods")] if attr.get("seg_mods") is not None else None
+    mask = predict_glass_mask(raw, attr["seg_ckpt"], mods=mods)
+    vis = cue_opts(obs_meta).get("vis") if "cue" in obs_meta else None
+    shared = bool(vis) and not vis.get("mask_noise") and str(vis.get("seg_ckpt")) == str(attr["seg_ckpt"]) \
+        and vis.get("seg_mods") == mods
+    return mask, shared
 
 
 def to_policy_obs(raw, obs_meta):
     """raw: dict of (..., H, W, C) uint8 images / (..., D) vectors. obs_meta: shape_meta["obs"]."""
     out = {}
+    if "glass_loc" in obs_meta and "glass_loc" not in raw:    # eval env: from the predicted mask of the frame
+        mask, shared = _loc_mask(raw, obs_meta)
+        raw = dict(raw, glass_loc=glass_location(mask))
+        if shared and raw.get("glass_mask") is None:
+            raw["glass_mask"] = mask
     for key, attr in obs_meta.items():
         if key == "cue":
             out[key] = compute_cues(raw, cue_roi(obs_meta), **cue_opts(obs_meta))
+            continue
+        if key == "glass_loc":
+            out[key] = np.asarray(raw[key], np.float32)
             continue
         x = raw[key]
         if attr.get("type", "low_dim") == "rgb":
