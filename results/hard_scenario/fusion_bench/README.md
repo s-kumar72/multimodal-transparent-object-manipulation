@@ -1548,6 +1548,71 @@ epoch 1. With four trainings the free memory fell to 17 GB (each training holds 
 long training on the machine; three trainings and one evaluation at a time are run instead. Its epoch-0 checkpoint
 was removed. The variant is not run in this round.
 
+## Round 13: the glass location as an input (planned 11/19 04:45 KST)
+
+### What was measured first (no policy involved)
+
+`policy/check_glass_mask.py`, output in `glass_loc/mask_check.txt`: the glass mask of the segmentation network
+(`mix_ws`, the one behind the visibility flags) against the true mask on the segmentation test frames of L0_bench
+(549 frames per test set), with all sensors, without thermal, without depth and with rgb alone. A sensor is left out
+the way the network was trained with missing sensors.
+
+| frames (test set g, held-out conditions) | all sensors | without thermal | rgb only |
+|---|---|---|---|
+| depth and thermal show the glass (371) | 100% within 4 px, median 0.48 px | 100%, 0.48 px | 93.8%, 0.70 px |
+| depth blind, thermal shows it (111) | 98.2%, 0.65 px | 100%, 0.61 px | 100%, 0.76 px |
+| thermal blind, depth shows it (55) | 100%, 0.44 px | 100%, 0.46 px | 98.2%, 0.92 px |
+| both blind (12 frames, 1 episode) | 100%, 0.44 px | 100%, 0.33 px | 100%, 0.30 px |
+
+(share of frames whose mask centroid is within 4 px of the true one, and the median distance; the frame is 96 px
+wide and the glass mask about 4 x 8 px.) Test set (a) and the demo frames give the same picture: a mask is found in
+every frame (with rgb alone in all but 2 of the 31,120 demo frames), and its centre does not depend on thermal or
+depth. On 8000 demo frames the centroid of the rgb-only
+mask is within 4 px of the stored all-sensor mask in 98.9–100% of the frames of every scene group.
+
+So the system knows where the glass is in every scene type, from rgb alone, while the policies succeed in about half
+of the see-through scenes (`learn_labels`, seed 42: 43/90 = 0.478 as trained; normal scenes 236/310 = 0.761). Two
+consequences are tested in this round: whether telling the policy the location closes that gap, and whether depth
+and thermal still add anything once the location is given.
+
+### Plan (written before the results)
+
+New observation `glass_loc` (`policy/obs_util.py` `glass_location`): [found, centre x, centre y, width, height] of
+the glass mask of the frame, as fractions of the frame, appended to the conditioning like the joint angles. Training
+reads it from stored masks, evaluation predicts the mask per frame. Policies without the key are unchanged.
+
+Trainings (seed 42, 101 epochs, the settings of their base runs):
+
+- `learn_labels_loc`: `learn_labels` plus `glass_loc` from the all-sensor mask (the one of the visibility cues).
+- `rgb_loc`: the plain rgb policy (`L0_bench_rgb_500demos`) plus `glass_loc` from the mask of the network restricted
+  to rgb, in training (`data/fusion_bench_masks_L0_bench_500_rgb.npy`, made with `policy/make_glass_masks.py ... rgb`)
+  and at inference. Depth and thermal are used nowhere in this run.
+
+Evaluations, 200 episodes per test set: both runs as trained; `learn_labels_loc` also with guidance 3.0 (the scale
+of round 6) and under three conditions at inference, each as trained and with guidance:
+
+- `--seg_mods rgb,depth`: the mask (gate cues and location) without thermal;
+- `--drop thermal --seg_mods rgb,depth`: thermal removed from the whole system;
+- `--route rgb_only --seg_mods rgb`: the same network with rgb and the rgb-only location, depth and thermal off.
+
+Criteria:
+
+- A, the location helps: `learn_labels_loc` against `learn_labels` of seed 42 on the same 400 episodes, with
+  guidance 3.0 (the operating point of the earlier rounds): higher success with a matched sign test p < 0.05. The
+  see-through episodes (90) and the comparison as trained are reported next to it. The run also has to meet the
+  limits of rounds 10 and 12 for a seed-42 variant (0.675 as trained, 0.747 with guidance); if it meets them and A
+  holds, it is run on seeds 43 and 44.
+- B, thermal with the location given: thermal removed from the whole system against the full system on the same
+  episodes; thermal contributes if the matched sign test gives p < 0.05 over all episodes or over the see-through
+  episodes (both reported, as trained and with guidance).
+- C, the other sensors with the location given: `rgb_loc` against `learn_labels_loc` as trained on the same test
+  episodes. If `rgb_loc` is not below it (matched sign test p >= 0.05, or above), depth and thermal are not needed in
+  this benchmark once a segmentation network gives the location, and the claim of the fusion policy has to change.
+  The result is reported either way; the rgb-only condition of `learn_labels_loc` is the same question asked of
+  one network.
+
+The two trainings need 11 GB of disk and are started when that space is available.
+
 ## Files
 
 - `L0_bench_rgbdt_500demos_<tag>/`: `train_logs.json.txt`, `curve.json`, and per test set `eval_log.json` and
