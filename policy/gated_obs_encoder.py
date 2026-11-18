@@ -43,7 +43,8 @@ Options (all in the config under policy.obs_encoder):
   gate_norm        none | max. max: the learned sigmoid weights are divided by the largest one of the frame, so the most
                    trusted sensor has w = 1 and the others are relative to it (the weights cannot all shrink together).
 At inference `route_eval` picks the rule: visible (as trained) | depth_first (thermal only when depth does not show
-the target; route=visible only) | all_on (no routing) | rgb_only.
+the target; route=visible only) | all_on (no routing) | rgb_only | flags (route=learned only: the thresholded
+flags of route=visible decide instead of the trained gate).
 After each forward the encoder keeps last_w (B, M), last_z {m: (B, D)} and last_drop (B, M) for the policy's
 auxiliary losses and for logging; force_drop = {"thermal"} switches a sensor off at inference (eval.py --drop).
 """
@@ -198,6 +199,8 @@ class GatedObsEncoder(SharedCropObsEncoder):
         elif self.training:
             e = self.route_explore
             on = torch.rand_like(p) < p.detach().clamp(e, 1 - e)
+        elif self.route_eval == "flags":                                    # the rule of route=visible, not the gate
+            on = cue[:, -2:] > 0.5
         else:
             on = p > 0.5
         rule = "visible" if self.training else self.route_eval

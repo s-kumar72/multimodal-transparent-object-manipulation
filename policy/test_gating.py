@@ -534,8 +534,50 @@ def test_learned_route():
     assert (gu3 is None or gu3.abs().sum() == 0) and gd3.abs().sum() > 0   # all held out: nothing for the policy
     _, gd4, _, _ = grads(act, split, start=5)
     assert gd4 is None or gd4.abs().sum() == 0                             # before gate_start_step the gate is not trained
+
+    # inference with the flags of the rule instead of the gate (route_eval=flags)
+    from policy.fit_gate import collect, fit_gate, fresh_gate, gate_objective, gate_probs
+    enc, pol = make("heldout")
+    enc.eval()
+    with torch.no_grad():
+        enc.gate["depth"][-1].bias.fill_(5.0)                              # the gate itself says: both on
+        enc.gate["thermal"][-1].bias.fill_(5.0)
+    fl = dict(frame, cue=frame["cue"].clone())
+    fl["cue"][:, -2:] = torch.tensor([[1., 1.], [0., 1.], [1., 0.], [0., 0.]])
+    enc(fl)
+    assert enc.last_w.tolist() == [[1, 1, 1]] * B
+    enc.route_eval = "flags"
+    enc(fl)
+    assert enc.last_w.tolist() == [[1, 1, 1], [1, 0, 1], [1, 1, 0], [1, 0, 0]]
+    enc.route_eval = "visible"
+
+    # a gate fitted after training (policy/fit_gate.py): cached losses of the four sensor states, then the gate alone
+    pol.eval()
+    torch.manual_seed(2)
+    data = collect(pol, [{"obs": obs, "action": act, "meta": dict(labels)}], draws=2, device="cpu")
+    assert data["L"].shape == (B, 2, 2) and data["cue"].shape == (B, 2, CUE_DIM + 4) and enc.route_force is None
+    assert torch.equal(data["flags"], obs["cue"][:, :2, -2:]) and torch.equal(data["cue"], obs["cue"][:, :2])
+    assert not torch.allclose(data["L"][:, 1, 1], data["L"][:, 0, 0])
+    torch.manual_seed(2)                                                   # state (on, on) = the loss with the gate's own "both on"
+    per, _, _ = pol._ddpm_per_sample({"obs": obs, "action": act})
+    torch.manual_seed(2)
+    one = collect(pol, [{"obs": obs, "action": act}], draws=1, device="cpu")
+    assert torch.allclose(one["L"][:, 1, 1], per, atol=1e-6) and "seethrough" not in one
+    n = 400                             # depth lowers the loss where cue entry 0 is positive, thermal always raises it
+    cue = torch.randn(n, 2, CUE_DIM + 4)
+    cue[:, 1] = cue[:, 0]
+    good = cue[:, 0, 0] > 0
+    L = 0.001 * torch.randn(n, 2, 2)
+    L[:, 1, :] += torch.where(good, -0.01, 0.01)[:, None]
+    L[:, :, 1] += 0.005
+    fresh_gate(enc.gate, seed=0)
+    assert torch.allclose(gate_probs(enc.gate, cue), torch.full((n, 2, 2), 0.5))
+    before = float(gate_objective(gate_probs(enc.gate, cue).mean(1), L)[0])
+    hist = fit_gate(enc.gate, cue, L, steps=300, lr=0.01)
+    p = gate_probs(enc.gate, cue).mean(1)
+    assert hist[-1] < before and ((p[:, 0] > 0.5) == good).float().mean() > 0.95 and (p[:, 1] < 0.5).all()
     print("ok learned route: p = 0.5 at start, forced / sampled / own decisions, labels fit the gate, "
-          "held-out samples move the gate only")
+          "held-out samples move the gate only, flags rule at inference, gate fitted after training")
 
 
 def test_switch_composition():
