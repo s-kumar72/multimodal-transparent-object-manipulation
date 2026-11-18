@@ -59,8 +59,12 @@ The `mix_paper` run turns all of this off, so this version can be compared again
 | `summarize.py` | builds the results table |
 | `policy_encoder.py`, `config/train_glass_fusion_image.yaml` | the model as a Diffusion Policy image encoder |
 | `train.sh` | runs everything, start to finish |
+| `fusion_policy.py` | Diffusion Policy with the fusion encoder, plus the optional ablation losses and weight logging |
+| `eval_fusion.py` | `policy/eval.py` with weight logging for fusion checkpoints from before `fusion_policy.py` |
+| `ablation_table.py`, `ablations/` | the ablation plan, its run script, results table and figures |
 | `test_fusion.py` | quick tests that run on a CPU |
 | `RUNNING.md` | how to run it and how to read the results |
+| `ABLATIONS.md` | the ablations after the first L0_bench round: what each tests and how to run it |
 
 ## The experiments
 
