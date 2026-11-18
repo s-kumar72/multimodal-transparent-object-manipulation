@@ -1003,6 +1003,508 @@ three values per side; p values are not corrected for the number of comparisons.
 5. Open from round 7: the control with visibility-independent single-sensor dropout; the control's own guidance
    scale; partially visible targets; the third seed of learned attention weighting.
 
+## Round 9: thermal input, gate errors over three seeds, missing masks, switched composition (11/18 01:26 – 11/19 00:10)
+
+### Runs
+
+Three trainings and 55 evaluations (proposals 1–4 of round 8). One evaluation (`flip10_g30`, seed 43) was stopped
+twice by the memory guard while another account loaded several models and finished at the third attempt; everything
+else finished at the first.
+
+- **`vis_route` on rgb + depth**, `L0_bench_rgbd_500demos_vis_route[_seed43|_seed44]`: the `vis_route` command with
+  the rgbd input
+  (`TRAIN="policy/train_gated.sh gate" TAG=vis_route[_seedNN] EXTRA="<vis_route overrides> [training.seed=NN]"
+  bash scripts/run_experiment.sh L0_bench rgbd 500`),
+  epoch 100 without interruption; depth is switched off where the glass is not visible in it, 10% rgb-only samples,
+  no thermal image in the policy's input. The glass mask of the gate still comes from the rgb + depth + thermal
+  segmentation network of rounds 3–5, so this removes thermal from the policy, not from the system. 200 episodes per
+  test set in `n200/`, as trained and `__guide30`.
+- **Thermal always off** on the `vis_route` checkpoints of seeds 43 and 44 (`__toff`, `__toff_g30`), and the other
+  **gate errors** of round 8 on the same two seeds (39 evaluations with the thermal ones), same options and tags.
+- **Missing masks keep the last flags** (`--route_hold`), evaluations only: `__mdrop30_hold[_g30]` on the three
+  seeds, `__hold[_g30]` (no error) on seed 42.
+- **Switched composition**, `n200/compose_switch[_seed43]/`: the plain rgbd and rgbt policies of the benchmark, one of
+  them acting per decision (`policy/eval_compose.py -c RGBD -c RGBT --switch <vis_route checkpoint of the seed>`).
+
+Code added, all opt-in (`python -m policy.test_gating` passes; existing configurations give identical outputs):
+
+- `policy/obs_util.py`: `compute_cues` without a thermal image (the thermal entries of the cue are then those of a
+  sensor that never shows the glass; the depth entries are unchanged).
+- `policy/eval.py --route_hold` (`policy/gated_policy.py`): a frame without a glass mask keeps the flags of the last
+  frame of the episode that had one; before the first such frame both sensors are off. Without it such a frame has
+  both sensors on (conclusion 29).
+- `policy/eval_compose.py --switch CKPT` (`policy/compose_policy.py`): the first member acts where the depth flag is
+  on, the second where it is off, per environment and decision, with the visibility cue computed as for the
+  `route=visible` checkpoint CKPT (only its cue settings are read); `episodes.json` has the member weights and the
+  cue of every decision.
+
+Fixed before the results: the conditions, seeds and tags above; guidance 3.0 as selected in round 6; for the
+composition the members and the rule (rgbd where the depth flag is on, rgbt elsewhere), no weight and nothing else
+selected, seeds 42 and 43 (rgbt has no third seed).
+
+### Does the policy need the thermal image? (three seeds, 1200 episodes per row)
+
+| run | guidance | seed 42 / 43 / 44 (of 400) | all | normal (930) | see-through (270) | crossover (126) |
+|---|---|---|---|---|---|---|
+| vis_route | – | 282 / 273 / 282 | 837 = 0.698 | 0.741 | 0.548 | 0.643 |
+| vis_route, thermal always off | – | 276 / 268 / 263 | 807 = **0.672** | 0.720 | 0.507 | 0.643 |
+| **vis_route trained on rgb + depth** | – | 270 / 262 / 263 | 795 = **0.662** (0.64–0.69) | 0.715 | 0.481 | 0.611 |
+| vis_route | 3.0 | 311 / 305 / 320 | 936 = 0.780 | 0.840 | 0.574 | 0.778 |
+| vis_route, thermal always off | 3.0 | 306 / 300 / 321 | 927 = **0.772** | 0.855 | 0.489 | 0.786 |
+| **vis_route trained on rgb + depth** | 3.0 | 310 / 301 / 300 | 911 = **0.759** (0.73–0.78) | 0.835 | 0.496 | 0.778 |
+
+- **Thermal off at inference, as trained**: 0.698 → 0.672 (same episodes 98 lost, 68 gained, p 0.024; every seed
+  lower; seed level Welch p 0.11, paired p 0.16). Seed 42 alone (round 8) showed 0.705 → 0.690, p 0.48.
+- **Thermal off at inference, with guidance**: 0.780 → 0.772 overall (110 lost, 101 gained, p 0.58), but the
+  see-through episodes fall from 0.574 to 0.489 (51 lost, 28 gained, p 0.013) while the normal ones rise from 0.840
+  to 0.855 (59 lost, 73 gained, p 0.26).
+- **Trained without the thermal image**: 0.662 as trained, below `vis_route` on the same episodes (144 lost, 102
+  gained, p 0.009; Fisher p 0.073; seed level Welch p 0.025, paired p 0.031), on see-through episodes 0.481 against
+  0.548 (44 lost, 26 gained, p 0.041). With guidance 0.759 against 0.780 (143 lost, 118 gained, p 0.14; Fisher
+  p 0.25; seed level p 0.20 / 0.29), see-through 0.496 against 0.574 (57 lost, 36 gained, p 0.038), normal 0.835
+  against 0.840, crossover 0.778 in both.
+- Trained without thermal against switching it off at inference: 0.759 against 0.772 with guidance (p 0.47),
+  see-through 0.496 against 0.489.
+- **Against the baselines the rgb + depth policy keeps most of the margin**: as trained 0.662 against rgbd 0.624
+  (Fisher p 0.055; matched 230 gained, 184 lost, p 0.027) and rgbdt 0.613 (p 0.014; 238 / 179, p 0.004), level with
+  the control (0.657, p 0.80); with guidance 0.759 against rgbd (p 1e-12; seed level p 0.007), rgbdt (p 2e-14; seed
+  level p 0.012) and the guided control 0.682 (p 3e-5; seed level p 0.052 / 0.077).
+- **Guidance gains as much without thermal**: +9.7 points for the rgb + depth policy (45 lost, 161 gained), +8.2 for
+  `vis_route`, +10.0 for `vis_route` with thermal off, +2.5 for the control.
+- 50 episodes per test set at epoch 100, rgb + depth: (a) 0.62 / 0.54 / 0.62, (g) 0.70 / 0.68 / 0.54 for seeds 42 /
+  43 / 44.
+
+### Gate errors at inference over three seeds (`vis_route`, 1200 episodes per cell)
+
+The conditions of round 8 on the checkpoints of seeds 42, 43 and 44; the same test episodes in every cell. Realized
+flag errors as shares of the decision steps of the runs as trained (the guided runs are within 2 points):
+
+| error | depth on, see-through | depth off, normal | thermal on, crossover | thermal off, otherwise |
+|---|---|---|---|---|
+| none | 0.5% | 0.7% | 1.5% | 0.7% |
+| flags flipped, 10% | 11.2% | 11.0% | 11.4% | 11.0% |
+| flags flipped, 30% | 31.0% | 29.3% | 31.9% | 29.7% |
+| depth always off | 0% | 100% | 3.3% | 1.0% |
+| thermal always off | 0.4% | 0.9% | 0% | 100% |
+| both always on | 100% | 0% | 100% | 0% |
+| thresholds × 0.5 (7.5 / 15) | 4.5% | 0.5% | 6.4% | 0.3% |
+| thresholds × 2 (30 / 60) | 0.2% | 2.1% | 1.0% | 8.7% |
+| mask shifted up to 1 px | 0.7% | 2.7% | 3.5% | 3.1% |
+| mask shifted up to 2 px | 1.9% | 38.0% | 6.1% | 21.6% |
+| mask missing in 30% of the frames | 29.8% | 0.4% | 33.0% | 0.7% |
+
+"vs none": episodes lost / gained against the row "none" of the same guidance, matched by seed and episode (sign
+test). Baselines over the same three seeds: rgbd 0.624, rgbdt 0.613.
+
+| error | as trained | seed 42 / 43 / 44 | normal (930) | see-through (270) | crossover (126) | vs none | guide 3.0 | seed 42 / 43 / 44 | normal | see-through | crossover | vs none |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| none | 837 = 0.698 | 282 / 273 / 282 | 0.741 | 0.548 | 0.643 | | 936 = 0.780 | 311 / 305 / 320 | 0.840 | 0.574 | 0.778 | |
+| flags flipped, 10% | 803 = 0.669 | 272 / 260 / 271 | 0.718 | 0.500 | 0.611 | 77 / 43 (p 0.002) | 900 = 0.750 | 301 / 291 / 308 | 0.822 | 0.504 | 0.730 | 93 / 57 (p 0.004) |
+| flags flipped, 30% | 735 = 0.613 | 244 / 243 / 248 | 0.674 | 0.400 | 0.516 | 148 / 46 (p 1e-13) | 814 = 0.678 | 272 / 262 / 280 | 0.791 | 0.289 | 0.571 | 172 / 50 (p 7e-17) |
+| depth always off | 690 = 0.575 | 230 / 225 / 235 | 0.582 | 0.552 | 0.444 | 173 / 26 (p 8e-28) | 740 = 0.617 | 257 / 234 / 249 | 0.635 | 0.552 | 0.437 | 228 / 32 (p 1e-37) |
+| thermal always off | 807 = 0.672 | 276 / 268 / 263 | 0.720 | 0.507 | 0.643 | 98 / 68 (p 0.024) | 927 = 0.772 | 306 / 300 / 321 | 0.855 | 0.489 | 0.786 | 110 / 101 (p 0.58) |
+| both always on | 723 = 0.603 | 234 / 248 / 241 | 0.720 | 0.196 | 0.444 | 159 / 45 (p 4e-16) | 762 = 0.635 | 252 / 254 / 256 | 0.792 | 0.093 | 0.333 | 198 / 24 (p 3e-35) |
+| thresholds × 0.5 | 840 = 0.700 | 289 / 272 / 279 | 0.744 | 0.548 | 0.667 | 17 / 20 (p 0.74) | 938 = 0.782 | 314 / 306 / 318 | 0.846 | 0.559 | 0.817 | 29 / 31 (p 0.90) |
+| thresholds × 2 | 836 = 0.697 | 282 / 271 / 283 | 0.739 | 0.552 | 0.643 | 21 / 20 (p 1) | 941 = 0.784 | 312 / 307 / 322 | 0.846 | 0.570 | 0.802 | 44 / 49 (p 0.68) |
+| mask shifted up to 1 px | 833 = 0.694 | 282 / 273 / 278 | 0.738 | 0.544 | 0.643 | 12 / 8 (p 0.50) | 941 = 0.784 | 316 / 310 / 315 | 0.845 | 0.574 | 0.786 | 34 / 39 (p 0.64) |
+| mask shifted up to 2 px | 767 = 0.639 | 266 / 245 / 256 | 0.666 | 0.548 | 0.571 | 109 / 39 (p 7e-9) | 889 = 0.741 | 304 / 289 / 296 | 0.789 | 0.574 | 0.675 | 102 / 55 (p 2e-4) |
+| mask missing, 30% | 790 = 0.658 | 261 / 258 / 271 | 0.735 | 0.393 | 0.579 | 88 / 41 (p 4e-5) | 862 = 0.718 | 285 / 289 / 288 | 0.827 | 0.344 | 0.611 | 115 / 41 (p 3e-9) |
+
+- **The pattern of round 8 holds on every seed.** Thresholds halved or doubled and a mask off by one pixel change
+  nothing (0.694–0.700 as trained, 0.782–0.784 with guidance; net −4 to +5 episodes of 1200).
+- **Random flips, 10%**: −2.8 points as trained and −3.0 with guidance, now significant (p 0.002, 0.004; one seed in
+  round 8: p 0.16, 0.21). With 30% the policy as trained is at the level of the baselines (0.613; rgbdt 0.613,
+  p 1) and the guided one at 0.678, still above them (p 0.001, 0.006).
+- **A sensor left on where it does not show the glass is the costly error, more so with guidance**: see-through
+  episodes 0.548 → 0.400 (flips, 30%), 0.393 (mask missing), 0.196 (always on) as trained and 0.574 → 0.289, 0.344,
+  0.093 with guidance; crossover episodes with thermal always on 0.643 → 0.444 and 0.778 → 0.333. With both sensors
+  always on the policy is at the level of the baselines in both settings (0.603 and 0.635; p ≥ 0.29).
+- **A sensor wrongly off**: a mask shifted up to 2 px (depth off in 38% of the normal steps, thermal in 22%) costs
+  5.8 points as trained and 3.9 with guidance, all on normal and crossover episodes (see-through unchanged); with
+  three seeds the loss with guidance is significant too (p 2e-4; round 8: p 0.41). Depth always off costs 12.2 and
+  16.3 points (0.575 and 0.617).
+- **Guidance gains under every error**: +6.0 to +10.2 points in nine of the eleven conditions (p < 1e-5 each), +4.2
+  with depth always off (p 0.001) and +3.2 with both always on (p 0.007).
+- Against the baselines (Fisher, 1200 episodes per side): as trained the policy is above rgbdt for no error, flips at
+  10%, thermal always off, both threshold changes, the 1 px shift and the missing mask (p ≤ 0.025), and not for flips
+  at 30%, depth always off, both always on and the 2 px shift (p 0.061–1); it is below rgbd with depth always off
+  (0.575 against 0.624, p 0.016). With guidance it is above both baselines in every condition (p ≤ 0.006) except
+  depth always off and both always on (p ≥ 0.29).
+
+### A missing mask keeps the last flags (`--route_hold`)
+
+Mask missing in 30% of the frames, three seeds (1200 episodes); "no error + hold" on seed 42 only (400).
+
+| condition | as trained | normal | see-through | crossover | depth on, see-through | guide 3.0 | normal | see-through | crossover |
+|---|---|---|---|---|---|---|---|---|---|
+| no error | 837 = 0.698 | 0.741 | 0.548 | 0.643 | 0.5% | 936 = 0.780 | 0.840 | 0.574 | 0.778 |
+| mask missing, 30% | 790 = 0.658 | 0.735 | 0.393 | 0.579 | 29.8% | 862 = 0.718 | 0.827 | 0.344 | 0.611 |
+| mask missing, 30%, hold | 825 = **0.688** | 0.728 | 0.548 | 0.619 | 0.4% | 915 = **0.762** | 0.817 | 0.574 | 0.762 |
+| no error, seed 42 | 282 = 0.705 | 0.739 | 0.589 | 0.690 | 0.1% | 311 = 0.777 | 0.829 | 0.600 | 0.786 |
+| no error, hold, seed 42 | 284 = 0.710 | 0.748 | 0.578 | 0.738 | 0.4% | 314 = 0.785 | 0.842 | 0.589 | 0.786 |
+
+- **Holding the flags removes the cost of missing masks on see-through and crossover episodes**: as trained 0.658 →
+  0.688 (same episodes 47 lost, 82 gained, p 0.003), see-through 0.393 → 0.548 (11 lost, 53 gained, p 1e-7); with
+  guidance 0.718 → 0.762 (62 / 115, p 8e-5), see-through 0.344 → 0.574 (13 / 75, p 9e-12), crossover 0.611 → 0.762
+  (10 / 29, p 0.003).
+- **Against no error**: as trained 0.688 against 0.698 (51 lost, 39 gained, p 0.25); with guidance 0.762 against
+  0.780 (58 lost, 37 gained, p 0.040), the difference on normal episodes (0.817 against 0.840; 45 lost, 24 gained,
+  p 0.015), where a sensor is off in 2.9% of the decisions (0.7% without errors); with held flags the decisions
+  before the first mask of an episode run on rgb alone.
+- **Without errors holding changes nothing** (seed 42): 0.710 against 0.705 (6 lost, 8 gained), 0.785 against 0.777
+  with guidance (12 / 15).
+
+### Switched composition of the rgbd and rgbt policies (seeds 42 and 43, 800 episodes per row)
+
+| policy | seed 42 / 43 (of 400) | all | normal (620) | see-through (180) | crossover (84) | neither (548) |
+|---|---|---|---|---|---|---|
+| rgbd | 261 / 251 | 0.640 | 0.798 | 0.094 | 0.774 | 0.788 |
+| rgbt | 228 / 177 | 0.506 | 0.508 | 0.500 | 0.262 | 0.540 |
+| rgbdt | 239 / 262 | 0.626 | 0.747 | 0.211 | 0.548 | 0.763 |
+| mean of rgbd and rgbt, 0.75 / 0.25 (round 8) | 271 / 246 | 0.646 | 0.779 | 0.189 | 0.667 | 0.781 |
+| **rgbd where depth shows the glass, rgbt elsewhere** | 296 / 277 | 573 = **0.716** (0.68–0.75) | 0.781 | 0.494 | 0.714 | 0.781 |
+| nogate_rgbonly | 273 / 245 | 0.647 | 0.681 | 0.533 | 0.488 | 0.703 |
+| vis_route | 282 / 273 | 0.694 | 0.734 | 0.556 | 0.655 | 0.743 |
+| vis_route, guide 3.0 | 311 / 305 | 0.770 | 0.827 | 0.572 | 0.762 | 0.832 |
+| vis_route on rgb + depth | 270 / 262 | 0.665 | 0.708 | 0.517 | 0.607 | 0.719 |
+| vis_route on rgb + depth, guide 3.0 | 310 / 301 | 0.764 | 0.834 | 0.522 | 0.798 | 0.832 |
+
+The rgbd member makes 99.7% of the decisions on normal episodes, 1.0% on see-through ones and 85.8% on crossover
+ones.
+
+- **Switching between two plain policies with the same flags is level with `vis_route` as trained**: 0.716 against
+  0.694 (Fisher p 0.35; same seeds and episodes 107 lost, 125 gained, p 0.26); normal 0.781 against 0.734 (p 0.064),
+  see-through 0.494 against 0.556 (p 0.29). It is above rgbd (p 0.001), rgbdt (p 2e-4), the control (p 0.004), the
+  weighted mean of round 8 (p 0.003) and `vis_route` on rgb + depth as trained (0.665, p 0.031).
+- **With guidance `vis_route` is above it**: 0.770 against 0.716 (Fisher p 0.016; 129 lost, 86 gained from the
+  guided policy to the composition, p 0.004), normal 0.827 against 0.781 (p 0.045); `vis_route` on rgb + depth with
+  guidance 0.764 (p 0.035; 130 / 92, p 0.013). The composition has no rgb-only path to guide from, and it needs two
+  trained policies at inference.
+- Its see-through episodes are at the level of its rgbt member (0.494 against 0.500) and its normal episodes at
+  the level of its rgbd member (0.781 against 0.798): the switch hands each scene to the right member, as the
+  weighted mean could not (see-through 0.189).
+
+### Conclusions of round 9
+
+33. **The thermal image has a small, measurable part in `vis_route`** (revises conclusion 30, which had one seed):
+    switched off at inference the policy loses 2.5 points as trained (0.698 → 0.672, matched p 0.024), and a
+    `vis_route` trained on rgb + depth is 3.5 points lower as trained (0.662, matched p 0.009). With guidance the
+    totals are 0.8 and 2.1 points lower (0.772 and 0.759 against 0.780, p 0.58 and 0.14), but see-through episodes
+    are about 8 points lower without thermal in both cases (0.489 and 0.496 against 0.574, p 0.013 and 0.038):
+    thermal is used where depth sees through the glass.
+34. **The method does not depend on the thermal image in the policy**: on rgb + depth, routing with guidance reaches
+    0.759, above rgbd (0.624) and rgbdt (0.613) at the episode and the seed level, and guidance gains as much (+9.7
+    points). The mask of the gate was still predicted from all three images.
+35. **The gate-error results of round 8 hold over three seeds** (removes the first caveat of round 8): small errors
+    cost nothing; 10% of the flags flipped costs 3 points in both settings, now significant; a sensor on where it
+    does not show the glass is the costly error and guidance makes it worse there (see-through 0.09 with both always
+    on); with guidance the policy stays above both baselines unless one sensor is forced in every step. The gain
+    from guidance is +6 to +10 points except with depth always off (+4.2) and both always on (+3.2).
+36. **A missing mask should keep the last decision** (follow-up of conclusion 29): with the flags held, 30% missing
+    masks cost 1.0 point as trained (p 0.25) and 1.8 with guidance (p 0.040) instead of 3.9 and 6.2, and see-through
+    episodes are back at the level without errors.
+37. **Switching between plain rgbd and rgbt policies by the same visibility flag reaches `vis_route` as trained**
+    (0.716 against 0.694, p 0.35), and stays below `vis_route` with guidance (0.770, p 0.016). As trained, what
+    `vis_route` adds over this baseline is one policy instead of two; its advantage in success comes with guidance.
+    The visibility flag itself is what both use.
+
+Caveats: the gate still uses a glass mask predicted from rgb, depth and thermal, so "without thermal" refers to the
+policy's input only; the random gate errors are one draw per seed and independent between decision steps; the
+composition has two seeds (rgbt has no third) and its rgbt member differs by 51 episodes between them; holding the
+flags without errors was run on one seed; "matched" pairs runs by seed number; seed-level tests have three values
+per side; p values are not corrected for the number of comparisons.
+
+### Next steps (proposals, not run)
+
+1. A gate whose mask does not need the thermal image (segmentation from rgb + depth), to test the rgb + depth system
+   end to end.
+2. The third seed of rgbt and rgb (2 trainings), for the composition baselines.
+3. Open from rounds 7 and 8: the control with visibility-independent single-sensor dropout; the control's own
+   guidance scale; partially visible targets.
+
+## Round 10: a routing gate that is trained (11/18 08:03 – 15:11 KST)
+
+The gate of `vis_route` is a rule: a sensor is on when the step of its image at the predicted glass mask is above a
+fixed threshold (depth 15, thermal 30). Round 10 replaces the two thresholds by a small network that is trained, in
+two ways, and checks each against a criterion fixed before the runs.
+
+### Runs
+
+Two trainings and four evaluations, seed 42 only; all six jobs finished at the first attempt.
+
+- `L0_bench_rgbdt_500demos_learn_labels`: the gate is a classifier of "this sensor shows the glass", trained with a
+  cross-entropy on the episode labels of the simulator (depth: not a see-through episode; thermal: not a crossover
+  episode). During training the sensors of the policy are switched by these labels, at inference by the gate.
+- `L0_bench_rgbdt_500demos_learn_heldout`: no labels. Every 5th demo is left out of the policy's loss: 93 of the 475
+  training demos (25 of the 500 are the validation split in every run), so the policy is fitted to 382 demos.
+  On those demos the denoising loss is evaluated, without gradient, with each sensor on and off (same noise and
+  timestep), and the gate is moved toward the state with the lower loss: loss_gate = Σ_m p_m (L_on,m − L_off,m).
+  The gate loss starts after 2000 steps. During training the sensors of the policy are switched by decisions sampled
+  from the gate, each state kept with probability at least 0.1 (`route_explore`).
+- Both: the `vis_route` command of rounds 3–5 with
+  `policy.obs_encoder.dropout_mode=none +policy.obs_encoder.route=learned`
+  `+policy.obs_encoder.route_rgb_only_p=0.1 policy.gate_loss_weight=0`
+  and `+policy.gate_train=labels`, or
+  `+policy.gate_train=heldout +task.dataset.gate_split=5 +policy.obs_encoder.route_explore=0.1`; epoch 100 without
+  interruption; the benchmark evaluation at 50 episodes per test set, then 200 per test set in `n200/`, as trained
+  and with `--guidance 3.0` (`__guide30`), all with `--save_w`.
+
+The gate: p_m = sigmoid(MLP_m(cue)) for depth and thermal, on when p_m > 0.5 at inference. Its input is the
+10-entry cue of `vis_route` with the two thresholded flags set to zero, so it sees the steps at the glass mask but
+not the rule's decisions. As for `vis_route`, the mask comes from the rgb + depth + thermal segmentation network.
+The decision is hard, so the imitation loss gives the gate no gradient; it is trained by the gate loss alone.
+
+Code added, all opt-in (`python -m policy.test_gating` passes; runs without the new options are unchanged):
+`policy/gated_obs_encoder.py` (`route=learned`, `route_explore`), `policy/gated_policy.py` (`gate_train`,
+`gate_start_step`, diagnostics), `policy/glass_dataset.py` (`gate_split`).
+
+Fixed before the runs:
+
+- A variant passes when (i) the gate's decisions on the test episodes agree with the visibility flags in at least
+  95% of the decisions, for each sensor, and (ii) its success is not more than 3 points below `vis_route` of the same
+  seed: at least 0.675 as trained (0.705) and 0.747 with guidance 3.0 (0.777).
+- Only a variant that passes is trained on seeds 43 and 44.
+- Fixed before the evaluations: agreement is measured per decision step between the gate's decision and the flag of
+  the rule in the same step (both stored by `--save_w`), over the 400 test episodes of a run.
+
+### Training
+
+Means over the 500 steps before each line of the training log (410 steps per epoch). "vis" / "not vis": samples of
+episodes where the sensor shows / does not show the glass (episode labels; used for these diagnostics in both runs).
+
+`learn_labels`:
+
+| step | denoising loss | gate accuracy | p depth, vis | p depth, not vis | p thermal, vis | p thermal, not vis |
+|---|---|---|---|---|---|---|
+| 2500 | 0.0203 | 0.967 | 0.908 | 0.067 | 0.874 | 0.834 |
+| 10000 | 0.0095 | 0.980 | 0.999 | 0.001 | 0.955 | 0.561 |
+| 20000 | 0.0054 | 0.988 | 1.000 | 0.000 | 0.970 | 0.386 |
+| 30000 | 0.0028 | 0.990 | 1.000 | 0.000 | 0.974 | 0.340 |
+| 41000 | 0.0015 | 0.990 | 1.000 | 0.000 | 0.975 | 0.325 |
+
+`learn_heldout` (Δ = loss with the sensor on − loss with it off, on the held-out demos; negative: the sensor helps):
+
+| step | denoising loss | Δ depth, vis | Δ depth, not vis | Δ thermal, vis | Δ thermal, not vis | p depth, vis | p depth, not vis | p thermal, vis | p thermal, not vis |
+|---|---|---|---|---|---|---|---|---|---|
+| 2500 | 0.0222 | −0.0006 | −0.0001 | −0.0003 | −0.0000 | 0.504 | 0.503 | 0.501 | 0.500 |
+| 10000 | 0.0110 | −0.0013 | −0.0002 | −0.0007 | +0.0006 | 0.963 | 0.727 | 0.702 | 0.600 |
+| 20000 | 0.0058 | −0.0021 | +0.0002 | −0.0015 | +0.0017 | 0.996 | 0.825 | 0.958 | 0.896 |
+| 30000 | 0.0030 | −0.0030 | +0.0007 | −0.0009 | +0.0061 | 0.997 | 0.722 | 0.971 | 0.895 |
+| 41000 | 0.0016 | −0.0035 | +0.0008 | +0.0002 | +0.0100 | 0.997 | 0.682 | 0.964 | 0.857 |
+
+- **Labels**: the depth gate separates the two cases within 10,000 steps. The thermal gate does not: its mean
+  probability on the samples of crossover demos (32 of the 475 training demos) is still 0.33 at the end, and at inference it
+  leaves thermal on in 16% of the crossover decisions (table below).
+- **Held-out demos**: the loss differences have the sign the labels would give (means from step 20000 on: depth
+  −0.0030 where visible and +0.0005 where not, thermal −0.0010 and +0.0054), so the held-out loss does carry the
+  information. They are small while the gate is formed (at most 0.002 up to step 20000, against a denoising loss of
+  0.006–0.02; of the 93 held-out demos 7 are crossover and 21 see-through ones) and largest at the end, when the
+  learning rate of the cosine schedule is small (below a quarter of its peak from step 28,000 on, below a twentieth
+  from step 36,000 on). The gate moved
+  toward "on" for both sensors in every case during the first 20,000 steps and came back only slowly (depth where not
+  visible 0.82 → 0.68, thermal where not visible 0.91 → 0.86): it ends as "both on".
+
+### Results (seed 42, 400 episodes per row)
+
+50 episodes per test set at epoch 100: `learn_labels` (a) 0.72, (g) 0.62; `learn_heldout` 0.54 / 0.50 (`vis_route`
+0.72 / 0.66). 200 episodes per test set, the same test episodes in every row:
+
+| run | guidance | all | normal (310) | see-through (90) | crossover (42) | neither (274) | criterion |
+|---|---|---|---|---|---|---|---|
+| rgbd | – | 261 = 0.652 | 0.816 | 0.089 | 0.857 | 0.796 | |
+| rgbdt | – | 239 = 0.598 | 0.706 | 0.222 | 0.571 | 0.715 | |
+| nogate_rgbonly | – | 273 = 0.682 | 0.710 | 0.589 | 0.500 | 0.737 | |
+| vis_route, both always on | – | 234 = 0.585 | 0.703 | 0.178 | 0.381 | 0.737 | |
+| vis_route | – | 282 = 0.705 | 0.739 | 0.589 | 0.690 | 0.745 | |
+| **learn_labels** | – | 279 = **0.698** (0.65–0.74) | 0.761 | 0.478 | 0.595 | 0.785 | ≥ 0.675: met |
+| **learn_heldout** | – | 221 = **0.552** (0.50–0.60) | 0.552 | 0.556 | 0.476 | 0.558 | ≥ 0.675: not met |
+| nogate_rgbonly | 3.0 | 273 = 0.682 | 0.729 | 0.522 | 0.500 | 0.748 | |
+| vis_route, both always on | 3.0 | 252 = 0.630 | 0.784 | 0.100 | 0.262 | 0.847 | |
+| vis_route | 3.0 | 311 = 0.777 | 0.829 | 0.600 | 0.786 | 0.832 | |
+| **learn_labels** | 3.0 | 292 = **0.730** (0.68–0.77) | 0.784 | 0.544 | 0.667 | 0.803 | ≥ 0.747: not met |
+| **learn_heldout** | 3.0 | 255 = **0.637** (0.59–0.68) | 0.665 | 0.544 | 0.476 | 0.686 | ≥ 0.747: not met |
+
+Agreement of the gate's decisions with the flags of the rule in the same decision step:
+
+| run | guidance | decisions | depth | thermal | both | depth on where not visible | thermal on where not visible | sensor off where visible | criterion |
+|---|---|---|---|---|---|---|---|---|---|
+| learn_labels | – | 5940 | 0.994 | 0.981 | 0.977 | 1.4% | 15.7% | 0.3% / 0.2% | ≥ 0.95 each: met |
+| learn_labels | 3.0 | 5980 | 0.994 | 0.982 | 0.977 | 2.1% | 15.7% | 0.1% / 0.1% | met |
+| learn_heldout | – | 6000 | 0.874 | 0.899 | 0.794 | 53.9% | 92.5% | 0% / 0% | not met |
+| learn_heldout | 3.0 | 6000 | 0.870 | 0.896 | 0.790 | 54.7% | 93.2% | 0% / 0% | not met |
+
+**Verdict by the fixed criterion: neither variant passes, and neither is trained on seeds 43 and 44.**
+`learn_labels` meets three of the four parts (agreement in both settings, success as trained) and misses the success
+limit with guidance (0.730 against 0.747). `learn_heldout` misses all four.
+
+- **`learn_labels` as trained is level with the rule**: 0.698 against `vis_route` 0.705 (Fisher p 0.88; same
+  episodes 38 lost, 35 gained, p 0.82), above rgbdt (0.598, p 0.004) and above the same kind of policy with both
+  sensors always on (0.585, p 0.001); against the control 0.682 (p 0.70) and rgbd 0.652 (p 0.20). By group it is
+  0.761 / 0.478 / 0.595 against 0.739 / 0.589 / 0.690 for `vis_route` (normal p 0.58, see-through p 0.18, crossover
+  p 0.50).
+- **With guidance it is 4.8 points below the rule**: 0.730 against 0.777 (Fisher p 0.14; same episodes 45 lost, 26
+  gained, p 0.032). Guidance adds 3.2 points to `learn_labels` (26 lost, 39 gained, p 0.14) against 7.2 to
+  `vis_route` at this seed (23 / 52, p 0.001). It stays above "both always on" with guidance (0.630, p 0.003);
+  against the guided control 0.682, p 0.16.
+- **Where the learned classifier differs from the rule**: thermal stays on in 15.7% of the decisions where the rule
+  has it off; on crossover episodes the thermal decision agrees with the rule in 87% of the decisions (thermal on in
+  16%, visible by the rule in 4%). Depth agrees in 99% in every group. Whether the smaller gain from guidance comes
+  from these thermal decisions (conclusions 29 and 35: a sensor wrongly on costs more with guidance), from training
+  the policy
+  with episode labels instead of per-frame flags, or from the seed is not separated by this run.
+- **`learn_heldout` ends with a gate that is mostly on and a weaker policy**: thermal is on in 92% of the decisions
+  where the rule has it off and depth in 54% (on see-through episodes depth is on in 52% of the decisions, visible
+  by the rule in 0.4%). Success is 0.552, below `vis_route` (p 1e-5; 85 lost, 24 gained) and the control (p 2e-4),
+  level with rgbdt (0.598, p 0.22) and with `vis_route` with both sensors always on (0.585, p 0.39). The loss is on
+  the normal episodes (0.552 against 0.739; rgbdt 0.706), where its gate agrees with the rule (depth 0.986); the
+  see-through episodes are at the level of `vis_route` (0.556 against 0.589). Its policy was trained on 382 demos
+  instead of 475 and with sensors switched off at random in at least 10% of the samples each, independent of
+  visibility; which of the two lowers the normal episodes is not separated. Guidance adds 8.5 points (25 lost, 59
+  gained, p 3e-4).
+- Per test set: `learn_labels` (a) 0.725, (g) 0.670, with guidance 0.750 / 0.710; `learn_heldout` 0.585 / 0.520 and
+  0.645 / 0.630 (`vis_route` 0.735 / 0.675 and 0.780 / 0.775). Failure outcomes over 400 episodes: `learn_labels`
+  missed grasp 55, dropped 41, wrong height 15, other 8, wrong object 2; `learn_heldout` 87 / 53 / 24 / 12 / 3.
+
+### Conclusions of round 10
+
+38. **The two thresholds of the rule can be replaced by a classifier trained on the simulator's visibility labels
+    without a measurable loss as trained**: 0.698 against 0.705, with 99.4% (depth) and 98.1% (thermal) of its
+    decisions equal to the rule's. With guidance 3.0 it is 4.8 points below the rule (0.730 against 0.777, matched
+    p 0.032) and misses the limit fixed before the run. One seed.
+39. **A gate trained without labels, from the loss on held-out demos, did not work in this form**: the loss
+    differences point the right way and grow during training, but the gate saturates at "on" before they are large,
+    and the policy trained next to it is at the level of rgbdt (0.552).
+40. **The supervision of the gate is still the simulator's**: the labels are episode labels of the simulator, and the
+    input of both gates is the cue at the glass mask of the segmentation network trained with simulator masks. What
+    round 10 shows is that the two thresholds need not be set by hand, not that visibility can be found without
+    labels.
+
+Caveats: one seed and one run per variant; the guidance scale 3.0 was selected for `vis_route` and not for the
+learned gates; the agreement is measured against the rule, not against ground-truth visibility per frame; the
+held-out variant differs from `vis_route` in three things at once (the gate, 382 instead of 475 demos for the policy,
+random switching during training); p values are not corrected for the number of comparisons.
+
+### Next steps (proposals; the first was run as round 11)
+
+1. Fit the gate of `learn_heldout` after training: policy frozen, a fresh gate trained on the held-out demos with
+   the same loss difference and its own learning rate; evaluations only. This tests whether the label-free signal
+   reaches the rule's decisions when it is not tied to the policy's schedule.
+2. `learn_labels` on seeds 43 and 44 (2 trainings), to tell the 4.8 points with guidance from seed variation. Not
+   covered by the rule fixed before the run; needs a decision.
+3. For a label-free gate trained jointly: normalize the loss difference per sensor (its scale changes tenfold during
+   training), start the gate later, or add a cost per sensor that is on.
+
+## Round 11: the gate of `learn_heldout` fitted after training (11/18 23:50 – 11/19 01:02 KST)
+
+Proposal 1 of round 10: is the label-free signal of `learn_heldout` wrong, or only the way it was used during
+training? The policy of that run is frozen and a new gate is fitted to the same loss difference afterwards.
+
+### Runs
+
+- **Fit**: `python policy/fit_gate.py -c data/runs/L0_bench_rgbdt_500demos_learn_heldout/checkpoints/latest.ckpt`
+  `-o results/hard_scenario/fusion_bench/gate_fit/L0_bench_rgbdt_500demos_learn_heldout`. The EMA weights of epoch
+  100, all frozen. For each of the 5128 samples of the 93 held-out demos the denoising loss is computed in the four
+  sensor states (depth on / off × thermal on / off), with the same noise and timesteps in the four states, averaged
+  over 8 draws. A fresh gate (p = 0.5 for every input) is trained on these cached losses with the loss of
+  `gate_train=heldout`, Σ_m p_m (L_on,m − L_off,m): 2000 full-batch Adam steps, learning rate 1e-3, seed 0. No
+  labels are used. 100 seconds on one GPU. Output: `gate_fit/<run>.pt` (the gate, 9 kB) and `.json` (diagnostics).
+- **Four evaluations** of the same policy on the test episodes of seed 42 (200 per test set, as trained and with
+  guidance 3.0), all finished at the first attempt: `__postfit[_g30]` with the fitted gate (`--gate_state`), and
+  `__flags[_g30]` with the sensors switched by the thresholded flags of the rule instead of a gate (`--route flags`),
+  as the reference for what this policy reaches with the decisions of `vis_route`.
+
+Code added, all opt-in (`python -m policy.test_gating` passes): `policy/fit_gate.py`; `policy/eval.py`
+(`--gate_state`, `--route flags`); `policy/gated_obs_encoder.py` (`route_eval=flags` for `route=learned`).
+
+Fixed before the fit:
+
+- The settings above; one fit, nothing selected.
+- **Criterion A (decisions)**: on the test episodes the fitted gate agrees with the flags of the rule in at least 95%
+  of the decisions, for each sensor (the criterion of round 10).
+- **Criterion B (success)**: with the fitted gate the policy is not more than 3 points below the same policy switched
+  by the flags of the rule, as trained and with guidance. The limits of round 10 (0.675 and 0.747) are reported too.
+- Expectation written down before the fit: depth is likely to pass; thermal may end mostly off, because the logged
+  loss difference where thermal shows the glass was close to zero (round 10, +0.0002 at the end of training).
+
+### The fit on the held-out demos
+
+Mean denoising loss by state: both on 0.02427, thermal off 0.02404, depth off 0.02678, both off 0.02699.
+"Rule on / off": the samples where the flag of the rule is on / off at the last observation step.
+
+| gate | gate loss | depth: on (rule 77.0%) | agrees with rule | on where rule off | off where rule on | thermal: on (rule 73.2%) | agrees with rule | on where rule off | off where rule on |
+|---|---|---|---|---|---|---|---|---|---|
+| of the checkpoint (trained jointly) | −0.00261 | 90.9% | 0.861 | 60.3% | 0.0% | 99.4% | 0.738 | 97.9% | 0.0% |
+| fresh (p = 0.5) | −0.00136 | | | | | | | | |
+| **fitted after training** | **−0.00400** | 82.0% | **0.951** | 21.5% | 0.0% | 44.0% | 0.530 | 33.3% | 52.0% |
+
+Loss difference (sensor on − off) under the fitted gate: depth −0.0037 where the rule has it on and +0.0013 where
+off; thermal −0.0004 where on and +0.0019 where off (by episode label: −0.0004 on demos without crossover, +0.0085
+on crossover demos, where the fitted gate has thermal on in 4.9% of the steps).
+
+### Test episodes (seed 42, 400 episodes per row, the same policy in the first three rows)
+
+Decisions against the flags of the rule in the same decision step, as trained (with guidance within 1 point, except
+thermal on where not visible: 10.1%):
+
+| gate | depth agrees | depth on where not visible | depth off where visible | thermal agrees | thermal on where not visible | thermal off where visible | thermal agrees, crossover episodes |
+|---|---|---|---|---|---|---|---|
+| trained jointly (round 10) | 0.874 | 53.9% | 0.0% | 0.899 | 92.5% | 0.0% | 0.119 |
+| **fitted after training** | **0.964** | 13.1% | 0.7% | **0.614** | 6.3% | 42.6% | 0.914 |
+
+| gate | as trained | normal (310) | see-through (90) | crossover (42) | guide 3.0 | normal | see-through | crossover |
+|---|---|---|---|---|---|---|---|---|
+| trained jointly (round 10) | 221 = 0.552 | 0.552 | 0.556 | 0.476 | 255 = 0.637 | 0.665 | 0.544 | 0.476 |
+| **fitted after training** | 218 = **0.545** (0.50–0.59) | 0.542 | 0.556 | 0.476 | 249 = **0.623** (0.57–0.67) | 0.642 | 0.556 | 0.500 |
+| flags of the rule | 221 = 0.552 | 0.552 | 0.556 | 0.452 | 256 = 0.640 | 0.661 | 0.567 | 0.524 |
+| `vis_route` (its own policy) | 282 = 0.705 | 0.739 | 0.589 | 0.690 | 311 = 0.777 | 0.829 | 0.600 | 0.786 |
+
+**Verdict by the fixed criteria.** A is not met: depth 0.964 (0.966 with guidance) passes, thermal 0.614 (0.618)
+does not, as expected before the fit. B is met: −0.8 points as trained (Fisher p 0.89; same episodes 12 lost, 9
+gained) and −1.8 with guidance (p 0.66; 26 lost, 19 gained). The limits of round 10 are missed by every gate on
+this policy, the flags of the rule included.
+
+- **Fitted after training, the label-free loss finds the depth decision of the rule**: 96.4% agreement on the test
+  episodes against 87.4% for the gate trained jointly; depth is left on where the rule has it off in 13% of the
+  decisions instead of 54% (on see-through episodes on in 12% instead of 52%), and almost never switched off where
+  the rule has it on (0.7%).
+- **For thermal the loss says "off" far more often than the rule**: on in 52% of the decisions (the rule: 89%). It
+  does switch thermal off where it does not show the glass (left on in 6% instead of 93%; agreement on crossover
+  episodes 0.91 instead of 0.12), but also in 43% of the decisions where it does. On the held-out demos thermal
+  lowers the loss of this policy by 0.0004 where the rule has it on, a tenth of what depth does (0.0037).
+- **Criterion B does not discriminate on this policy.** Its success is the same with all three gates: 0.552, 0.545
+  and 0.552 as trained, 0.637, 0.623 and 0.640 with guidance (largest difference 26 lost against 19 gained), on
+  see-through episodes 0.556 whether depth is on in 52%, 12% or 0.1% of the decisions.
+- **The policy, not the gate, keeps `learn_heldout` below `vis_route`**: switched by the flags of the rule it is at
+  0.552 against 0.705 (p 1e-5; 85 lost, 24 gained) and 0.640 against 0.777 with guidance (p 2e-5), the difference on
+  normal episodes (0.552 against 0.739, 0.661 against 0.829) and on crossover ones (0.452 against 0.690, p 0.047).
+  It was fitted to 382 demos instead of 475 and with each sensor switched at random in at least 10% of the samples.
+- Guidance adds 8.5, 7.8 and 8.8 points with the three gates (p ≤ 3e-4 each).
+
+### Conclusions of round 11
+
+41. **The label-free signal was right for depth; the joint schedule was the problem** (follow-up of conclusion 39):
+    the same loss difference, fitted after training with the policy frozen, agrees with the depth flag of the rule
+    in 96% of the test decisions, without labels and in 100 seconds.
+42. **For thermal the signal does not reproduce the rule, because this policy gains almost nothing from thermal**:
+    the fitted gate switches thermal off on crossover scenes and in 43% of the decisions where the rule keeps it on.
+    This fails the agreement criterion; it is in line with the small part of thermal found in round 9
+    (conclusion 33).
+43. **A gate fitted after training does not help a policy that was trained without it**: this policy reaches 0.55
+    (0.62–0.64 with guidance) with any of the three gates, 15 points below `vis_route`. Whether a label-free gate
+    reaches the success of the rule needs the policy trained with the fitted gate on all demos; that was not run.
+
+Caveats: one seed and one fit (the gate loss was still falling slowly at step 2000); the 5128 samples are
+overlapping windows of 93 demos; agreement is measured against the rule, not against ground-truth visibility; the
+loss differences are those of a policy trained with random switching and say what this policy does with a sensor,
+not what a policy trained with the gate would do; p values are not corrected for the number of comparisons.
+
+### Next steps (proposals, not run)
+
+1. Two stages: train the policy again on all 475 training demos with the fitted gate fixed (as `vis_route` is
+   trained with the rule), seed 42 first (1 training, 2 evaluations), and compare with `vis_route`.
+2. `learn_labels` on seeds 43 and 44 (open from round 10).
+3. Keep the rule as the gate of the method and report rounds 10 and 11 as what a learned gate reaches.
+
 ## Files
 
 - `L0_bench_rgbdt_500demos_<tag>/`: `train_logs.json.txt`, `curve.json`, and per test set `eval_log.json` and
@@ -1038,3 +1540,18 @@ three values per side; p values are not corrected for the number of comparisons.
   all opt-in: `policy/eval.py` (`--gate_error`, `--vis_thr`, `--mask_noise`), `policy/gated_policy.py` (`gate_error`),
   `policy/obs_util.py` (`degrade_mask`, `mask_noise`), `policy/compose_policy.py`, `policy/eval_compose.py`, tests in
   `policy/test_gating.py`.
+- Round 9 results: `L0_bench_rgbd_500demos_vis_route[_seed43|_seed44]/` (`vis_route` on rgb + depth) and their `n200/`
+  evaluations (as trained, `__guide30`); `n200/L0_bench_rgbdt_500demos_vis_route_seed{43,44}__<tag>[_g30]/` with the
+  tags of round 8, `__allon_g30/` and `n200/L0_bench_rgbdt_500demos_vis_route_seed44__all_on/`;
+  `n200/<vis_route run>__mdrop30_hold[_g30]/` (three seeds) and `n200/L0_bench_rgbdt_500demos_vis_route__hold[_g30]/`;
+  `n200/compose_switch[_seed43]/`. Code added, all opt-in: `policy/obs_util.py` (cues without a thermal image),
+  `policy/gated_policy.py` (`route_hold`), `policy/eval.py` (`--route_hold`), `policy/compose_policy.py`
+  (`switch_key`), `policy/eval_compose.py` (`--switch`), tests in `policy/test_gating.py`.
+- Round 10 results: `L0_bench_rgbdt_500demos_learn_{labels,heldout}/` and their `n200/` evaluations (as trained,
+  `__guide30`). Code added, all opt-in: `policy/gated_obs_encoder.py` (`route=learned`, `route_explore`,
+  `route_force`), `policy/gated_policy.py` (`gate_train=labels|heldout`, `gate_start_step`),
+  `policy/glass_dataset.py` (`gate_split`), tests in `policy/test_gating.py`.
+- Round 11 results: `gate_fit/L0_bench_rgbdt_500demos_learn_heldout.{pt,json}` (the gate fitted after training and
+  its diagnostics) and `n200/L0_bench_rgbdt_500demos_learn_heldout__{postfit,flags}[_g30]/` (`eval_log.json` records
+  `gate_state` and `route`). Code added, all opt-in: `policy/fit_gate.py`, `policy/eval.py` (`--gate_state`,
+  `--route flags`), `policy/gated_obs_encoder.py` (`route_eval=flags`), tests in `policy/test_gating.py`.
