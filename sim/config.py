@@ -18,7 +18,7 @@ import yaml
 CONFIG_DIR = Path(__file__).parent / "configs"
 # Fixed ids of the per-factor RNG streams (np.random.default_rng([seed, id])); never renumber
 FACTORS = {"background": 1, "lighting": 2, "transparent": 3, "liquid": 4, "distractors": 5,
-           "thermal": 6, "sensor": 7}
+           "thermal": 6, "sensor": 7, "cell": 8}
 HELDOUT_ALL = ["background", "lighting", "distractors"]
 # Thermal config names stored as ids in meta/ep_thermal_config (append only)
 THERMAL_NAMES = ["v0", "calibrated_v1", "calibrated_v1_narrow", "calibrated_v1_fixed"]
@@ -38,6 +38,10 @@ class ThermalConfig:
     table_emis: tuple = (0.90, 0.97)
     realistic_p: float = 0.0        # with this probability the glass is slightly below ambient (evaporation / AC)
     realistic_gap: tuple = (-1.25, -0.76)
+    # Visibility cells (SceneConfig.cells), thermal blind episode: the apparent temperature of the glass is within
+    # this many degC of that of the table behind it (sensors.matching_temp). 0.1 is about the camera noise: 2.73
+    # counts per pixel at 34 counts per degC = 0.08 degC. Not used without cells.
+    blind_contrast: float = 0.1
     distractor_ambient_p: float = 0.7   # distractors within +-1 degC of ambient, else +-distractor_gap
     distractor_gap: tuple = (5.0, 35.0)
     liquid_temp: dict = field(default_factory=lambda: {"cold": (4.0, 10.0), "room": None, "warm": (40.0, 60.0)})
@@ -96,6 +100,21 @@ class SceneConfig:
     # dots or blobs: per episode, probability that the depth sensor sees through the glass (no missing or wrong depth
     # on it, only the surface behind), like a time-of-flight sensor; 0 draws nothing, so existing levels are unchanged
     glass_seethrough_p: float = 0.0
+    # Visibility cells (None = off: existing levels draw nothing and are unchanged). A list of
+    # [weight, rgb blind, depth blind, thermal blind] with integer weights: each episode gets one cell and the cell sets
+    # the three causes, overriding their own probabilities: rgb blind = the room light at dark_light of "normal" with
+    # dark_rgb_noise on the image (a low-light exposure), depth blind = a see-through episode (glass_seethrough_p),
+    # thermal blind = the glass looks as warm as the table behind it, to within thermal.blind_contrast (a crossover
+    # episode; crossover_gap is measured from the room temperature and leaves the glass visible against a table that
+    # is warmer or colder than the room). A sensor that is not blind in the cell is not blind in the episode: normal
+    # light, dot holes on the glass, the glass thermal.gap away from the room temperature. The cells are dealt to the
+    # seeds in a fixed shuffled order (cell_pattern), and with cells the object of seed k is object k % 5 unless the
+    # caller names one (the test sets name the same one), so any 5 * sum(weights) consecutive seeds hold every
+    # (cell, object) pair exactly weight times. Episode info then has cell (index), rgb_dark and thermal_contrast
+    # (apparent, glass - table, degC).
+    cells: list = None
+    dark_light: float = 0.02
+    dark_rgb_noise: float = 0.0
 
     def pool(self, factor):
         """Value pool of a factor for this config's split."""
@@ -103,6 +122,19 @@ class SceneConfig:
         if isinstance(p, dict) and set(p) <= {"train", "test"}:
             return p["test" if self.split == "test" and factor in self.heldout else "train"]
         return p
+
+def cell_pattern(cells, n_objects=5):
+    """Cell index of seed k is cell_pattern(cells)[k % len(pattern)]. The pattern has n_objects * sum(weights) entries:
+    the seeds with the same k % n_objects (the same object, see SceneConfig.cells) hold every cell exactly weight
+    times, in a fixed shuffled order of their own."""
+    w = [int(c[0]) for c in cells]
+    assert all(x > 0 for x in w) and all(len(c) == 4 for c in cells), cells
+    rng = np.random.default_rng(20261119)
+    base = np.repeat(np.arange(len(w)), w)
+    pat = np.empty(n_objects * len(base), int)
+    for o in range(n_objects):
+        pat[o::n_objects] = rng.permutation(base)
+    return pat
 
 def factor_rng(seed, factor):
     return np.random.default_rng(None if seed is None else [seed, FACTORS[factor]])
