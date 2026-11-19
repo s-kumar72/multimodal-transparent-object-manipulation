@@ -14,7 +14,8 @@
 # TRAIN="policy/train_gated.sh gate" or TRAIN=scripts/train_fusion_policy.sh), EVAL_EXTRA (more policy/eval.py options,
 # e.g. --save_w), TOPK (best checkpoints kept besides latest.ckpt, 1; 0 keeps only latest.ckpt, which is the one evaluated),
 # TEST_SETS (test sets of the final evaluation, "a_in_distribution g_heldout_all"), NEVAL (episodes per test set in the
-# final evaluation, default NTEST; NTEST stays the number of rollouts during training).
+# final evaluation, default NTEST; NTEST stays the number of rollouts during training), ZARR (demo set to train on,
+# default results/data/sim_demos_<level>_<n_demos>.zarr; for a set made by hand, e.g. policy/subset_demos.py, with TAG).
 # Several runs can start at once on different GPUs: a lock makes the first one collect a missing demo set and the
 # others wait for it.
 set -e
@@ -27,7 +28,7 @@ TEST_SETS=${TEST_SETS:-"a_in_distribution g_heldout_all"}; NEVAL=${NEVAL:-$NTEST
 export PYTHONPATH=$PWD:$PWD/sim:$DP_ROOT:$PYTHONPATH MUJOCO_GL=${MUJOCO_GL:-egl} WANDB_MODE=${WANDB_MODE:-offline}
 
 NAME=${LEVEL}_${VARIANT}_${NDEMOS}demos${TAG:+_$TAG}
-ZARR=results/data/sim_demos_${LEVEL}_${NDEMOS}.zarr
+ZARR=${ZARR:-results/data/sim_demos_${LEVEL}_${NDEMOS}.zarr}
 RUN=$RUNS_DIR/$NAME
 OUT=results/hard_scenario/$GROUP/$NAME
 mkdir -p $RUNS_DIR $OUT

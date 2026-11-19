@@ -5,6 +5,7 @@ run via python sim/collect_demos.py --n 200 --out data/sim_demos.zarr with venv 
 add --workers 16 to run episodes in parallel processes (rendering is the bottleneck)
 add --obj bottle to collect one object type only (default: a random object per episode)
 add --config sim/configs/L2.yaml for another scene (default: main's scene)
+add --cells 4 to keep only the seeds of these visibility cells (levels with cells; the other seeds are not run)
 Each episode's scene conditions go to meta/ep_<name> (one row per episode; names of categorical ids are in meta.attrs).
 Author: Sadhana Kumar
 """
@@ -19,7 +20,7 @@ from collections import Counter
 import numpy as np
 import zarr
 
-from config import THERMAL_NAMES, config_dict, load_config
+from config import THERMAL_NAMES, cell_pattern, config_dict, load_config
 from env import BACKGROUNDS, EXTRA_NAMES, LIGHTING_NAMES, LIQUID_KINDS, GlassPickEnv, OBJECT_NAMES
 from teacher import ScriptedTeacher
 
@@ -65,19 +66,25 @@ if __name__ == "__main__":
     p.add_argument("--obj", choices=OBJECT_NAMES, default=None, help="collect this object only")
     p.add_argument("--config", default=None, help="scene YAML (default: main's scene)")
     p.add_argument("--split", default="train", choices=["train", "test"])
+    p.add_argument("--cells", type=int, nargs="+", default=None,
+                   help="visibility cells to keep (levels with cells): seeds of other cells are skipped, not run")
     args = p.parse_args()
     cfg = load_config(args.config, split=args.split)
 
+    seeds = itertools.count(args.seed)
+    if args.cells is not None:      # the cell of a seed, as GlassPickEnv deals it
+        pat = cell_pattern(cfg.cells, len(OBJECT_NAMES))
+        seeds = (s for s in seeds if pat[s % len(pat)] in args.cells)
     # Results come back in seed order, so the saved dataset is the same for any number of workers.
     # macOS cannot fork a process that will open a GL context, so workers are spawned there.
     if args.workers > 1:
         pool = mp.get_context("fork" if sys.platform == "linux" else "spawn").Pool(
             args.workers, init_worker, (args.obj, cfg, args.split))
-        results = pool.imap(run_episode, range(args.seed, args.seed + 3 * args.n + 50))
+        results = pool.imap(run_episode, itertools.islice(seeds, 3 * args.n + 50))
     else:
         pool = None
         init_worker(args.obj, cfg, args.split)
-        results = map(run_episode, itertools.count(args.seed))
+        results = map(run_episode, seeds)
 
     root = zarr.open(args.out, mode="w")
     data, meta = root.create_group("data"), root.create_group("meta")

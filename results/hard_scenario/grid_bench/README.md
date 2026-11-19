@@ -326,11 +326,64 @@ it started: (1) one diagnostic run, the plain rgb policy trained on the 330 demo
 glass, to tell the two candidate causes apart; (2) seeds 43 and 44 of the baselines; (3) the gate for three sensors.
 Whether the level's rgb cells are changed is the project owner's decision.
 
+## Repair round: the rgb axis and the thermal level (plan of 11/20, written before the runs)
+
+**Why.** The aim of the project is a method on top of the plain rgbdt policy that makes it at least as good as every
+other policy in nearly every cell. The baselines above leave little to show that with: no policy uses rgb (the
+rgb-only cell is at the floor for all four), and thermal alone reaches 0.16-0.24. A policy that matched the best
+baseline of every cell would average 0.43 against 0.375 for rgbd, with the whole gain in two cells whose ceiling is
+0.24. Two more facts from the baseline records (no new run):
+
+- In the cells where thermal shows the glass, the success of rgbt does not depend on the size of the thermal contrast
+  (0.15-0.33 in every bin from 5 to 35 degC, with or without depth) or on its sign (hot 55 / 244, cold 39 / 236).
+  One object carries it: jar 36 / 96, the other four 11-17 / 96.
+- The same kinds of scene gave more on `L0_bench` (other test episodes, two seeds): rgb 0.39 (here 0.03 where rgb
+  shows the glass), rgbt 0.50 on see-through episodes (here 0.24 in cell 2), rgbd 0.80 on normal episodes (here
+  0.58-0.75 where depth shows the glass). What changed is the training set: every sensor shows the glass in 330 of
+  the 500 demos, and 170 demos have a dark colour image.
+
+**Runs** (plain Diffusion Policy, seed 42, settings and final evaluation of the baselines: level `L0_grid`, the same
+840 test episodes; the level and the test sets are not changed):
+
+| run | sensors | demos | question |
+|---|---|---|---|
+| `L0_grid_rgb_330demos_rgbshown` | rgb | the 330 demos of cells 0, 2, 3, 6 of the 500-demo set (`policy/subset_demos.py`) | do the dark demos keep the policy from learning rgb? |
+| `L0_grid_rgb_1000demos` | rgb | 1000 (seeds 0-999, same weights; rgb shows the glass in 660) | does more data repair the rgb axis? |
+| `L0_grid_rgbt_1000demos` | rgb, thermal | 1000 | does more data raise the cells where only thermal can help (2 and 4)? |
+| `L0_grid_rgbt_500demos_cell4` | rgb, thermal | 500 demos of cell 4 only (dark, see-through, thermal shows the glass; `collect_demos.py --cells 4`) | what can a policy do with thermal alone when all its demos are of that kind? |
+
+**Read-out, fixed now.** Thresholds on the pooled success over both test sets:
+
+| quantity | now | repaired | not repaired |
+|---|---|---|---|
+| rgb policy in the four cells where rgb shows the glass (0, 2, 3, 6; 480 episodes) | 0.031 | >= 0.30 | < 0.15 |
+| rgbt policy in cells 2 and 4 (240 episodes); for the cell-4 run, cell 4 only (120 episodes; its demos have no lit scene, so cell 2 is outside its training data) | 0.200; cell 4 0.158 | >= 0.40 | < 0.30 |
+
+Between the two limits the result is called partial. 0.15 is the leak limit of the reporting rules (below it a policy
+is not told apart from one that cannot see the glass); 0.30 is short of what rgb reached on `L0_bench` (0.39); 0.40
+is twice what thermal gives now. The cells a policy cannot solve are reported as before and must stay below 0.15.
+
+**What follows from each outcome** (also fixed now; the follow-up runs themselves are reported before they start):
+
+- rgb with 1000 demos repaired: the training set of the benchmark becomes the 1000 demos, and rgbd and rgbdt are
+  trained on them as well (rgbt is already in this round).
+- rgb with 1000 demos not repaired, rgb on the 330 lit demos repaired: the dark demos are the obstacle. Rgb blind is
+  then redefined to hide only the glass, as depth blind and thermal blind do, in a new level; `L0_grid` stays.
+- neither repaired: neither explanation holds; reported, nothing changed.
+- thermal: rgbt with 1000 demos repaired means more data is enough. If not, the cell-4 run tells which: repaired
+  there means thermal alone can carry a grasp and the mixed training set is the obstacle; not repaired there means
+  the limit is the thermal image as the policy gets it, and changing that is proposed, not done.
+
+One seed per run. Nothing here changes `L0_grid`, its test sets or the baseline results above.
+
 ## Files
 
 - `figure_cells.png`; `thermal_contrast_sweep.{txt,json}`; `real_thermal_contrast.{txt,json}`; `teacher_check.txt`;
   `cells_check_L0_bench_net.{txt,json}` (check 3), `cells_check_L0_grid_net.{txt,json}` (check 4).
 - Baselines: `L0_grid_{rgbdt,rgbd,rgbt,rgb}_500demos/` (`train_logs.json.txt`, `curve.json`, `cells.json`, and per
   test set `eval_log.json`, `episodes.json`); `baselines_cells.txt`.
-- Not in git: the demo set `results/data/sim_demos_L0_grid_500.zarr`; the segmentation frames, network and logs
-  under `data/grid_bench/`.
+- Repair round: `policy/subset_demos.py` (the demos of chosen cells of a set), `sim/collect_demos.py --cells`
+  (collect the seeds of chosen cells only), `ZARR` of `scripts/run_experiment.sh` (train on such a set); the
+  defaults of both scripts are unchanged.
+- Not in git: the demo sets `results/data/sim_demos_L0_grid_{500,1000,330_rgbshown,500_cell4}.zarr`; the
+  segmentation frames, network and logs under `data/grid_bench/`.
