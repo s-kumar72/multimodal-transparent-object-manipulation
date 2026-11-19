@@ -13,7 +13,9 @@ and lighting fixed as in `L0_bench`. The definition of "thermal blind" was left 
 ([Thermal blind](#thermal-blind-how-the-number-was-set)).
 
 The design, the checks and the reporting rules below were fixed before any policy was trained on this level. The
-first runs are the [baselines](#baselines-approved-1119-listed-before-they-start).
+first runs are the [baselines](#baselines-approved-1119-listed-before-they-start). Their results were added on 11/19
+in a section of their own ([Baseline results](#baseline-results-1119)); the sections before it are as they were
+written before the runs.
 
 ## Design
 
@@ -252,9 +254,83 @@ Plain Diffusion Policy, one run per sensor set, to see what the benchmark does t
   thermal only; it needs a third flag for rgb and the level's segmentation network (check 4). Its design is written up
   and approved before it is trained.
 
+## Baseline results (11/19)
+
+The four runs finished (101 epochs, last checkpoint, 420 episodes on each of `h_cells` and `i_cells_heldout`; seed 42
+only). Success per cell, both test sets pooled (120 episodes per cell); `baselines_cells.txt` has the tables per test
+set and the paired comparisons (`policy/summarize_cells.py`, option `--versus` for the pairs).
+
+| cell | sensors that show the glass | rgbdt | rgbd | rgbt | rgb |
+|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.625 | 0.600 | 0.217 | 0.025 |
+| 1 | depth+thermal | 0.575 | 0.750 | 0.167 | 0.033 |
+| 2 | rgb+thermal | 0.083 | 0.025 | 0.242 | 0.033 |
+| 3 | rgb+depth | 0.550 | 0.583 | 0.042 | 0.042 |
+| 4 | thermal | 0.017 | 0.025 | 0.158 | 0.017 |
+| 5 | depth | 0.575 | 0.625 | 0.050 | 0.025 |
+| 6 | rgb | 0.050 | 0.017 | 0.042 | 0.025 |
+| | **macro average** | **0.354** | **0.375** | **0.131** | **0.029** |
+| | bootstrap 95% | 0.325–0.381 | 0.350–0.400 | 0.111–0.154 | 0.018–0.040 |
+| | `h_cells` / `i_cells_heldout` | 0.383 / 0.324 | 0.398 / 0.352 | 0.136 / 0.126 | 0.031 / 0.026 |
+
+**Cells a policy cannot solve** (reporting rule): rgb in cells 1, 4, 5: 0.033, 0.017, 0.025; rgbd in cell 4: 0.025;
+rgbt in cell 5: 0.050. All far below 0.15: no cell leaks.
+
+What the table shows:
+
+- **A floor of 0.02–0.05.** Wherever a policy has nothing to go on it still succeeds in 2–6 of 120 episodes (the
+  glass spawns in a small area). In those cells half of the episodes or more end with the gripper closing more than
+  8 cm from the glass (`other`, 47–79 of 120), which does not happen once in the cells where depth shows the glass to
+  a policy that has depth.
+- **Depth works as designed.** rgbd reaches 0.583–0.750 in the four cells where depth shows the glass (307/480 =
+  0.640) and the floor in the other three (8/360 = 0.022).
+- **Thermal works, at a low level.** rgbt reaches 0.158–0.242 in the four cells where thermal shows the glass
+  (94/480 = 0.196) and 0.042–0.050 in the other three (16/360 = 0.044). Where thermal shows the glass, the policy
+  goes to it but does not grasp it: 62–71 of 120 episodes end with a close within 8 cm and no lift (`missed_grasp`),
+  6–11 as `other`.
+- **Rgb is not used by any policy.** The rgb policy is at the floor in the four cells where rgb shows the glass
+  (15/480 = 0.031) as in the three dark ones (9/360 = 0.025), with the same mix of outcomes; 13 of its 24 successes
+  are the jar. The rgb-only cell (6) is at the floor for every policy (0.017–0.050), and neither rgbd nor rgbt gains
+  anything from rgb in the cells where their other sensor is blind (rgbd in cell 2: 0.025; rgbt in cell 3: 0.042).
+  The first point of [Limits](#limits) expected about 0.4 for an rgb policy where rgb shows the glass, as the plain
+  rgb policy reaches on `L0_bench` (0.389 on two seeds, 800 episodes, `../fusion_bench/README.md`). That did not
+  hold.
+- **rgbdt behaves as a depth policy and loses what thermal alone gives.** It equals rgbd over all episodes (0.354
+  against 0.375; same episodes: 64 only rgbdt, 82 only rgbd, sign test p 0.16). In the two cells where thermal shows
+  the glass and depth does not, it is below rgbt: cell 2, 0.083 against 0.242 (5 / 24, p 0.0006); cell 4, 0.017
+  against 0.158 (1 / 18, p 8e-5). In cell 1 (rgb dark) it is below rgbd, 0.575 against 0.750 (4 / 25, p 0.0001).
+- **Held-out distractors cost a few points** for the policies that work (rgbdt 0.383 to 0.324, rgbd 0.398 to 0.352).
+- **Arithmetic on the table, not a run:** taking rgbd in the cells where depth shows the glass and rgbt in the others
+  gives (0.600 + 0.750 + 0.583 + 0.625 + 0.242 + 0.158 + 0.042) / 7 = 0.429, against 0.354 for rgbdt. That is what
+  choosing between the two plain policies by the true cell would reach.
+
+What this says about the benchmark:
+
+- **The depth and thermal axes do what they were built for**: a policy succeeds where its sensor shows the glass and
+  is at the floor where it does not, no cell leaks, and the policy with all three sensors is not the best one in the
+  cells where only thermal helps. That is the gap a gate is meant to close.
+- **The rgb axis does not work for plain Diffusion Policy.** "Rgb shows the glass" was checked with the segmentation
+  network (checks 3 and 4: rgb alone locates it in 0.91–0.98 of the first frames), not with a policy. No baseline
+  solves the rgb-only cell, so the macro average of these baselines cannot exceed 6/7, and the rgb baseline says
+  nothing about rgb.
+- **Why rgb fails here and not on `L0_bench` is not established.** The glass looks the same in rgb as there (alpha
+  0.3, normal light). Two differences in the training data, neither tested: 170 of the 500 demos are dark (the rgb
+  image carries nothing, 34%), and 330 demos with a visible glass remain instead of 500.
+- **Thermal's ceiling is low** (0.16–0.24 where it is the sensor that shows the glass), so cells 2 and 4 can add
+  little to the macro average as long as the policy cannot grasp from thermal.
+- **One seed.** The cell rates have a 95% interval of about ±0.09 at 0.5; the statements above rest on differences
+  far larger than that, except the ranking of rgbdt and rgbd.
+
+Nothing in the level, the test sets or the reporting rules was changed after these results. Proposed next, none of
+it started: (1) one diagnostic run, the plain rgb policy trained on the 330 demos of the cells where rgb shows the
+glass, to tell the two candidate causes apart; (2) seeds 43 and 44 of the baselines; (3) the gate for three sensors.
+Whether the level's rgb cells are changed is the project owner's decision.
+
 ## Files
 
 - `figure_cells.png`; `thermal_contrast_sweep.{txt,json}`; `real_thermal_contrast.{txt,json}`; `teacher_check.txt`;
   `cells_check_L0_bench_net.{txt,json}` (check 3), `cells_check_L0_grid_net.{txt,json}` (check 4).
+- Baselines: `L0_grid_{rgbdt,rgbd,rgbt,rgb}_500demos/` (`train_logs.json.txt`, `curve.json`, `cells.json`, and per
+  test set `eval_log.json`, `episodes.json`); `baselines_cells.txt`.
 - Not in git: the demo set `results/data/sim_demos_L0_grid_500.zarr`; the segmentation frames, network and logs
   under `data/grid_bench/`.
