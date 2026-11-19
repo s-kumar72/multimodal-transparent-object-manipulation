@@ -12,8 +12,8 @@ that.
 and lighting fixed as in `L0_bench`. The definition of "thermal blind" was left open and is set here by measurement
 ([Thermal blind](#thermal-blind-how-the-number-was-set)).
 
-No policy has been trained or evaluated on this level. The first runs are listed [at the end](#proposed-first-runs-not-started)
-and wait for approval.
+The design, the checks and the reporting rules below were fixed before any policy was trained on this level. The
+first runs are the [baselines](#baselines-approved-1119-listed-before-they-start).
 
 ## Design
 
@@ -197,15 +197,29 @@ both give 190/190 arrays identical.
 - **The 4 px criterion has a high chance level** (0.20–0.37 whenever the network predicts a mask), because the
   glass spawns within about 12 × 30 cm. All blindness statements are relative to that chance level.
 
-## Proposed first runs (not started)
+## Baselines (approved 11/19, listed before they start)
 
-Waiting for approval; nothing below has been run.
+Plain Diffusion Policy, one run per sensor set, to see what the benchmark does to policies that have no gate.
 
-1. **Baselines**: Diffusion Policy with `rgb`, `rgbd`, `rgbt`, `rgbdt` on the 500 demos, seed 42, 101 epochs, the
-   settings of the `fusion_bench` baselines; rollouts during training on `h_cells` (35 episodes, monitoring only).
-   Estimated at 6–7 h per training and 1 h per evaluation.
-2. **Gate for three sensors**: the visibility gate so far decides depth and thermal only. It needs a third flag for
-   rgb and the level's segmentation network (check 4). Its design is written up and approved before it is trained.
+| run | sensors | seed |
+|---|---|---|
+| `L0_grid_rgbdt_500demos` | rgb, depth, thermal | 42 |
+| `L0_grid_rgbd_500demos` | rgb, depth | 42 |
+| `L0_grid_rgbt_500demos` | rgb, thermal | 42 |
+| `L0_grid_rgb_500demos` | rgb | 42 |
+
+- **Settings:** those of the `L0_bench` baselines (`scripts/run_experiment.sh L0_grid <variant> 500`, default config,
+  101 epochs), except the rollouts during training, which use `h_cells` with 35 episodes (5 per cell, monitoring
+  only), and `TOPK=0` (only the last checkpoint is kept, the one that is evaluated).
+- **Final evaluation:** as in the reporting rules, `TEST_SETS="h_cells i_cells_heldout" NEVAL=420` (new knobs of
+  `scripts/run_experiment.sh`; its defaults are unchanged).
+- **What to expect, written before the runs (not a criterion):**
+  - near 0 in the cells a policy cannot solve: rgb in cells 1, 4, 5; rgbd in cell 4; rgbt in cell 5;
+  - rgbdt has a sensor that shows the glass in every cell, so any cell where it is far below the others shows what a
+    policy without a gate loses to its blind sensors.
+- **Not part of this step:** seeds 43 and 44, and the gate for three sensors. The gate so far decides depth and
+  thermal only; it needs a third flag for rgb and the level's segmentation network (check 4). Its design is written up
+  and approved before it is trained.
 
 ## Files
 
