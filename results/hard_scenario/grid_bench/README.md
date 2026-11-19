@@ -376,6 +376,53 @@ is twice what thermal gives now. The cells a policy cannot solve are reported as
 
 One seed per run. Nothing here changes `L0_grid`, its test sets or the baseline results above.
 
+### First three results and the follow-up level `L0_grid_clear` (11/20 04:10, written before its runs)
+
+Three of the four runs are in (840 test episodes each; the full tables come with the fourth):
+
+| run | read-out | result |
+|---|---|---|
+| `L0_grid_rgb_330demos_rgbshown` | cells where rgb shows the glass | 162 / 480 = 0.338 (baseline 0.031): **repaired**; dark cells 7 / 360 |
+| `L0_grid_rgb_1000demos` | cells where rgb shows the glass | 7 / 480 = 0.015: **not repaired**; dark cells 5 / 360 |
+| `L0_grid_rgbt_500demos_cell4` | cell 4 | 69 / 120 = 0.575 (baseline 0.158): **repaired**; cell 1, the same case for this policy, 67 / 120 |
+
+So the rule above applies: the dark demos are the obstacle for rgb, and more demos do not help (660 lit demos with
+340 dark ones give nothing, 330 lit demos alone give 0.34). Rgb blind is redefined in a new level; `L0_grid` stays.
+
+**Level `L0_grid_clear`** (`sim/configs/L0_grid_clear.yaml`, level id 32; `SceneConfig.rgb_blind: clear`): `L0_grid`
+with one change. An rgb-blind episode has normal light, and the glass is clear to the colour camera (alpha 0.001,
+below one grey level). The colour image shows the table, the arm and the distractors but not the glass, so rgb blind
+hides only the glass, as depth blind and thermal blind do. Test sets `h_cells` and `i_cells_heldout` as before (the
+same seeds and cells).
+
+**Check** (`sim/check_clear.py`, [`clear_check.txt`](clear_check.txt); 250 training seeds and 3 teacher episodes per
+cell):
+
+- In the rgb-blind cells the camera frame with the glass and the frame rendered without the transparent objects
+  differ in 0 pixels, on the first frame and on every frame of the teacher episodes (in the other cells in 220-330
+  pixels of the 240 x 320 frame, by up to 190 grey levels). Blindness is exact; there is no chance level to compare
+  with.
+- First-frame depth and thermal equal those of `L0_grid` for all 250 seeds, and in the cells where rgb shows the
+  glass the whole teacher episode is the same. In the 500 demos (teacher 500 / 500) the episodes of those cells are
+  identical to `L0_grid`'s, the actions of all 500 are, and the rgb-blind episodes have a mean brightness of 197
+  (4.8 in `L0_grid`).
+- The existing levels are unchanged: `sim/regression_test.py` on the default config, `L0_bench` and `L0_grid`,
+  190 / 190 arrays each.
+
+**Runs:** the four baselines again, on this level: `L0_grid_clear_{rgb,rgbd,rgbt,rgbdt}_500demos`, seed 42, settings
+and final evaluation of the `L0_grid` baselines.
+
+**Read-out, fixed now:**
+
+- rgb axis: the rgb policy over the cells where rgb shows the glass (0, 2, 3, 6), >= 0.30 repaired, < 0.15 not
+  repaired, as above. If it is not repaired, demos without the glass in the colour image keep a plain policy from
+  learning rgb however the glass is hidden; nothing further is changed and the choice of benchmark goes back to the
+  user with both tables.
+- Leak: rgb in cells 1, 4, 5, rgbd in cell 4 and rgbt in cell 5 stay below 0.15.
+- Thermal: rgbt and rgbdt in cell 4, against 0.40 and 0.30 as above and against 0.575, what the cell-4 run reached.
+- Reported without a threshold: the best baseline of every cell, and the mean of those against the best single
+  baseline (the room a method has on this level).
+
 ## Files
 
 - `figure_cells.png`; `thermal_contrast_sweep.{txt,json}`; `real_thermal_contrast.{txt,json}`; `teacher_check.txt`;
@@ -385,5 +432,7 @@ One seed per run. Nothing here changes `L0_grid`, its test sets or the baseline 
 - Repair round: `policy/subset_demos.py` (the demos of chosen cells of a set), `sim/collect_demos.py --cells`
   (collect the seeds of chosen cells only), `ZARR` of `scripts/run_experiment.sh` (train on such a set); the
   defaults of both scripts are unchanged.
-- Not in git: the demo sets `results/data/sim_demos_L0_grid_{500,1000,330_rgbshown,500_cell4}.zarr`; the
+- Level `L0_grid_clear`: `sim/configs/L0_grid_clear.yaml`, `sim/check_clear.py`, `clear_check.txt`.
+- Not in git: the demo sets `results/data/sim_demos_L0_grid_{500,1000,330_rgbshown,500_cell4}.zarr` and
+  `sim_demos_L0_grid_clear_500.zarr`; the
   segmentation frames, network and logs under `data/grid_bench/`.

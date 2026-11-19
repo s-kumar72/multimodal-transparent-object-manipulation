@@ -168,8 +168,13 @@ class GlassPickEnv:
                     thermal_gap=gap, is_crossover=int(crossover), realistic=int(realistic),
                     obj_emis=self.emis[self.obj])
         info.update(self._transparent(seed))
+        assert cfg.rgb_blind in ("dark", "clear"), cfg.rgb_blind
+        if cell is not None and cell[1] and cfg.rgb_blind == "clear":   # rgb blind: the glass is not in the colour image
+            for geoms in self.glass_geoms.values():
+                self.model.geom_rgba[geoms, 3] = cfg.clear_alpha
+            info["alpha"] = cfg.clear_alpha
         info.update(self._background(seed))
-        self.dark = cell is not None and cell[1]
+        self.dark = cell is not None and cell[1] and cfg.rgb_blind == "dark"
         info.update(self._lighting(seed, self.dark))
         liquid = self._liquid(seed, info)
         extras = self._extras(seed, info) if self.uses_extras else []
@@ -180,7 +185,7 @@ class GlassPickEnv:
         info["n_table_blobs"] = len(self.sensor_scene["blobs"])
         info["glass_seethrough"] = self.sensor_scene["seethrough"]   # 1 in a see-through episode (dots or blobs)
         if cell is not None:
-            info.update(cell=cell[0], rgb_dark=int(cell[1]), thermal_contrast=apparent_contrast(
+            info.update(cell=cell[0], rgb_dark=int(self.dark), thermal_contrast=apparent_contrast(
                 self.temps[self.obj], self.emis[self.obj], self.temps["table"], self.emis["table"], self.t_env))
         self.episode_info = info
 
