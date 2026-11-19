@@ -3,6 +3,7 @@ Scripted-teacher success rate per difficulty level, on training seeds and on the
 Prints the failures with a reason (target not lifted / distractor knocked over or moved).
 
 run via python sim/teacher_check.py --n 100 --workers 4
+--test_set i_cells_heldout --n_test 420 checks another test set / number of test episodes (default: g, the manifest's n)
 """
 import argparse
 import multiprocessing as mp
@@ -14,9 +15,11 @@ from env import GlassPickEnv, OBJECT_NAMES
 from teacher import ScriptedTeacher
 from testsets import manifest, test_set
 
+TEST_SET = "g_heldout_all"
+
 def run(job):
     level, split, seed, obj = job
-    cfg = test_set(level, "g_heldout_all")[0] if split == "test" else None
+    cfg = test_set(level, TEST_SET)[0] if split == "test" else None
     from config import load_config
     env = GlassPickEnv(config=cfg or load_config(manifest()["levels"][level]))
     teacher = ScriptedTeacher()
@@ -35,12 +38,15 @@ if __name__ == "__main__":
     p.add_argument("--n", type=int, default=100, help="training seeds per level")
     p.add_argument("--workers", type=int, default=4)
     p.add_argument("--levels", nargs="+", default=list(manifest()["levels"]))
+    p.add_argument("--test_set", default="g_heldout_all")
+    p.add_argument("--n_test", type=int, default=None, help="test episodes (default: the manifest's n)")
     args = p.parse_args()
+    TEST_SET = args.test_set   # read by the forked workers
 
     jobs = []
     for level in args.levels:
         jobs += [(level, "train", s, None) for s in range(args.n)]
-        _, seeds, objects = test_set(level, "g_heldout_all")
+        _, seeds, objects = test_set(level, args.test_set, n=args.n_test)
         jobs += [(level, "test", s, objects[s % len(objects)]) for s in seeds]
     with mp.get_context("fork").Pool(args.workers) as pool:
         results = pool.map(run, jobs, chunksize=4)

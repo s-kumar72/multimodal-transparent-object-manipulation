@@ -1,0 +1,6 @@
+== test set h_cells
+L0_grid train teacher 0/0  tumbler 0/0 bottle 0/0 wineglass 0/0 jar 0/0 flask 0/0  | episodes that moved a distractor > 2 cm: 0
+L0_grid test  teacher 420/420  tumbler 84/84 bottle 84/84 wineglass 84/84 jar 84/84 flask 84/84  | episodes that moved a distractor > 2 cm: 0
+== test set i_cells_heldout
+L0_grid train teacher 0/0  tumbler 0/0 bottle 0/0 wineglass 0/0 jar 0/0 flask 0/0  | episodes that moved a distractor > 2 cm: 0
+L0_grid test  teacher 420/420  tumbler 84/84 bottle 84/84 wineglass 84/84 jar 84/84 flask 84/84  | episodes that moved a distractor > 2 cm: 0

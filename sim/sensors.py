@@ -23,6 +23,23 @@ def band_radiance_map(temp):
     u, inv = np.unique(temp, return_inverse=True)
     return band_radiance(u)[inv].reshape(temp.shape)
 
+def apparent_contrast(t_obj, e_obj, t_ref, e_ref, t_env):
+    """Apparent temperature of an object minus that of a reference surface (degC). Apparent = what the camera measures,
+    emissivity * emitted + (1 - emissivity) * reflected room radiance, in black-body degrees at room temperature."""
+    b_env = band_radiance(t_env)
+    per_deg = band_radiance(t_env + 0.5) - band_radiance(t_env - 0.5)
+    return float((e_obj * (band_radiance(t_obj) - b_env) - e_ref * (band_radiance(t_ref) - b_env)) / per_deg)
+
+def matching_temp(t_ref, e_ref, e_obj, t_env, contrast=0.0):
+    """Temperature at which an object of emissivity e_obj has the given apparent contrast (degC) against the reference."""
+    b_env = band_radiance(t_env)
+    per_deg = band_radiance(t_env + 0.5) - band_radiance(t_env - 0.5)
+    target = b_env + (e_ref * (band_radiance(t_ref) - b_env) + per_deg * contrast) / e_obj
+    t = t_env + (target - b_env) / per_deg
+    for _ in range(3):   # Newton steps; one is already within 1e-3 degC for the few degrees used here
+        t -= (band_radiance(t) - target) / (band_radiance(t + 0.5) - band_radiance(t - 0.5))
+    return float(t)
+
 def gaussian_blur(img, sigma):
     r = max(1, int(round(3 * sigma)))
     k = np.exp(-0.5 * (np.arange(-r, r + 1) / sigma) ** 2)
@@ -49,7 +66,7 @@ class Sensors:
         self.cam_id, self.focal = cam, 0.5 * height / np.tan(np.radians(model.cam_fovy[cam]) / 2)
         self.scene = None
 
-    def episode(self, seed, target, liquid, extras, data, region=((0.24, 0.56), (-0.24, 0.24))):
+    def episode(self, seed, target, liquid, extras, data, region=((0.24, 0.56), (-0.24, 0.24)), force_seethrough=None):
         """Per-episode sensor effects: liquid in the target, absorber holes and table hole patches (lever C).
         region: (x range, y range) on the table where the hole patches may go."""
         cfg, m = self.cfg, self.model
@@ -61,6 +78,8 @@ class Sensors:
         # "glass" key stays with no defects, otherwise render() falls back to the dot holes; in dot mode render()
         # skips the dot holes on the glass.
         seethrough = cfg.glass_seethrough_p > 0 and rng.random() < cfg.glass_seethrough_p
+        if force_seethrough is not None:     # visibility cells (cfg.cells) decide it
+            seethrough = bool(force_seethrough)
         if seethrough and blob_mode:
             defects["glass"].update(missing=0.0, wrong=0.0)
         holes = {}
