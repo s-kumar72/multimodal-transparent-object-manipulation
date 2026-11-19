@@ -91,7 +91,7 @@ def main(ckpt, level, sets, device, out):
     for i, c in enumerate(cells):
         sel = ok & (d["cell"] == i)
         visible = tuple(m for m, blind in zip(MODS, c[1:4]) if not blind)
-        row = dict(cell=i, visible=list(visible), n=int(sel.sum()))
+        row = dict(cell=i, shows=list(visible), n=int(sel.sum()))
         txt = []
         for name, key in (("rgb", ("rgb",)), ("depth", ("depth",)), ("thermal", ("thermal",)), ("visible", visible),
                           ("all", MODS)):

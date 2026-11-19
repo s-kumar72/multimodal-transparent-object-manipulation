@@ -174,6 +174,37 @@ both give 190/190 arrays identical.
 5. **Evaluation pipeline** (not a result): a policy trained on `L0_bench` ran through `policy/eval.py` on 35 episodes
    of each test set; every episode record carries its `cell`, and `policy/summarize_cells.py` reads them.
 
+### Result of check 4
+
+Network: `data/grid_bench/runs/mix_ws` (20000 iterations, 47 min; finished after the criteria above were committed).
+First frame of the 840 test episodes, located / chance ([`cells_check_L0_grid_net.txt`](cells_check_L0_grid_net.txt)):
+
+| cell | shows the glass | rgb only | depth only | thermal only | the visible sensors | all three |
+|---|---|---|---|---|---|---|
+| 0 | rgb, depth, thermal | 0.908 / 0.363 | 0.983 / 0.359 | 0.792 / 0.344 | 0.975 | 0.975 |
+| 1 | depth, thermal | **0.375 / 0.316** | 0.975 / 0.334 | 0.767 / 0.317 | 0.967 | 0.967 |
+| 2 | rgb, thermal | 0.983 / 0.362 | **0.350 / 0.312** | 0.908 / 0.352 | 1.000 | 1.000 |
+| 3 | rgb, depth | 0.942 / 0.351 | 1.000 / 0.348 | **0.142 / 0.111** | 1.000 | 1.000 |
+| 4 | thermal | **0.383 / 0.322** | **0.283 / 0.220** | 0.933 / 0.321 | 0.933 | 0.958 |
+| 5 | depth | **0.283 / 0.307** | 0.992 / 0.293 | **0.150 / 0.154** | 0.992 | 0.992 |
+| 6 | rgb | 0.933 / 0.324 | **0.250 / 0.212** | **0.150 / 0.109** | 0.933 | 0.933 |
+
+- **(a) met.** Every blind sensor is at chance for the network that was trained on the blind cells too: largest
+  excess +0.063 (cell 4, depth). The level's `blind_contrast` stays 0.1 °C and the demos are kept.
+- **(b) not met for 2 of the 12 pairs:** thermal alone in cells 0 and 1 (0.792 and 0.767, limit 0.85). The other ten
+  pairs are 0.908–1.000.
+- **(c) met:** the visible sensors together locate the glass in 0.933–1.000 of the frames of every cell.
+- **What the miss in (b) is.** On the same frames the `L0_bench` network locates the glass from thermal alone in
+  0.908 and 0.925 (check 3), so the thermal image carries the signal and the level's network is the weaker
+  thermal-only detector. Its misses are mostly glass colder than the room (0.64–0.71 located, against 0.86–0.88 for
+  warmer glass).
+- **"Alone" is exact.** The mask predicted from thermal alone does not change when the rgb and depth images are
+  replaced by zeros (0 of 840 frames, both networks).
+- **Decision:** reported to the project owner on 11/19. Proposed: the level stays as it is, because (b) was there to
+  catch a sensor that does not show the glass where it should, and check 3 shows that it does. The weakness is the
+  network's and matters for the gate, which uses this network to find the glass; it belongs to the gate design. The
+  baselines do not use the network.
+
 ## Reporting rules, fixed before any policy is trained
 
 - **Evaluation:** the last checkpoint (epoch 100) on `h_cells` and `i_cells_heldout`, 420 episodes each.
@@ -224,6 +255,6 @@ Plain Diffusion Policy, one run per sensor set, to see what the benchmark does t
 ## Files
 
 - `figure_cells.png`; `thermal_contrast_sweep.{txt,json}`; `real_thermal_contrast.{txt,json}`; `teacher_check.txt`;
-  `cells_check_L0_bench_net.{txt,json}`.
+  `cells_check_L0_bench_net.{txt,json}` (check 3), `cells_check_L0_grid_net.{txt,json}` (check 4).
 - Not in git: the demo set `results/data/sim_demos_L0_grid_500.zarr`; the segmentation frames, network and logs
   under `data/grid_bench/`.
