@@ -423,6 +423,81 @@ and final evaluation of the `L0_grid` baselines.
 - Reported without a threshold: the best baseline of every cell, and the mean of those against the best single
   baseline (the room a method has on this level).
 
+### Results of the repair round and of `L0_grid_clear` (11/20; seed 42, 840 test episodes per run)
+
+Per-cell tables of every run and the paired comparisons: [`repair_cells.txt`](repair_cells.txt).
+
+**Repair round** (level `L0_grid`, other training sets):
+
+| run | read-out | result | baseline | verdict by the limits above |
+|---|---|---|---|---|
+| rgb, the 330 lit demos | cells where rgb shows the glass (480) | 162 = 0.338 | 0.031 | repaired |
+| rgb, 1000 demos | the same cells | 7 = 0.015 | 0.031 | not repaired |
+| rgbt, 500 demos of cell 4 | cell 4 (120) | 69 = 0.575 | 0.158 | repaired |
+| rgbt, 1000 demos | cells 2 and 4 (240) | 79 = 0.329 | 0.200 | partial |
+
+- The cells a policy cannot solve stay at the floor in all four runs (0.008-0.050).
+- The cell-4 policy is as good in cell 1 (0.558), the same case for a policy without depth, and solves all five
+  objects (0.42-0.83; the baseline's successes were mostly the jar).
+- With 1000 demos rgbt gains in the cells where thermal shows the glass (cell 4: 0.342 against 0.158, 28 / 6 on the
+  same episodes, p 0.0002) and still does not use rgb (cells 3 and 6: 0.037).
+
+**Baselines on `L0_grid_clear`** (500 demos), next to those on `L0_grid`:
+
+| cell | sensors that show the glass | rgbdt | rgbd | rgbt | rgb | | rgbdt on `L0_grid` | rgbd | rgbt | rgb |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | rgb, depth, thermal | 0.592 | 0.583 | 0.167 | 0.050 | | 0.625 | 0.600 | 0.217 | 0.025 |
+| 1 | depth, thermal | 0.633 | 0.700 | 0.075 | 0.033 | | 0.575 | 0.750 | 0.167 | 0.033 |
+| 2 | rgb, thermal | 0.108 | 0.050 | 0.117 | 0.058 | | 0.083 | 0.025 | 0.242 | 0.033 |
+| 3 | rgb, depth | 0.650 | 0.650 | 0.117 | 0.100 | | 0.550 | 0.583 | 0.042 | 0.042 |
+| 4 | thermal | 0.058 | 0.042 | 0.017 | 0.042 | | 0.017 | 0.025 | 0.158 | 0.017 |
+| 5 | depth | 0.625 | 0.633 | 0.033 | 0.033 | | 0.575 | 0.625 | 0.050 | 0.025 |
+| 6 | rgb | 0.083 | 0.092 | 0.183 | 0.075 | | 0.050 | 0.017 | 0.042 | 0.025 |
+| | macro average | 0.393 | 0.393 | 0.101 | 0.056 | | 0.354 | 0.375 | 0.131 | 0.029 |
+
+Read-out of `L0_grid_clear`, by the limits fixed before its runs:
+
+- **rgb axis: not repaired.** The rgb policy succeeds in 34 / 480 = 0.071 of the episodes of the cells where rgb
+  shows the glass (0.036 in the others). It comes near the glass more often there (closes within 8 cm in 51% of the
+  episodes, against 29% in the rgb-blind cells) but does not grasp it.
+- **Leak: none.** rgb in cells 1, 4, 5: 0.033, 0.042, 0.033; rgbd in cell 4: 0.042; rgbt in cell 5: 0.033.
+- **Thermal: not repaired.** Cell 4 is 0.017 for rgbt and 0.058 for rgbdt, against 0.575 for the cell-4 policy (which
+  was trained and tested on `L0_grid`, where the rgb-blind image is dark).
+- **Best baseline of every cell:** mean 0.419 on `L0_grid_clear` and 0.433 on `L0_grid`, against the best single
+  baseline 0.393 and 0.375. With the two single-sensor reference policies of the repair round (rgb on the lit demos,
+  rgbt on the cell-4 demos) the per-cell best on `L0_grid` is 0.625, 0.750, 0.367, 0.583, 0.575, 0.625, 0.308: mean
+  0.548.
+
+**What the twelve runs show.**
+
+1. A plain policy uses one sensor. With depth it is a depth policy: rgbd and rgbdt reach 0.58-0.75 where depth shows
+   the glass and 0.02-0.11 elsewhere, on both levels, although rgb or thermal show the glass in those cells. rgbdt
+   is not above rgbd on either level (0.354 / 0.375, 0.393 / 0.393).
+2. Without depth it leans on one of the others, weakly, and which one depends on the level: thermal on `L0_grid`
+   (0.16-0.24 where thermal shows the glass, rgb unused), rgb on `L0_grid_clear` (0.12-0.18 where rgb shows the
+   glass, thermal-only cell at the floor).
+3. Each weak sensor can carry the task when all demos are of the kind where it shows the glass (rgb 0.31-0.37,
+   thermal 0.56-0.58), and not when such demos are mixed with demos where it does not: not with twice the demos (rgb
+   0.015; thermal 0.33), and for rgb not with the other way of hiding the glass either (0.071).
+4. So the low rgb and thermal numbers of the baselines are not defects of the scenes; they are what a plain policy
+   does with demos of mixed visibility. The cause is not established.
+
+**Decisions of the user (11/20), which change what follows:**
+
+- A method is trained and evaluated on sensor images and joint values only (and the demo actions in training).
+  Nothing that only the simulator knows is used, in training either: no cell, no visibility flag, no glass mask and no
+  network trained on such masks. The gated policies of `fusion_bench` used a segmentation network trained on
+  simulator masks; they are dropped as methods and stay as a reference for what that information gives.
+- The two single-sensor policies above were trained on demos chosen by cell, so they are reference levels, not
+  baselines.
+- All-or-nothing visibility is a limit of both levels; intermediate visibility is to be added.
+
+**Open, nothing started:** which of the two levels becomes the benchmark (the numbers do not separate them; the
+clear rgb-blind case cannot be told from image brightness); a higher rgb "shows" level, so that the single-sensor
+reference of rgb is in the range of depth and thermal (0.34 now; alpha 0.3 was set on `L0_bench`, where rgb always
+showed the glass); intermediate visibility levels set by measurement, first as test sets for the existing
+checkpoints; seeds 43 and 44; a baseline with random sensor dropout.
+
 ## Files
 
 - `figure_cells.png`; `thermal_contrast_sweep.{txt,json}`; `real_thermal_contrast.{txt,json}`; `teacher_check.txt`;
@@ -433,6 +508,8 @@ and final evaluation of the `L0_grid` baselines.
   (collect the seeds of chosen cells only), `ZARR` of `scripts/run_experiment.sh` (train on such a set); the
   defaults of both scripts are unchanged.
 - Level `L0_grid_clear`: `sim/configs/L0_grid_clear.yaml`, `sim/check_clear.py`, `clear_check.txt`.
+- Repair round and `L0_grid_clear` runs: `L0_grid_{rgb_330demos_rgbshown,rgb_1000demos,rgbt_500demos_cell4,rgbt_1000demos}/`,
+  `L0_grid_clear_{rgbdt,rgbd,rgbt,rgb}_500demos/` (same files as the baselines); `repair_cells.txt`.
 - Not in git: the demo sets `results/data/sim_demos_L0_grid_{500,1000,330_rgbshown,500_cell4}.zarr` and
   `sim_demos_L0_grid_clear_500.zarr`; the
   segmentation frames, network and logs under `data/grid_bench/`.
