@@ -115,6 +115,11 @@ class SceneConfig:
     cells: list = None
     dark_light: float = 0.02
     dark_rgb_noise: float = 0.0
+    # How an rgb-blind cell hides the glass from the colour camera. "dark": the dark room above. "clear": normal
+    # light and the glass at clear_alpha, below one grey level, so the colour image shows the table, the arm and the
+    # distractors but not the glass (rgb blind hides only the glass, as depth blind and thermal blind do).
+    rgb_blind: str = "dark"
+    clear_alpha: float = 0.001
 
     def pool(self, factor):
         """Value pool of a factor for this config's split."""

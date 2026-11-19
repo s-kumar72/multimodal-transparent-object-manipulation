@@ -1,0 +1,46 @@
+{
+ "runs": [
+  "results/hard_scenario/grid_bench/L0_grid_clear_rgbt_500demos"
+ ],
+ "test_sets": [
+  "h_cells",
+  "i_cells_heldout"
+ ],
+ "macro": 0.10119047619047619,
+ "macro_ci": [
+  0.08095238095238096,
+  0.12142857142857141
+ ],
+ "cells": {
+  "0": {
+   "success": 20,
+   "n": 120
+  },
+  "1": {
+   "success": 9,
+   "n": 120
+  },
+  "2": {
+   "success": 14,
+   "n": 120
+  },
+  "3": {
+   "success": 14,
+   "n": 120
+  },
+  "4": {
+   "success": 2,
+   "n": 120
+  },
+  "5": {
+   "success": 4,
+   "n": 120
+  },
+  "6": {
+   "success": 22,
+   "n": 120
+  }
+ },
+ "success": 85,
+ "n": 840
+}
