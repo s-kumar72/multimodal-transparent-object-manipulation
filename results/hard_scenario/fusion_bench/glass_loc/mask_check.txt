@@ -1,0 +1,60 @@
+== data/fusion_bench/sim/L0_bench_test_a_in_distribution.npz: 549 frames, 50 episodes; depth shows the glass 0.783, thermal shows it 0.876, crossover 0.118
+  depth and thermal show it: 374 frames, 34 episodes
+     all sensors      vs the true mask: found 1.000 | IoU 0.677 | centroid within 2 px 0.813, within 4 px 0.976, median 0.65 px
+     without thermal  vs the true mask: found 1.000 | IoU 0.651 | centroid within 2 px 0.840, within 4 px 0.989, median 0.70 px
+     without depth    vs the true mask: found 1.000 | IoU 0.682 | centroid within 2 px 0.821, within 4 px 0.979, median 0.71 px
+     rgb only         vs the true mask: found 1.000 | IoU 0.611 | centroid within 2 px 0.834, within 4 px 0.992, median 1.01 px
+  depth blind, thermal shows it: 107 frames, 10 episodes
+     all sensors      vs the true mask: found 1.000 | IoU 0.660 | centroid within 2 px 0.766, within 4 px 0.953, median 0.76 px
+     without thermal  vs the true mask: found 1.000 | IoU 0.608 | centroid within 2 px 0.766, within 4 px 0.963, median 0.97 px
+     without depth    vs the true mask: found 1.000 | IoU 0.658 | centroid within 2 px 0.776, within 4 px 0.953, median 0.83 px
+     rgb only         vs the true mask: found 1.000 | IoU 0.590 | centroid within 2 px 0.766, within 4 px 0.963, median 1.11 px
+  thermal blind, depth shows it: 56 frames, 7 episodes
+     all sensors      vs the true mask: found 1.000 | IoU 0.621 | centroid within 2 px 0.804, within 4 px 1.000, median 0.87 px
+     without thermal  vs the true mask: found 1.000 | IoU 0.620 | centroid within 2 px 0.804, within 4 px 1.000, median 0.84 px
+     without depth    vs the true mask: found 1.000 | IoU 0.582 | centroid within 2 px 0.804, within 4 px 1.000, median 0.98 px
+     rgb only         vs the true mask: found 1.000 | IoU 0.570 | centroid within 2 px 0.804, within 4 px 1.000, median 1.09 px
+  both blind: 12 frames, 1 episodes
+     all sensors      vs the true mask: found 1.000 | IoU 0.630 | centroid within 2 px 1.000, within 4 px 1.000, median 0.81 px
+     without thermal  vs the true mask: found 1.000 | IoU 0.629 | centroid within 2 px 1.000, within 4 px 1.000, median 0.56 px
+     without depth    vs the true mask: found 1.000 | IoU 0.632 | centroid within 2 px 1.000, within 4 px 1.000, median 0.81 px
+     rgb only         vs the true mask: found 1.000 | IoU 0.627 | centroid within 2 px 1.000, within 4 px 1.000, median 0.28 px
+== data/fusion_bench/sim/L0_bench_test_g_heldout_all.npz: 549 frames, 50 episodes; depth shows the glass 0.776, thermal shows it 0.878, crossover 0.118
+  depth and thermal show it: 371 frames, 34 episodes
+     all sensors      vs the true mask: found 1.000 | IoU 0.709 | centroid within 2 px 0.989, within 4 px 1.000, median 0.48 px
+     without thermal  vs the true mask: found 1.000 | IoU 0.679 | centroid within 2 px 0.987, within 4 px 1.000, median 0.48 px
+     without depth    vs the true mask: found 1.000 | IoU 0.710 | centroid within 2 px 0.992, within 4 px 1.000, median 0.56 px
+     rgb only         vs the true mask: found 1.000 | IoU 0.628 | centroid within 2 px 0.908, within 4 px 0.938, median 0.70 px
+  depth blind, thermal shows it: 111 frames, 12 episodes
+     all sensors      vs the true mask: found 1.000 | IoU 0.677 | centroid within 2 px 0.973, within 4 px 0.982, median 0.65 px
+     without thermal  vs the true mask: found 1.000 | IoU 0.635 | centroid within 2 px 0.973, within 4 px 1.000, median 0.61 px
+     without depth    vs the true mask: found 1.000 | IoU 0.676 | centroid within 2 px 0.973, within 4 px 0.982, median 0.67 px
+     rgb only         vs the true mask: found 1.000 | IoU 0.613 | centroid within 2 px 0.964, within 4 px 1.000, median 0.76 px
+  thermal blind, depth shows it: 55 frames, 7 episodes
+     all sensors      vs the true mask: found 1.000 | IoU 0.679 | centroid within 2 px 1.000, within 4 px 1.000, median 0.44 px
+     without thermal  vs the true mask: found 1.000 | IoU 0.678 | centroid within 2 px 1.000, within 4 px 1.000, median 0.46 px
+     without depth    vs the true mask: found 1.000 | IoU 0.595 | centroid within 2 px 0.982, within 4 px 1.000, median 0.97 px
+     rgb only         vs the true mask: found 1.000 | IoU 0.602 | centroid within 2 px 0.964, within 4 px 0.982, median 0.92 px
+  both blind: 12 frames, 1 episodes
+     all sensors      vs the true mask: found 1.000 | IoU 0.579 | centroid within 2 px 1.000, within 4 px 1.000, median 0.44 px
+     without thermal  vs the true mask: found 1.000 | IoU 0.591 | centroid within 2 px 1.000, within 4 px 1.000, median 0.33 px
+     without depth    vs the true mask: found 1.000 | IoU 0.596 | centroid within 2 px 1.000, within 4 px 1.000, median 0.36 px
+     rgb only         vs the true mask: found 1.000 | IoU 0.584 | centroid within 2 px 1.000, within 4 px 1.000, median 0.30 px
+== results/data/sim_demos_L0_bench_500.zarr: 8000 frames; stored mask found in 1.0000
+  predicted again with all sensors: pixel agreement with the stored masks 1.0000
+  normal: 5515 frames, 344 demos
+     without thermal  vs the stored mask: found 1.000 | IoU 0.909 | centroid within 2 px 1.000, within 4 px 1.000, median 0.18 px
+     without depth    vs the stored mask: found 1.000 | IoU 0.889 | centroid within 2 px 0.998, within 4 px 0.999, median 0.20 px
+     rgb only         vs the stored mask: found 1.000 | IoU 0.755 | centroid within 2 px 0.976, within 4 px 0.995, median 0.47 px
+  see-through: 1938 frames, 122 demos
+     without thermal  vs the stored mask: found 1.000 | IoU 0.798 | centroid within 2 px 0.995, within 4 px 0.997, median 0.39 px
+     without depth    vs the stored mask: found 1.000 | IoU 0.968 | centroid within 2 px 1.000, within 4 px 1.000, median 0.03 px
+     rgb only         vs the stored mask: found 1.000 | IoU 0.755 | centroid within 2 px 0.974, within 4 px 0.989, median 0.47 px
+  crossover: 460 frames, 28 demos
+     without thermal  vs the stored mask: found 1.000 | IoU 0.964 | centroid within 2 px 1.000, within 4 px 1.000, median 0.07 px
+     without depth    vs the stored mask: found 1.000 | IoU 0.796 | centroid within 2 px 0.998, within 4 px 0.998, median 0.39 px
+     rgb only         vs the stored mask: found 1.000 | IoU 0.784 | centroid within 2 px 0.993, within 4 px 1.000, median 0.49 px
+  see-through and crossover: 87 frames, 6 demos
+     without thermal  vs the stored mask: found 1.000 | IoU 0.909 | centroid within 2 px 1.000, within 4 px 1.000, median 0.19 px
+     without depth    vs the stored mask: found 1.000 | IoU 0.904 | centroid within 2 px 1.000, within 4 px 1.000, median 0.18 px
+     rgb only         vs the stored mask: found 1.000 | IoU 0.858 | centroid within 2 px 1.000, within 4 px 1.000, median 0.33 px

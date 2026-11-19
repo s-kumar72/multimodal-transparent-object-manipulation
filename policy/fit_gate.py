@@ -12,6 +12,11 @@ route=visible appear in the diagnostics only.
   python policy/fit_gate.py -c data/runs/<run>/checkpoints/latest.ckpt -o results/.../gate_fit/<run>
 writes <run>.pt ({"gate": state dict of the encoder's gate}; evaluate with eval.py --gate_state <run>.pt) and
 <run>.json (diagnostics: the gate of the checkpoint, the fresh gate and the fitted gate on the same cached losses).
+
+--select chooses the form of the gate without labels: a linear gate or the MLP of the encoder, the number of
+optimizer steps and the weight decay are compared by the gate loss on demos left out of the fit (--folds folds over
+the held-out demos); the setting with the lowest left-out loss is fitted on all of them. A linear gate goes with an
+encoder built with gate_hidden=0 (policy.gate_train=frozen, policy.gate_state=<run>.pt for the second stage).
 Run from the repo root with the PYTHONPATH that policy/train.sh uses. The EMA weights are used when present, as in
 eval.py.
 """
@@ -55,21 +60,69 @@ def fresh_gate(gate, seed=0):
         torch.nn.init.zeros_(gate[m][-1].bias)
 
 
-def fit_gate(gate, cue, L, steps=2000, lr=1e-3):
-    """Full-batch Adam on the cached losses; cue (n, To, C), L (n, 2, 2). The probability of a sample is the mean
-    over its To observation steps, as in training. Returns the objective at every step."""
+def fit_gate(gate, cue, L, steps=2000, lr=1e-3, weight_decay=0.0, at=(), probe=None):
+    """Full-batch Adam (AdamW with weight_decay > 0) on the cached losses; cue (n, To, C), L (n, 2, 2). The
+    probability of a sample is the mean over its To observation steps, as in training. Returns the objective at
+    every step; probe(gate) is called after each step count in `at` and its results are returned as a dict."""
     params = [q for m in SENSORS for q in gate[m].parameters()]
     for q in params:
         q.requires_grad_(True)
-    opt = torch.optim.Adam(params, lr=lr)
-    hist = []
-    for _ in range(steps):
+    opt = torch.optim.AdamW(params, lr=lr, weight_decay=weight_decay) if weight_decay > 0 else torch.optim.Adam(params, lr=lr)
+    hist, probes = [], {}
+    for i in range(steps):
         opt.zero_grad()
         loss, _, _ = gate_objective(gate_probs(gate, cue).mean(1), L)
         loss.backward()
         opt.step()
         hist.append(float(loss))
-    return hist
+        if probe is not None and i + 1 in at:
+            probes[i + 1] = probe(gate)
+    return (hist, probes) if probe is not None else hist
+
+
+def make_gate(family, n_cue, hidden=32):
+    """The gate modules as GatedObsEncoder builds them (rgb is not used by route=learned): family mlp | linear."""
+    def one():
+        return torch.nn.Sequential(torch.nn.Linear(n_cue, hidden), torch.nn.Mish(), torch.nn.Linear(hidden, 1)) \
+            if family == "mlp" else torch.nn.Sequential(torch.nn.Linear(n_cue, 1))
+    gate = torch.nn.ModuleDict({m: one() for m in ("rgb",) + SENSORS})
+    torch.nn.init.zeros_(gate["rgb"][-1].weight)
+    torch.nn.init.constant_(gate["rgb"][-1].bias, 2.0)
+    return gate
+
+
+def select(data, families=("linear", "mlp"), steps=(300, 1000, 3000, 10000), decays=(0.0, 0.01), folds=5, lr=1e-3, seed=0):
+    """Left-out gate loss of every setting: the demos are split into folds, the gate is fitted on the others and
+    scored on the left-out ones with the same loss (no labels). Returns rows sorted by the selection order: lowest
+    mean left-out loss, then linear before mlp, fewer steps, larger weight decay."""
+    eps = sorted(set(data["ep"].tolist()))
+    fold = {e: i % folds for i, e in enumerate(eps)}
+    f = torch.tensor([fold[e] for e in data["ep"].tolist()], device=data["cue"].device)
+    def score(gate, sel):
+        with torch.no_grad():
+            d = {k: v[sel] for k, v in data.items() if k != "ep"}
+            r = describe(gate, d)
+        return {"loss": r["objective"], "depth_agree": r["depth"]["agreement_with_rule"], "thermal_agree": r["thermal"]["agreement_with_rule"],
+                "depth_on": r["depth"]["on"], "thermal_on": r["thermal"]["on"]}
+    rows = []
+    for fam in families:
+        for wd in decays:
+            per = {s: [] for s in steps}
+            for k in range(folds):
+                gate = make_gate(fam, data["cue"].shape[-1]).to(data["cue"].device)
+                fresh_gate(gate, seed)
+                tr, va = f != k, f == k
+                _, pr = fit_gate(gate, data["cue"][tr], data["L"][tr], steps=max(steps), lr=lr, weight_decay=wd, at=set(steps),
+                                 probe=lambda g: score(g, va))
+                for s in steps:
+                    per[s].append(pr[s])
+            for s in steps:
+                m = lambda key: float(np.mean([x[key] for x in per[s]]))
+                rows.append({"family": fam, "weight_decay": wd, "steps": s, "cv_loss": m("loss"),
+                             "cv_loss_folds": [x["loss"] for x in per[s]], "depth_agree": m("depth_agree"),
+                             "thermal_agree": m("thermal_agree"), "depth_on": m("depth_on"), "thermal_on": m("thermal_on")})
+    rows.sort(key=lambda r: (round(r["cv_loss"], 7), r["family"] != "linear", r["steps"], -r["weight_decay"]))
+    return rows
 
 
 @torch.no_grad()
@@ -150,8 +203,14 @@ def describe(gate, data):
 @click.option("--batch_size", type=int, default=128, show_default=True)
 @click.option("--num_workers", type=int, default=4, show_default=True)
 @click.option("--max_samples", type=int, default=0, help="use only the first N held-out samples (smoke tests)")
+@click.option("--family", default=None, type=click.Choice(["mlp", "linear"]), help="form of the gate (default: the encoder's gate)")
+@click.option("--weight_decay", type=float, default=0.0, show_default=True)
+@click.option("--select", "do_select", is_flag=True, help="choose family, steps and weight decay by the left-out gate loss")
+@click.option("--folds", type=int, default=5, show_default=True)
+@click.option("--cache", default=None, help="file for the cached losses: loaded if it exists, written otherwise")
 @click.option("-d", "--device", default="cuda:0", show_default=True)
-def main(checkpoint, output, draws, steps, lr, seed, batch_size, num_workers, max_samples, device):
+def main(checkpoint, output, draws, steps, lr, seed, batch_size, num_workers, max_samples, family, weight_decay,
+         do_select, folds, cache, device):
     import dill
     import hydra
     from omegaconf import OmegaConf
@@ -183,23 +242,41 @@ def main(checkpoint, output, draws, steps, lr, seed, batch_size, num_workers, ma
     loader = torch.utils.data.DataLoader(torch.utils.data.Subset(dataset, held), batch_size=batch_size, shuffle=False,
                                          num_workers=num_workers)
     print(f"{len(held)} samples of {len(episodes)} held-out demos, {draws} draws x 4 states", flush=True)
-    data = collect(policy, loader, draws, device)
+    if cache and pathlib.Path(cache).exists():
+        data = torch.load(cache, map_location="cpu")
+        assert data["L"].shape[0] == len(held), "the cache is for another set of samples"
+    else:
+        data = collect(policy, loader, draws, device)
+        data["ep"] = torch.tensor([dataset._episode_of(i) for i in held])
+        if cache:
+            torch.save(data, cache)
     data = {k: v.to(device) for k, v in data.items()}
+    ep, data = data.pop("ep"), data
 
     L = data["L"]
     report = {"checkpoint": str(checkpoint), "weights": "ema" if ema else "model", "n_samples": len(held),
               "n_demos": len(episodes), "draws": draws, "steps": steps, "lr": lr, "seed": seed,
               "loss_by_state": {f"depth{d}_thermal{t}": float(L[:, d, t].mean()) for d in (1, 0) for t in (1, 0)},
               "checkpoint_gate": describe(enc.gate, data)}
-    fresh_gate(enc.gate, seed)
-    report["fresh_gate"] = describe(enc.gate, data)
-    hist = fit_gate(enc.gate, data["cue"], L, steps=steps, lr=lr)
-    report["fitted_gate"] = describe(enc.gate, data)
+    if do_select:
+        rows = select(dict(data, ep=ep), folds=folds, lr=lr, seed=seed)
+        report["selection"] = rows
+        family, steps, weight_decay = rows[0]["family"], rows[0]["steps"], rows[0]["weight_decay"]
+        report.update(steps=steps, folds=folds)
+        for r in rows:
+            print(f"  {r['family']:6s} wd {r['weight_decay']:<5} steps {r['steps']:5d}: left-out loss {r['cv_loss']:+.6f}  "
+                  f"(agreement with the rule, not used: depth {r['depth_agree']:.3f}, thermal {r['thermal_agree']:.3f})", flush=True)
+    gate = enc.gate if family is None else make_gate(family, data["cue"].shape[-1]).to(device)
+    report.update(family=family or "encoder", weight_decay=weight_decay)
+    fresh_gate(gate, seed)
+    report["fresh_gate"] = describe(gate, data)
+    hist = fit_gate(gate, data["cue"], L, steps=steps, lr=lr, weight_decay=weight_decay)
+    report["fitted_gate"] = describe(gate, data)
     report["objective_curve"] = [hist[i] for i in sorted({0, *range(steps // 20 - 1, steps, max(steps // 20, 1)), steps - 1})]
 
-    state = {k: v.detach().cpu() for k, v in copy.deepcopy(enc.gate.state_dict()).items()}
-    torch.save({"gate": state, "checkpoint": str(checkpoint), "draws": draws, "steps": steps, "lr": lr, "seed": seed},
-               str(out) + ".pt")
+    state = {k: v.detach().cpu() for k, v in copy.deepcopy(gate.state_dict()).items()}
+    torch.save({"gate": state, "checkpoint": str(checkpoint), "draws": draws, "steps": steps, "lr": lr, "seed": seed,
+                "family": family or "encoder", "weight_decay": weight_decay}, str(out) + ".pt")
     pathlib.Path(str(out) + ".json").write_text(json.dumps(report, indent=2))
     for name in ("checkpoint_gate", "fresh_gate", "fitted_gate"):
         r = report[name]

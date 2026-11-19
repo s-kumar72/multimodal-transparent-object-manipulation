@@ -512,6 +512,18 @@ def test_learned_route():
     assert ((enc.last_p.view(B, 2, 2).mean(1) > 0.5).float() == torch.stack(
         [1 - labels["ep_glass_seethrough"], 1 - labels["ep_is_crossover"]], -1)).all()
 
+    # gate_balance: with 3 of 4 samples "depth visible" the single "not visible" sample weighs as much as the other three
+    lab3 = {"ep_glass_seethrough": torch.tensor([0., 1., 0., 0.]), "ep_is_crossover": torch.tensor([0., 0., 0., 0.])}
+    def bias_grad(balance):
+        enc, pol = make("labels", gate_balance=balance)
+        pol.train()
+        pol.compute_loss({"obs": obs, "action": torch.zeros(B, T, 7), "meta": dict(lab3)}).backward()
+        return float(enc.gate["depth"][-1].bias.grad), float(enc.gate["thermal"][-1].bias.grad)
+    gd_plain, gt_plain = bias_grad(False)        # p = 0.5: d BCE / d logit = p - y, mean over samples
+    gd_bal, gt_bal = bias_grad(True)
+    assert abs(gd_plain - (-0.25) / 2) < 1e-6 and abs(gd_bal) < 1e-6        # balanced: the two classes cancel at p = 0.5
+    assert abs(gt_plain - (-0.5) / 2) < 1e-6 and abs(gt_bal - (-0.25) / 2) < 1e-6   # one class only: half the weight
+
     # heldout: marked episodes train the gate only; the others train the policy only
     def grads(actions, split, start=0):
         enc, pol = make("heldout", gate_start_step=start)
@@ -576,8 +588,44 @@ def test_learned_route():
     hist = fit_gate(enc.gate, cue, L, steps=300, lr=0.01)
     p = gate_probs(enc.gate, cue).mean(1)
     assert hist[-1] < before and ((p[:, 0] > 0.5) == good).float().mean() > 0.95 and (p[:, 1] < 0.5).all()
+
+    # frozen: the fitted gate is loaded, not trained, and switches the sensors by p > 0.5 in training as at inference
+    import os
+    import tempfile
+    src, _ = make("labels")
+    with torch.no_grad():
+        src.gate["depth"][0].weight.normal_()
+        src.gate["depth"][-1].weight.normal_()
+        src.gate["thermal"][-1].bias.fill_(-3.0)
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "gate.pt")
+        torch.save({"gate": src.gate.state_dict()}, path)
+        enc, pol = make("frozen", gate_state=path)
+    assert all(torch.equal(a, b) for a, b in zip(enc.gate.state_dict().values(), src.gate.state_dict().values()))
+    assert not any(q.requires_grad for q in enc.gate.parameters()) and enc.route_sample is False
+    pol.train()
+    batch = {"obs": obs, "action": act, "meta": dict(labels)}
+    loss = pol.compute_loss(batch)
+    loss.backward()
+    want = (enc.last_p > 0.5).float()                                       # (B * To, 2): depth, thermal
+    assert torch.equal(enc.last_w[:, 1:], want) and (want[:, 1] == 0).all() and 0 < want[:, 0].mean() < 1
+    for _ in range(3):                                                     # no sampling: the same decisions every pass
+        pol.compute_loss(batch)
+        assert torch.equal(enc.last_w[:, 1:], want)
+    assert next(pol.model.parameters()).grad.abs().sum() > 0 and all(q.grad is None for q in enc.gate.parameters())
+    pol.eval()
+    with torch.no_grad():
+        pol.compute_loss(batch)
+    assert torch.equal(enc.last_w[:, 1:], want) and enc.route_force is None
+    lin = GatedObsEncoder(meta, _resnet(), crop_shape=(84, 84), use_group_norm=True, imagenet_norm=True,
+                          dropout_mode="none", route="learned", gate_hidden=0)
+    assert [len(g) for g in lin.gate.values()] == [1, 1, 1] and lin.gate["depth"][0].out_features == 1
+    lin.eval()
+    lin(frame)
+    assert torch.allclose(lin.last_p, torch.full((B, 2), 0.5))
     print("ok learned route: p = 0.5 at start, forced / sampled / own decisions, labels fit the gate, "
-          "held-out samples move the gate only, flags rule at inference, gate fitted after training")
+          "held-out samples move the gate only, flags rule at inference, gate fitted after training, frozen gate, "
+          "linear gate")
 
 
 def test_switch_composition():
@@ -757,6 +805,77 @@ def test_soft_route_and_norm():
     print("ok soft route + gate_norm")
 
 
+def test_glass_loc():
+    """glass_loc observation: location of the glass mask, stored (dataset) or from the predicted mask (eval env); the
+    cue shares that mask when it uses the same network and sensors; the encoders append it to the conditioning."""
+    import copy
+    import policy.glass_seg as seg
+    from policy.obs_util import LOC_DIM, glass_location
+    from policy.gated_obs_encoder import GatedObsEncoder
+    from policy.shared_crop_encoder import SharedCropObsEncoder
+    m = np.zeros((3, 96, 96), bool)
+    m[0, 10:20, 30:50] = True                       # rows 10-19, columns 30-49
+    m[1, 5, 5] = True                               # fewer than 5 pixels: not found
+    loc = glass_location(m)
+    assert loc.shape == (3, LOC_DIM) and np.allclose(loc[0], [1, 40 / 96, 15 / 96, 20 / 96, 10 / 96], atol=1e-6)
+    assert not loc[1:].any()
+    assert np.allclose(glass_location((m[..., None] * 255).astype(np.uint8)), loc)       # stored masks: (N, H, W, 1) uint8
+    assert glass_location(m.reshape(1, 3, 96, 96)).shape == (1, 3, LOC_DIM)
+
+    meta = copy.deepcopy(SHAPE_META)
+    meta["obs"]["cue"]["shape"] = [CUE_DIM + 4]
+    meta["obs"]["cue"]["vis_thr"] = [15, 30]
+    meta["obs"]["cue"]["seg_ckpt"] = "net.pt"
+    meta["obs"]["glass_loc"] = {"shape": [LOC_DIM], "type": "low_dim", "seg_ckpt": "net.pt"}
+    raw = fake_raw(T=3)
+    stored = to_policy_obs(dict(raw, glass_loc=loc, glass_mask=m), meta["obs"])             # dataset: both stored
+    assert np.allclose(stored["glass_loc"], loc) and stored["glass_loc"].dtype == np.float32
+    calls = []
+    def fake_predict(raw_, ckpt, device="cpu", batch=256, thr=0.5, mods=None):
+        calls.append((ckpt, mods))
+        return m if mods is None else np.roll(m, 20, axis=-1)      # another mask when the sensors are restricted
+    orig, seg.predict_glass_mask = seg.predict_glass_mask, fake_predict
+    try:
+        out = to_policy_obs(raw, meta["obs"])                      # eval env: one prediction for the cue and the location
+        assert calls == [("net.pt", None)] and np.allclose(out["glass_loc"], loc)
+        assert np.allclose(out["cue"], stored["cue"])
+        calls.clear()
+        meta2 = copy.deepcopy(meta)
+        meta2["obs"]["glass_loc"]["seg_mods"] = ["rgb"]            # the location from rgb only, the cue from all sensors
+        out2 = to_policy_obs(raw, meta2["obs"])
+        assert sorted(calls, key=str) == sorted([("net.pt", ["rgb"]), ("net.pt", None)], key=str)
+        assert np.allclose(out2["cue"], stored["cue"]) and np.isclose(out2["glass_loc"][0, 1], loc[0, 1] + 20 / 96)
+        calls.clear()
+        meta3 = copy.deepcopy(meta)
+        meta3["obs"]["cue"]["seg_mods"] = ["rgb", "depth"]         # both restricted the same way: shared again
+        meta3["obs"]["glass_loc"]["seg_mods"] = ["rgb", "depth"]
+        to_policy_obs(raw, meta3["obs"])
+        assert calls == [("net.pt", ["rgb", "depth"])]
+        calls.clear()
+        plain = {"obs": {k: v for k, v in meta["obs"].items() if k != "cue"}, "action": meta["action"]}
+        out4 = to_policy_obs(raw, plain["obs"])                    # a policy without the cue
+        assert calls == [("net.pt", None)] and "cue" not in out4 and np.allclose(out4["glass_loc"], loc)
+    finally:
+        seg.predict_glass_mask = orig
+
+    t = {k: torch.from_numpy(v) for k, v in stored.items()}
+    torch.manual_seed(0)
+    enc = GatedObsEncoder(meta, _resnet(), crop_shape=(84, 84), use_group_norm=True, imagenet_norm=True,
+                          dropout_mode="none", route="learned", route_rgb_only_p=0.0)
+    ref = GatedObsEncoder({"obs": {k: v for k, v in meta["obs"].items() if k != "glass_loc"}, "action": meta["action"]},
+                          _resnet(), crop_shape=(84, 84), use_group_norm=True, imagenet_norm=True,
+                          dropout_mode="none", route="learned", route_rgb_only_p=0.0)
+    enc.eval()
+    f = enc(t)
+    assert f.shape[-1] == ref.output_shape()[0] + LOC_DIM == enc.output_shape()[0]
+    assert torch.allclose(f[:, -LOC_DIM - 7:-7] if enc.state_keys[-1] == "joints" else f[:, -LOC_DIM:], t["glass_loc"])
+    enc2 = SharedCropObsEncoder(plain, _resnet(), crop_shape=(84, 84), random_crop=False, use_group_norm=True,
+                                imagenet_norm=True)
+    f2 = enc2({k: v for k, v in t.items() if k != "cue"})
+    assert f2.shape[-1] == enc2.output_shape()[0] and f2.shape[-1] == 3 * 512 + 7 + LOC_DIM
+    print("ok glass_loc: location of a mask, stored / predicted, mask shared with the cue, appended by both encoders")
+
+
 if __name__ == "__main__":
     test_cues()
     test_obs()
@@ -770,4 +889,5 @@ if __name__ == "__main__":
     test_soft_route_and_norm()
     test_learned_route()
     test_switch_composition()
+    test_glass_loc()
     print("all ok")

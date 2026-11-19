@@ -1505,6 +1505,262 @@ not what a policy trained with the gate would do; p values are not corrected for
 2. `learn_labels` on seeds 43 and 44 (open from round 10).
 3. Keep the rule as the gate of the method and report rounds 10 and 11 as what a learned gate reaches.
 
+## Round 12: trained gates on three seeds, two-stage training (started 11/19 02:18 KST)
+
+### Plan (written before the results)
+
+Requirement for the gate from here on: it is decided by training, not by thresholds set by hand; supervision by the
+labels of the simulator is allowed.
+
+Trainings (L0_bench, rgbdt, 500 demos, 101 epochs, the `vis_route` settings with `route=learned`):
+
+- `learn_labels_seed43`, `learn_labels_seed44`: the label-trained gate of round 10, unchanged, on the other two seeds.
+- `learn_twostage` (seed 42): the second stage of round 11. The gate fitted after training
+  (`gate_fit/L0_bench_rgbdt_500demos_learn_heldout.pt`) is loaded and not trained (`policy.gate_train=frozen`); the
+  policy is trained on all 475 training demos with the sensors switched by that gate (p > 0.5) and 10% rgb-only
+  samples, as `vis_route` is trained with the rule.
+- `learn_labels_bal` (seed 42): `learn_labels` with the two label classes of each sensor weighted equally in every
+  batch (`policy.gate_balance=true`), aimed at the thermal decision on crossover scenes (left on in 16% of the
+  decisions in round 10; 32 of the 475 training demos are crossover demos).
+
+Form of the gate for the two-stage run, checked without labels before the training
+(`fit_gate.py --select --draws 32`, `gate_fit/L0_bench_rgbdt_500demos_learn_heldout_select.json`): a linear gate or
+the MLP, 300 to 10,000 steps, weight decay 0 or 0.01, compared by the gate loss on demos left out of the fit (5 folds
+over the 93 held-out demos). The lowest left-out loss is the MLP at 3000 steps (−0.003451; linear at 10,000 steps
+−0.003417), with the decisions of the gate of round 11 (on the left-out demos depth agrees with the rule in 95.7%
+of the steps, thermal in 52.1%); in every setting thermal agrees in 46–52%. The thermal decision of round 11 is
+therefore not an artefact of the fit, and the gate of round 11 is used unchanged.
+
+Evaluations: 200 episodes per test set, as trained and with guidance 3.0 (the scale selected for `vis_route` in
+round 6; no other scale is tried on the test episodes). Diagnostics: `learn_labels` of seed 42 switched by the flags
+of the rule (`__flags[_g30]`), and thermal off at inference (`--drop thermal`) for the label-trained gates.
+
+Criteria:
+
+- Label-trained gate over three seeds (1200 episodes): decisions agree with the rule in at least 95% for each
+  sensor, and success is not more than 3 points below `vis_route` on the same seeds (0.698 and 0.780): at least
+  0.668 as trained and 0.750 with guidance.
+- `learn_twostage` and `learn_labels_bal` at seed 42: the limits of round 10 (0.675 as trained, 0.747 with
+  guidance). A variant that meets them is run on seeds 43 and 44.
+
+Deviation from the plan (11/19 03:02 KST, before any result): `learn_labels_bal` was started at 02:42 and stopped at
+epoch 1. With four trainings the free memory fell to 17 GB (each training holds 17–24 GB here), next to another
+long training on the machine; three trainings and one evaluation at a time are run instead. Its epoch-0 checkpoint
+was removed. The variant is not run in this round.
+
+### Results (11/19 10:05 KST)
+
+All three trainings reached epoch 100 without interruption. One evaluation was stopped and repeated
+(`learn_twostage` as trained: stopped by hand after 11 minutes on 11/19 08:36 KST, when jobs of another account
+brought the free memory down to 7–11 GB; the repeat ran to the end). Not run: thermal off for `learn_labels` of
+seeds 43 and 44 (4 evaluations, taken out of the queue when the work on L0_bench was stopped, see round 13), so
+that diagnostic has seed 42 only.
+
+**Label-trained gate, three seeds** (1200 episodes per row; per seed of 400)
+
+| policy | guidance | all | normal (930) | see-through (270) | crossover (126) | neither (822) | per seed |
+|---|---|---|---|---|---|---|---|
+| rgbd | – | 749 = 0.624 | 0.782 | 0.081 | 0.754 | 0.773 | 261 / 251 / 237 |
+| rgbdt | – | 736 = 0.613 | 0.731 | 0.207 | 0.476 | 0.757 | 239 / 262 / 235 |
+| nogate_rgbonly | – | 788 = 0.657 | 0.695 | 0.526 | 0.500 | 0.718 | 273 / 245 / 270 |
+| vis_route | – | 837 = 0.698 | 0.741 | 0.548 | 0.643 | 0.751 | 282 / 273 / 282 |
+| **learn_labels** | – | 834 = **0.695** (0.67–0.72) | 0.747 | 0.515 | 0.595 | 0.764 | 279 / 279 / 276 |
+| nogate_rgbonly | 3.0 | 818 = 0.682 | 0.729 | 0.519 | 0.484 | 0.751 | 273 / 258 / 287 |
+| vis_route | 3.0 | 936 = 0.780 | 0.840 | 0.574 | 0.778 | 0.842 | 311 / 305 / 320 |
+| **learn_labels** | 3.0 | 878 = **0.732** (0.71–0.76) | 0.789 | 0.533 | 0.659 | 0.803 | 292 / 298 / 288 |
+
+Agreement of the gate's decisions with the flags of the rule in the same decision step:
+
+| guidance | decisions | depth | thermal | depth on where not visible | thermal on where not visible | sensor off where visible |
+|---|---|---|---|---|---|---|
+| – | 17,870 | 0.995 | 0.982 | 1.2% | 15.7% | 0.3% / 0.1% |
+| 3.0 | 17,940 | 0.994 | 0.982 | 1.6% | 14.9% | 0.3% / 0.2% |
+
+**Verdict by the fixed criterion: not met.** The agreement part is met in both settings and the success part as
+trained (0.695 against the limit 0.668); with guidance the success is 0.732 against the limit 0.750.
+
+- As trained the label-trained gate is level with the rule: −0.3 points (Fisher p 0.93; same episodes: 104 lost,
+  101 gained, sign p 0.89). It is above the control without a gate by 3.8 points (Fisher p 0.050; 97 lost, 143
+  gained, p 0.004; seed-level paired p 0.24) and above the plain baselines: rgbd +7.1 (p 0.0003; seed-level paired
+  p 0.043), rgbdt +8.2 (p 3e-5; seed-level paired p 0.053).
+- With guidance it is 4.8 points below the rule (Fisher p 0.007; 133 lost, 75 gained, sign p 7e-5; seed-level Welch
+  p 0.027, paired p 0.12), 5.0 above the control (p 0.008; seed-level paired p 0.22), and above rgbd by 10.8 and
+  rgbdt by 11.8 points (p 2e-8 and 8e-10; seed-level paired p 0.020 and 0.014).
+- Guidance adds 3.7 points to `learn_labels` (75 lost, 119 gained, p 0.002; +13, +19, +12 episodes per seed) against
+  8.2 to `vis_route` (61 lost, 160 gained; +29, +32, +38).
+
+**Two-stage training, seed 42** (400 episodes per row)
+
+| policy | guidance | all | normal (310) | see-through (90) | crossover (42) | neither (274) | limit |
+|---|---|---|---|---|---|---|---|
+| vis_route | – | 282 = 0.705 | 0.739 | 0.589 | 0.690 | 0.745 | |
+| learn_labels | – | 279 = 0.698 | 0.761 | 0.478 | 0.595 | 0.785 | |
+| **learn_twostage** | – | 274 = **0.685** (0.64–0.73) | 0.713 | 0.589 | 0.595 | 0.730 | ≥ 0.675: met |
+| vis_route | 3.0 | 311 = 0.777 | 0.829 | 0.600 | 0.786 | 0.832 | |
+| learn_labels | 3.0 | 292 = 0.730 | 0.784 | 0.544 | 0.667 | 0.803 | |
+| **learn_twostage** | 3.0 | 304 = **0.760** (0.72–0.80) | 0.819 | 0.556 | 0.667 | 0.832 | ≥ 0.747: met |
+
+**Verdict: `learn_twostage` meets both limits at seed 42.** By the plan it is then run on seeds 43 and 44. That was
+not done: all trainings on L0_bench were stopped on 11/19 09:27 KST (round 13). The result is one seed.
+
+- Against `vis_route`: −2.0 points as trained (same episodes: 44 lost, 36 gained, sign p 0.43) and −1.7 with
+  guidance (47 lost, 40 gained, p 0.52). Against `learn_labels`: −1.2 (p 0.64) and +3.0 (34 lost, 46 gained,
+  p 0.22). Against the control: +0.3 as trained and +7.8 with guidance (35 lost, 66 gained, p 0.003). Against
+  rgbd +3.3 (p 0.31) and rgbdt +8.8 (55 lost, 90 gained, p 0.005).
+- Against the first-stage policy the gate was fitted on (`learn_heldout`, which stayed near 0.55 as trained with its
+  own gate, the fitted gate or the flags of the rule in round 11; compared here with its rule-flag evaluation, 0.552
+  and 0.640): +13.3 and +12.0 points (27 lost, 80 gained, p 3e-7; 31 lost, 79 gained, p 5e-6).
+- Guidance adds 7.5 points (20 lost, 50 gained, p 0.0004), as much as for `vis_route`.
+- Decisions of its gate against the rule (6000 decisions as trained): depth agrees in 96.7% (on in 12.3% of the
+  steps where depth does not show the glass), thermal in 62.5%: thermal is on in 53.7% of the steps (the rule:
+  89.4%), off in 40.9% of the steps where thermal shows the glass and on in 8.8% of those where it does not. With
+  guidance 96.6% and 63.5%.
+- 50 episodes per test set at epoch 100: (a) 0.74, (g) 0.54.
+
+**Diagnostics, seed 42**
+
+- `learn_labels` switched by the flags of the rule instead of its gate: 275 = 0.688 as trained (its own gate 0.698;
+  22 lost, 18 gained, p 0.64) and 299 = 0.748 with guidance (its own gate 0.730; 16 lost, 23 gained, p 0.34;
+  `vis_route` 0.777: 39 lost, 27 gained, p 0.18). On the see-through episodes with guidance 45/90 = 0.500 against
+  54/90 = 0.600 for `vis_route` (16 lost, 7 gained, p 0.09).
+- Thermal off at inference for `learn_labels`: 261 = 0.652 as trained against 0.698 (51 lost, 33 gained, p 0.063;
+  see-through 35/90 against 43/90) and 285 = 0.713 with guidance against 0.730 (53 lost, 46 gained, p 0.55;
+  see-through 35/90 against 49/90). `vis_route` over three seeds (round 9): 0.672 against 0.698 (p 0.024) and 0.772
+  against 0.780 (p 0.58).
+
+### What this means
+
+44. **A label-trained gate replaces the two thresholds without loss as trained, on three seeds** (0.695 against
+    0.698), 7–8 points above the plain baselines. It gains less from guidance (3.7 against 8.2 points) and ends 4.8
+    points below the rule there, so the criterion of this round is not met.
+45. **The gap with guidance is not in the decisions of the gate**: with the flags of the rule the same policy gives
+    0.748 against 0.730 with its own gate (p 0.34) and is still 3.0 points below `vis_route` (one seed, p 0.18). The
+    difference left is the policy trained next to the gate (switched by episode labels during training instead of
+    per-frame flags); this round does not separate it further.
+46. **A gate obtained without labels can work once the policy is trained with it** (one seed): the gate fitted on
+    the held-out loss after a first training, frozen while a new policy is trained, meets both limits (0.685 and
+    0.760), level with `vis_route` (−2.0 and −1.7 points, not significant) and 12–13 points above the first-stage
+    policy it was fitted on. Seeds 43 and 44 were not run.
+47. **That gate differs from the rule on thermal and the success is the same**: it switches thermal on in 54% of the
+    steps against 89% for the rule (agreement 62–64%). This fits rounds 9 and 11: in this benchmark the policy gains
+    little from thermal, so a gate that uses it half as often loses nothing measurable.
+
+## Round 13: the glass location as an input (planned 11/19 04:45 KST)
+
+### What was measured first (no policy involved)
+
+`policy/check_glass_mask.py`, output in `glass_loc/mask_check.txt`: the glass mask of the segmentation network
+(`mix_ws`, the one behind the visibility flags) against the true mask on the segmentation test frames of L0_bench
+(549 frames per test set), with all sensors, without thermal, without depth and with rgb alone. A sensor is left out
+the way the network was trained with missing sensors.
+
+| frames (test set g, held-out conditions) | all sensors | without thermal | rgb only |
+|---|---|---|---|
+| depth and thermal show the glass (371) | 100% within 4 px, median 0.48 px | 100%, 0.48 px | 93.8%, 0.70 px |
+| depth blind, thermal shows it (111) | 98.2%, 0.65 px | 100%, 0.61 px | 100%, 0.76 px |
+| thermal blind, depth shows it (55) | 100%, 0.44 px | 100%, 0.46 px | 98.2%, 0.92 px |
+| both blind (12 frames, 1 episode) | 100%, 0.44 px | 100%, 0.33 px | 100%, 0.30 px |
+
+(share of frames whose mask centroid is within 4 px of the true one, and the median distance; the frame is 96 px
+wide and the glass mask about 4 x 8 px.) Test set (a) and the demo frames give the same picture: a mask is found in
+every frame (with rgb alone in all but 2 of the 31,120 demo frames), and its centre does not depend on thermal or
+depth. On 8000 demo frames the centroid of the rgb-only
+mask is within 4 px of the stored all-sensor mask in 98.9–100% of the frames of every scene group.
+
+So the system knows where the glass is in every scene type, from rgb alone, while the policies succeed in about half
+of the see-through scenes (`learn_labels`, seed 42: 43/90 = 0.478 as trained; normal scenes 236/310 = 0.761). Two
+consequences are tested in this round: whether telling the policy the location closes that gap, and whether depth
+and thermal still add anything once the location is given.
+
+### Plan (written before the results)
+
+New observation `glass_loc` (`policy/obs_util.py` `glass_location`): [found, centre x, centre y, width, height] of
+the glass mask of the frame, as fractions of the frame, appended to the conditioning like the joint angles. Training
+reads it from stored masks, evaluation predicts the mask per frame. Policies without the key are unchanged.
+
+Trainings (seed 42, 101 epochs, the settings of their base runs):
+
+- `learn_labels_loc`: `learn_labels` plus `glass_loc` from the all-sensor mask (the one of the visibility cues).
+- `rgb_loc`: the plain rgb policy (`L0_bench_rgb_500demos`) plus `glass_loc` from the mask of the network restricted
+  to rgb, in training (`data/fusion_bench_masks_L0_bench_500_rgb.npy`, made with `policy/make_glass_masks.py ... rgb`)
+  and at inference. Depth and thermal are used nowhere in this run.
+
+Evaluations, 200 episodes per test set: both runs as trained; `learn_labels_loc` also with guidance 3.0 (the scale
+of round 6) and under three conditions at inference, each as trained and with guidance:
+
+- `--seg_mods rgb,depth`: the mask (gate cues and location) without thermal;
+- `--drop thermal --seg_mods rgb,depth`: thermal removed from the whole system;
+- `--route rgb_only --seg_mods rgb`: the same network with rgb and the rgb-only location, depth and thermal off.
+
+Criteria:
+
+- A, the location helps: `learn_labels_loc` against `learn_labels` of seed 42 on the same 400 episodes, with
+  guidance 3.0 (the operating point of the earlier rounds): higher success with a matched sign test p < 0.05. The
+  see-through episodes (90) and the comparison as trained are reported next to it. The run also has to meet the
+  limits of rounds 10 and 12 for a seed-42 variant (0.675 as trained, 0.747 with guidance); if it meets them and A
+  holds, it is run on seeds 43 and 44.
+- B, thermal with the location given: thermal removed from the whole system against the full system on the same
+  episodes; thermal contributes if the matched sign test gives p < 0.05 over all episodes or over the see-through
+  episodes (both reported, as trained and with guidance).
+- C, the other sensors with the location given: `rgb_loc` against `learn_labels_loc` as trained on the same test
+  episodes. If `rgb_loc` is not below it (matched sign test p >= 0.05, or above), depth and thermal are not needed in
+  this benchmark once a segmentation network gives the location, and the claim of the fusion policy has to change.
+  The result is reported either way; the rgb-only condition of `learn_labels_loc` is the same question asked of
+  one network.
+
+The two trainings need 11 GB of disk and are started when that space is available.
+
+### Results (the round was stopped on 11/19 09:27 KST)
+
+On 11/19 09:27 KST all trainings on L0_bench were stopped: the benchmark is going to be rebuilt (reasons below).
+State of the round at that time:
+
+- `learn_labels_loc`: stopped at epoch 64 of 101 and not evaluated; its seven evaluations were not run. Criteria A
+  and B cannot be evaluated.
+- `rgb_loc`: trained to epoch 100 and evaluated with 200 episodes per test set. Criterion C compares it with
+  `learn_labels_loc`, so C cannot be evaluated either. The table sets `rgb_loc` against the existing runs of seed 42
+  on the same 400 episodes; these comparisons were not fixed before the result.
+
+| policy (seed 42) | all (400) | normal (310) | see-through (90) | crossover (42) | neither (274) |
+|---|---|---|---|---|---|
+| rgb | 161 = 0.403 | 0.406 | 0.389 | 0.500 | 0.387 |
+| **rgb_loc** | 228 = **0.570** (0.52–0.62) | 0.555 | 0.622 | 0.500 | 0.566 |
+| rgbt | 228 = 0.570 | 0.574 | 0.556 | 0.381 | 0.599 |
+| rgbd | 261 = 0.652 | 0.816 | 0.089 | 0.857 | 0.796 |
+| rgbdt | 239 = 0.598 | 0.706 | 0.222 | 0.571 | 0.715 |
+| nogate_rgbonly | 273 = 0.682 | 0.710 | 0.589 | 0.500 | 0.737 |
+| vis_route | 282 = 0.705 | 0.739 | 0.589 | 0.690 | 0.745 |
+| learn_labels | 279 = 0.698 | 0.761 | 0.478 | 0.595 | 0.785 |
+
+- Against the plain rgb policy: +16.7 points (same episodes: 43 lost, 110 gained, sign p 6e-8). Missed grasps fall
+  from 173 to 96 of the 400 episodes (dropped 35 and 32, wrong height 23 and 32).
+- Against the policies with depth it stays below: rgbd −8.3 (105 lost, 72 gained, p 0.016), `nogate_rgbonly` −11.3
+  (p 0.0003), `vis_route` −13.5 (104 lost, 50 gained, p 2e-5), `learn_labels` −12.8 (p 4e-5); level with rgbt (0.0)
+  and rgbdt (−2.8, p 0.46). On the normal episodes, where depth shows the glass, 0.555 against 0.816 for rgbd.
+- 50 episodes per test set at epoch 100: 19/50 and 21/50. The same 100 seeds give 41/100 in the 200-episode
+  evaluation and the other 300 seeds 187/300.
+
+So the glass location from rgb alone explains a part of what the plain rgb policy lacks (17 of the 25 points up to
+rgbd), and depth still adds 8–13 points on top of it at seed 42. One seed, and not the comparison that was planned.
+
+### Why the work on L0_bench was stopped
+
+What rounds 6–13 show about the benchmark itself (numbers from the 200-episode evaluations):
+
+- The hard scenes only take a sensor away: on see-through episodes rgbd is far below rgb (0.081 against 0.37), on
+  crossover episodes rgbt is below rgb (0.26 against 0.42). There is no scene in which depth or thermal is the only
+  sensor that shows the glass, and rgb shows it in every scene (round 13, mask check). The gain of the gated policy
+  is therefore the harm it avoids, and thermal can be removed with guidance at a cost of 0.8 points (0.780 to 0.772).
+- Shares of the test episodes: neither 68.5%, depth blind 21%, thermal blind 9%, both 1.5% (18 of 1200). With the
+  same policies and equal thirds of the first three, `vis_route` with guidance would be 0.748 and thermal would add
+  2.2 points; the per-scene-type rates do not change, so no mix of these scene types makes thermal matter.
+- Background and lighting are fixed in L0_bench; test set (g) differs from (a) by the distractor objects only (the
+  two differ by 0–5 points).
+
+Decision of 11/19: a new level in which every combination of "which sensors show the glass" occurs (rgb blind = low
+light, depth blind = see-through, thermal blind = glass at ambient temperature), with equal numbers per combination
+in the test sets. It is drafted on a separate branch and is not part of this folder.
+
 ## Files
 
 - `L0_bench_rgbdt_500demos_<tag>/`: `train_logs.json.txt`, `curve.json`, and per test set `eval_log.json` and
@@ -1555,3 +1811,12 @@ not what a policy trained with the gate would do; p values are not corrected for
   its diagnostics) and `n200/L0_bench_rgbdt_500demos_learn_heldout__{postfit,flags}[_g30]/` (`eval_log.json` records
   `gate_state` and `route`). Code added, all opt-in: `policy/fit_gate.py`, `policy/eval.py` (`--gate_state`,
   `--route flags`), `policy/gated_obs_encoder.py` (`route_eval=flags`), tests in `policy/test_gating.py`.
+- Round 12 results: `L0_bench_rgbdt_500demos_{learn_labels_seed43,learn_labels_seed44,learn_twostage}/` and their
+  `n200/` evaluations (as trained, `__guide30`); `n200/L0_bench_rgbdt_500demos_learn_labels__{flags,toff}[_g30]/`
+  (`eval_log.json` records `route` and `drop`); `gate_fit/L0_bench_rgbdt_500demos_learn_heldout_select.json`. Code
+  added, all opt-in: `policy/gated_policy.py` (`gate_train=frozen`, `gate_balance`), `policy/fit_gate.py`
+  (`--select`), `policy/eval.py` (`--route flags` for trained gates), tests in `policy/test_gating.py`.
+- Round 13 results: `L0_bench_rgb_500demos_loc/` and `n200/L0_bench_rgb_500demos_loc/`; `glass_loc/mask_check.txt`.
+  Code added, all opt-in: `policy/obs_util.py` (`glass_location`, the `glass_loc` observation, `seg_mods`),
+  `policy/glass_seg.py` (`mods`), `policy/glass_dataset.py`, `policy/make_glass_masks.py` (sensor argument),
+  `policy/eval.py` (`--seg_mods`), `policy/check_glass_mask.py`, tests in `policy/test_gating.py`.
