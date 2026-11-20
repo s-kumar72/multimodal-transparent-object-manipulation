@@ -1,7 +1,8 @@
 """
 Figure of the visibility cells of a level (sim/config.py cells): one row per cell, all with the same seed (same target
 object, position and distractors), columns = the three images the policy gets (96x96 RGB, depth, thermal). The target
-glass is circled; a column title in brackets means that sensor is blind in the cell.
+glass is circled; a column title in brackets means that sensor is blind in the cell, "faint" that it shows the glass
+weakly (cell flag 2).
 
 run via python sim/figure_cells.py --seed 3  ->  results/hard_scenario/grid_bench/figure_cells.png
 """
@@ -47,19 +48,20 @@ def main():
         ax[1].imshow(np.zeros(d.shape), cmap=ListedColormap(["#d62728"]), vmin=0, vmax=1, interpolation="nearest")
         ax[1].imshow(d, cmap="gray", vmin=70, vmax=200, interpolation="nearest")
         ax[2].imshow(obs["thermal"][..., 0], cmap="inferno", vmin=0, vmax=255, interpolation="nearest")
-        shows = [n for n, blind in zip(NAMES, c[1:4]) if not blind]
-        for a, n, blind in zip(ax, NAMES, c[1:4]):
+        shows = [n + (" (faint)" if f == 2 else "") for n, f in zip(NAMES, c[1:4]) if f != 1]
+        for a, n, f in zip(ax, NAMES, c[1:4]):
             a.add_patch(Circle((u, v), 7, fill=False, ec="#00e5ff", lw=1.1))
             a.set_xticks([])
             a.set_yticks([])
-            a.set_title(f"[{n}: blind]" if blind else n, fontsize=8.5, color="#b22222" if blind else "black", pad=3)
+            a.set_title((n, f"[{n}: blind]", f"{n}: faint")[f], fontsize=8.5, color=("black", "#b22222", "#b8860b")[f], pad=3)
         ax[0].set_ylabel(f"cell {r}\nshown by\n" + ",\n".join(shows), rotation=0, ha="right", va="center",
                          fontsize=8.5, labelpad=6)
         ax[2].text(1.05, 0.5, f"glass {info['thermal_gap']:+.1f} °C vs room\n"
                    f"{info['thermal_contrast']:+.2f} °C vs table\n(apparent)", transform=ax[2].transAxes,
                    fontsize=7.5, va="center")
-    fig.suptitle(f"{args.level}: the seven visibility cells (seed {args.seed}, {OBJECT_NAMES[args.seed % 5]}; policy "
-                 "inputs, 96x96).\nCircle = target glass. Red in depth = no reading.", fontsize=9, y=0.925)
+    count = {7: "seven", 11: "eleven"}.get(len(cells), str(len(cells)))
+    fig.suptitle(f"{args.level}: the {count} visibility cells (seed {args.seed}, {OBJECT_NAMES[args.seed % 5]}; policy "
+                 "inputs, 96x96).\nCircle = target glass. Red in depth = no reading.", fontsize=9, y=0.925 if len(cells) <= 7 else 0.905)
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(args.out, dpi=150, bbox_inches="tight")
     print("Saved", args.out)
