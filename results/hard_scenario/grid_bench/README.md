@@ -635,6 +635,41 @@ it, and four more cells.
 default config, 101 epochs, rollouts during training on `j_cells11` (55 episodes, monitoring only), `TOPK=0`. Seeds 43
 and 44, the single-sensor references and other baselines are not part of this step.
 
+### Baselines on `L0_vis` (11/20 22:05; seed 42, 1320 test episodes per run, 120 per cell)
+
+Tables per test set and paired comparisons: [`vis_cells.txt`](vis_cells.txt).
+
+| cell | rgb / depth / thermal | rgbdt | rgbd | rgbt | rgb |
+|---|---|---|---|---|---|
+| 0 | shows / shows / shows | 0.675 | 0.633 | 0.167 | 0.100 |
+| 1 | blind / shows / shows | 0.567 | 0.633 | 0.025 | 0.025 |
+| 2 | shows / blind / shows | 0.092 | 0.092 | 0.192 | 0.092 |
+| 3 | shows / shows / blind | 0.633 | 0.600 | 0.225 | 0.100 |
+| 4 | blind / blind / shows | 0.050 | 0.017 | 0.058 | 0.017 |
+| 5 | blind / shows / blind | 0.492 | 0.550 | 0.075 | 0.025 |
+| 6 | shows / blind / blind | 0.100 | 0.108 | 0.183 | 0.075 |
+| 7 | faint / blind / blind | 0.058 | 0.050 | 0.108 | 0.050 |
+| 8 | blind / faint / blind | 0.375 | 0.442 | 0.033 | 0.042 |
+| 9 | blind / blind / faint | 0.067 | 0.058 | 0.050 | 0.042 |
+| 10 | faint / faint / faint | 0.350 | 0.292 | 0.117 | 0.067 |
+| | **macro average, eleven cells** | **0.314** | **0.316** | **0.112** | **0.058** |
+| | cells 0-6 | 0.373 | 0.376 | 0.132 | 0.062 |
+| | cells 7-10 | 0.212 | 0.210 | 0.077 | 0.050 |
+| | `j_cells11` / `k_cells11_heldout` | 0.329 / 0.300 | 0.330 / 0.302 | 0.111 / 0.114 | 0.064 / 0.052 |
+
+- **No leak.** Cells a policy cannot solve: rgb 0.017-0.042 (cells 1, 4, 5, 8, 9), rgbd 0.017 and 0.058 (4, 9), rgbt
+  0.075 and 0.033 (5, 8); all below 0.15.
+- **As on the earlier levels, a plain policy is a depth policy.** rgbdt and rgbd reach 0.49-0.68 where depth shows
+  the glass, 0.38-0.44 where it shows it faintly (0.29-0.35 when all three are faint) and at most 0.11 in the five
+  cells without depth, although rgb or thermal show the glass in four of them. rgbdt is not above rgbd (0.314 against
+  0.316).
+- Without depth, rgbt leans on rgb, weakly (0.17-0.23 where rgb shows the glass, 0.11 where faintly), and does not
+  use thermal (cells 4 and 9 at the floor). rgb alone stays at 0.02-0.10 even with the glass at alpha 0.5.
+- The faint cells are graded as intended for depth: 0.49-0.68 (shows), 0.38-0.44 (faint), 0.02-0.11 (blind).
+- Best baseline of every cell: mean 0.354, against 0.316 for the best single baseline.
+
+One seed. The single-sensor references of this level, seeds 43 and 44 and further baselines are not run.
+
 ## Method probe: grasp maps per sensor from the demos alone (11/20; perception only, no policy yet)
 
 Asked by the user: a method on the rgbdt policy that uses the sensors by situation, with nothing but sensor images
@@ -682,6 +717,8 @@ Not done: a policy that acts on the fused map, and its success on the benchmark.
 - Level `L0_grid_clear`: `sim/configs/L0_grid_clear.yaml`, `sim/check_clear.py`, `clear_check.txt`.
 - "rgb shows" level: `sim/configs/L0_grid_clear_a0{4,5}.yaml`, `L0_grid_clear_a0{4,5}_rgb_330demos_rgbshown/`,
   `alpha_cells.txt`. Faint level: `policy/sweep_visibility.py`, `visibility_sweep.{txt,json}`.
+- Baselines of the final level: `L0_vis_{rgbdt,rgbd,rgbt,rgb}_700demos/`, `vis_cells.txt`. Method probe:
+  `research/{heatmap,hindsight}_probe.py`, `method_probe/`.
 - Final level: `sim/configs/L0_vis.yaml`, `faint_calibration.txt`, `teacher_check_L0_vis.txt`; demo set
   `results/data/sim_demos_L0_vis_700.zarr` (not in git).
 - Repair round and `L0_grid_clear` runs: `L0_grid_{rgb_330demos_rgbshown,rgb_1000demos,rgbt_500demos_cell4,rgbt_1000demos}/`,
