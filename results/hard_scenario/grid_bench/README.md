@@ -635,6 +635,41 @@ it, and four more cells.
 default config, 101 epochs, rollouts during training on `j_cells11` (55 episodes, monitoring only), `TOPK=0`. Seeds 43
 and 44, the single-sensor references and other baselines are not part of this step.
 
+## Method probe: grasp maps per sensor from the demos alone (11/20; perception only, no policy yet)
+
+Asked by the user: a method on the rgbdt policy that uses the sensors by situation, with nothing but sensor images
+and joint values. This is a feasibility check of its first stage, not a benchmark result.
+
+**Idea.** The demo itself says where the glass was: the tool position at the first step that closes the gripper (arm
+kinematics), projected into the image with the camera calibration. Each sensor learns a distribution over the 96 x 96
+pixels of where the grasp will be (a small fully convolutional network: local receptive field, no global pooling,
+cross-entropy, image shifts). No cell, visibility flag or mask is used. A sensor's own reliability is learned from
+maps on demos it was not trained on (4 folds): did the peak hit the grasp pixel, predicted from four numbers of the
+map. Training: the 700 demos of `L0_vis`, first four frames; evaluation: 700 demos of other seeds, first frame
+(`research/heatmap_probe.py`, [`method_probe/heatmap_maps.txt`](method_probe/heatmap_maps.txt)).
+
+| sensor | pixel error where it shows the glass / faintly / not (median) | peak within 1.5 px | trained only where it shows the glass (uses the cells) | reliability: shows against blind (AUROC) |
+|---|---|---|---|---|
+| rgb | 0.20 / 0.25 / 3.91 | 0.99 / 0.97 / 0.11 | 0.17 / 0.16 | 0.924 |
+| depth | 0.27 / 0.44 / 3.64 | 0.99 / 0.94 / 0.12 | 0.31 / 0.47 | 0.940 |
+| thermal | 0.35 / 0.68 / 4.45 | 0.95 / 0.76 / 0.07 | 0.33 / 0.57 | 0.908 |
+
+(1 px is about 1.9 x 1.3 cm on the table.)
+
+- Trained on the mixed demos, every sensor finds the grasp pixel where it shows the glass as well as a network
+  trained only on the demos where it does. The demos where a sensor is blind do not hurt it.
+- Taking the sensor with the highest reliability gives a peak within 1.5 px in 0.90 of all held-out demos (per cell
+  0.74-0.99, thermal-faint cell 0.58); depth alone 0.65. The product of the three maps is worse (0.68, with the
+  reliabilities 0.74): a blind sensor still puts its peak somewhere and its reliability is not low enough (median
+  0.39-0.49). The fusion rule is open.
+- The same supervision as a regression of the grasp point from the whole image (ResNet trunk, soft-argmax keypoints,
+  [`method_probe/global_regression.txt`](method_probe/global_regression.txt), `research/hindsight_probe.py`) works
+  for depth only: where the sensor shows the glass 1.6 cm for depth, 4.1 cm for rgb and 3.0 cm for thermal, against
+  1.6 / 2.0 / 2.1 cm when trained only on such demos; reweighting by out-of-fold error does not recover it. So the
+  harm of mixed demos is not special to the diffusion loss, and a local architecture removes it.
+
+Not done: a policy that acts on the fused map, and its success on the benchmark.
+
 ## Files
 
 - `figure_cells.png`; `thermal_contrast_sweep.{txt,json}`; `real_thermal_contrast.{txt,json}`; `teacher_check.txt`;
