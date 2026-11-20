@@ -670,6 +670,121 @@ Tables per test set and paired comparisons: [`vis_cells.txt`](vis_cells.txt).
 
 One seed. The single-sensor references of this level, seeds 43 and 44 and further baselines are not run.
 
+## Baseline programme on `L0_vis` (plan of 11/21, written before its runs)
+
+Decision of the user (11/21): before any method is applied, the benchmark gets reference levels and stronger
+baselines. Five of the eleven cells are at the floor for every plain baseline; the programme asks whether those cells
+can be solved at all on this level and whether known techniques fill them. Scenes, cells and test sets are not
+changed by it.
+
+| stage | runs | question |
+|---|---|---|
+| 1 | single-sensor reference policies (rgb, depth, thermal), each trained on the demos where its sensor shows the glass; they use the cells | what can be reached in each cell |
+| 2 | the four plain baselines, seeds 43 and 44 | how much the baseline numbers move with the seed |
+| 3 | rgbdt with random sensor dropout, three seeds | does the usual remedy fill the floor |
+| 4 | single-sensor policies trained on all demos (depth, thermal; rgb exists), and their combination at inference | does combining separate policies fill it |
+| 5 (optional) | rgbdt with pretrained image encoders, three seeds | is the encoder the obstacle |
+| 6 | the list of baselines and the comparison rules for a method are frozen | |
+
+Settings of every run: those of the `L0_vis` baselines (default config, 101 epochs, last checkpoint, 1320 test
+episodes). Stages 3 to 5 are specified here before they start.
+
+**Rules for all runs, fixed now.** (1) The same information for all: sensor images, joint values and the demo
+actions; the arm's kinematics and the camera calibration are allowed to any run; nothing else of the simulator, except
+in stage 1, whose policies are references and not baselines. (2) Default settings; nothing is selected on the test
+sets. (3) Three seeds for every baseline that is compared; two policies are compared on the same episodes. (4) A
+method is compared, cell by cell, with the best baseline of that cell (mean over seeds, over the baselines of stages
+2 to 5). (5) "Better in nearly every case" means: no cell in which the method is below that best baseline with
+p < 0.05 (pooled sign test on the same episodes), and a macro average above every baseline.
+
+**Stage 1: references.** `L0_vis_{rgb,depth,thermal}_430demos_shown`: plain Diffusion Policy with that sensor's image
+and the joints only (new variants `depth` and `thermal` of `policy/train.sh`), trained on the 430 demos of the cells
+where the sensor shows the glass fully or faintly (rgb: cells 0, 2, 3, 6, 7, 10; depth: 0, 1, 3, 5, 8, 10; thermal:
+0, 1, 2, 4, 9, 10; `policy/subset_demos.py`), seed 42. Read-out, fixed now: the reference of a cell is the highest
+success among the policies whose sensor shows the glass in it. A cell with a reference of at least 0.30 counts as
+shown to be solvable. If the reference of a single-sensor cell (4 to 9) is below 0.15, that sensor's level in that
+cell is too weak for a policy; this is reported before anything else is concluded from the level, and whether the
+level is changed is the user's decision.
+
+**Stage 1, addition: single-cell references for thermal** (specified 11/21 04:50, before the runs; approved by the
+user after the first stage-1 results). With the 430 demos where its sensor shows the glass fully or faintly, the
+thermal-only reference reaches 0.20-0.22 where thermal shows the glass and 0.12-0.16 where faintly (depth-only:
+0.60-0.69 and 0.45-0.48; rgb-only, first test set: 0.27-0.37 and 0.27-0.28). On `L0_grid` a policy trained on 500
+demos of the thermal-only cell reached 0.575 there, so the mixed training set of the reference may be what holds it
+down, not the cell. `L0_vis_thermal_500demos_cell4` and `L0_vis_thermal_500demos_cell9`: the thermal-only policy on
+500 demos of that cell alone (`collect_demos.py --cells`), seed 42. Read-out, fixed now, on the cell the policy was
+trained for (120 episodes): at least 0.30, the cell is solvable and the stage-1 recipe understates it; below 0.15,
+the thermal level of that cell is too weak for a policy and the user decides whether the level changes; between,
+partial. Single-cell references for the other four single-sensor cells are decided after this.
+
+**Stage 2: seeds.** `L0_vis_{rgbdt,rgbd,rgbt,rgb}_700demos_seed{43,44}`. Reported: per cell and for the macro
+average the mean over the three seeds and their range, and the pooled tables.
+
+**Stage 3: random sensor dropout** (specified 11/21 02:00, before its runs).
+`L0_vis_rgbdt_700demos_drop`, `..._drop_seed43`, `..._drop_seed44` (`TRAIN=policy/train_dropout.sh`): the plain rgbdt
+policy; in training each of the three images of a sample (both observation steps) is blank with probability 0.3,
+independently, and at least one stays. Validation and evaluation see all sensors. The probability is not tuned.
+Read-out, fixed now: per cell and for the macro average against the plain rgbdt of the same seed on the same episodes.
+In a cell without depth (2, 4, 6, 7, 9) the floor counts as filled if the mean over the three seeds is at least 0.30,
+and as raised if the policy is above the plain rgbdt there with p < 0.05 (pooled sign test).
+
+**Stage 4: separate policies combined at inference** (specified 11/21 02:05, before its runs).
+`L0_vis_depth_700demos` and `L0_vis_thermal_700demos`: plain single-sensor policies trained on all 700 demos, seed 42
+(the rgb one exists). They are baselines of their own, and the three are combined with `policy/eval_compose.py`: the
+mean of their noise predictions at every denoising step, weights 1/3 each, nothing selected
+(`L0_vis_compose_mean_700demos`, same test episodes). Read-out as in stage 3. Seeds 43 and 44 of the two new members
+are added only if the combination, with seed 42, has a macro average within 0.05 of the best baseline or above it;
+otherwise it is reported with one seed.
+
+### Results of stage 1 (11/21 08:40; seed 42, 1320 test episodes per run, 120 per cell)
+
+Success per cell; in brackets the cells where the policy's sensor does not show the glass. Reference: the highest
+value among the policies whose sensor shows the glass in the cell, fully or faintly. Best plain baseline: the highest
+of rgbdt, rgbd, rgbt and rgb (seed 42). Per run: `cells.json` in its folder.
+
+| cell | rgb / depth / thermal | rgb only, 430 | depth only, 430 | thermal only, 430 | thermal only, 500 of cell 4 | thermal only, 500 of cell 9 | reference | best plain baseline |
+|---|---|---|---|---|---|---|---|---|
+| 0 | shows / shows / shows | 0.283 | 0.658 | 0.217 | 0.442 | 0.025 | **0.658** | 0.675 |
+| 1 | blind / shows / shows | (0.050) | 0.658 | 0.200 | 0.375 | 0.025 | **0.658** | 0.633 |
+| 2 | shows / blind / shows | 0.317 | (0.000) | 0.208 | 0.408 | 0.042 | **0.408** | 0.192 |
+| 3 | shows / shows / blind | 0.258 | 0.692 | (0.017) | (0.017) | (0.033) | **0.692** | 0.633 |
+| 4 | blind / blind / shows | (0.025) | (0.008) | 0.217 | 0.417 | 0.017 | **0.417** | 0.058 |
+| 5 | blind / shows / blind | (0.058) | 0.600 | (0.008) | (0.008) | (0.050) | **0.600** | 0.550 |
+| 6 | shows / blind / blind | 0.392 | (0.017) | (0.008) | (0.008) | (0.017) | **0.392** | 0.183 |
+| 7 | faint / blind / blind | 0.267 | (0.017) | (0.025) | (0.008) | (0.017) | **0.267** | 0.108 |
+| 8 | blind / faint / blind | (0.033) | 0.450 | (0.017) | (0.017) | (0.033) | **0.450** | 0.442 |
+| 9 | blind / blind / faint | (0.025) | (0.017) | 0.158 | 0.192 | 0.000 | **0.192** | 0.067 |
+| 10 | faint / faint / faint | 0.267 | 0.483 | 0.117 | 0.167 | 0.008 | **0.483** | 0.350 |
+| | **mean of the eleven cells** | 0.180 | 0.327 | 0.108 | 0.187 | 0.024 | **0.474** | 0.354 |
+
+Read-out by the rules fixed before the runs:
+
+- **Nine of the eleven cells are shown to be solvable** (reference at least 0.30): cells 0 to 6, 8 and 10. Not shown
+  to be solvable: cell 7 (rgb faint, 0.267) and cell 9 (thermal faint, 0.192). By the stage-1 rule no single-sensor
+  cell has a reference below 0.15.
+- **Cell 4 (thermal only) is solvable, and the first recipe understated it.** The thermal-only policy on 500 demos of
+  cell 4 reaches 0.417 there (0.217 with the 430 demos where thermal shows the glass fully or faintly), and 0.375 to
+  0.442 in every cell where thermal shows the glass fully.
+- **Cell 9 (thermal faint): 0.000 (0 of 120) for the policy trained on 500 demos of that cell, below 0.15.** By the
+  rule of the addition the thermal level of that cell is too weak for a policy, and whether the level changes is the
+  user's decision. The level is not changed here. That policy learned nothing: at most 0.05 in every cell, also where
+  thermal shows the glass fully.
+
+Observations outside the read-out:
+
+- The same faint level is read, in part, by a policy that learned where thermal is clear: 0.192 in cell 9 for the
+  policy trained on cell 4 alone, 0.158 for the one trained on the 430 demos. A policy that is given only faint demos
+  learns nothing from them. The thermal level of cell 9 is therefore weak for learning, not without information for a
+  trained policy (the grasp maps of the method probe hit in 0.76 of the faint thermal frames).
+- The 430 demos of the first thermal reference are 330 with thermal fully visible and 100 with thermal faint (cells 9
+  and 10); the thermal image does not depend on the other two sensors' flags. With them the policy reaches about half
+  of the cell-4 policy where thermal shows the glass fully (0.200-0.217 against 0.375-0.442). The two training sets
+  also differ in size (430 and 500), so this is an indication, not a controlled comparison. The rgb and depth
+  references were trained with the same recipe (100 faint demos of 430) and may be understated in the same way.
+- **Where depth shows the glass the plain baselines are at the reference; without depth they are far below it.**
+  Cells with depth (0, 1, 3, 5, 8, 10): reference 0.590 on average, best plain baseline 0.547. Cells without depth
+  (2, 4, 6, 7, 9): reference 0.335, best plain baseline 0.122. The room for a method is in those five cells.
+
 ## Method probe: grasp maps per sensor from the demos alone (11/20; perception only, no policy yet)
 
 Asked by the user: a method on the rgbdt policy that uses the sensors by situation, with nothing but sensor images
