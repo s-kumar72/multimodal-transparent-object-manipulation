@@ -555,6 +555,156 @@ would leave a policy nothing in rgb, so the faint levels are better set on polic
 **Open, nothing started:** the alpha of "rgb shows" (the rule chose none); how the references are measured, alike for
 the three sensors; the faint level of each sensor; the cells and sizes of the training and test sets.
 
+### Final level: decisions of the user and how the faint levels are set (11/20 16:00, written before any run)
+
+Decisions of the user (11/20): "rgb shows" is alpha 0.5; the benchmark has eleven cells, the seven above, three in
+which a single sensor shows the glass and only faintly (rgb, depth, thermal), and one in which all three show it
+faintly; 700 training demos (the 500 as before and 50 per new cell), 60 test episodes per cell and test set.
+
+**Faint levels.** No new training: each single-sensor reference policy that exists is evaluated in its single-sensor
+cell with the cue weakened, on the same 120 test episodes (seeds 100000+, no held-out factor) per value:
+
+| sensor | policy (trained at full strength) | values | full strength |
+|---|---|---|---|
+| depth | `L0_grid_clear_rgbd_500demos`, rgb and thermal blind | 10%, 20%, 30% of the glass pixels are holes | 40% |
+| thermal | `L0_grid_rgbt_500demos_cell4`, rgb (dark) and depth blind | 1, 2, 3, 5 degC from the table (+-10%) | 5-35 degC |
+| rgb | `L0_grid_clear_a05_rgb_330demos_rgbshown`, depth and thermal blind | alpha 0.2, 0.3, 0.4 | 0.5 |
+
+**Rule, fixed now:** the faint level of a sensor is the value whose success is closest to half of the success at
+full strength on the same episodes. The policies have never seen a weakened cue, so this measures how much of the cue
+a policy trained on the full one can still use; the level's own baselines and references are measured afterwards.
+
+## Final level `L0_vis` (11/20)
+
+**Faint levels** ([`faint_calibration.txt`](faint_calibration.txt); rule and runs as fixed above):
+
+| sensor | cue weakened to | success of the reference policy | full strength | half of it | chosen |
+|---|---|---|---|---|---|
+| depth (share of glass pixels that are holes) | 10% / 20% / 30% | 0.050 / 0.275 / 0.483 | 0.600 at 40% | 0.300 | **20%** |
+| thermal (degC from the table) | 1 / 2 / 3 / 5 | 0.067 / 0.233 / 0.317 / 0.425 | 0.575 at 5-35 | 0.288 | **3 (2.7-3.3)** |
+| rgb (alpha) | 0.2 / 0.3 / 0.4 | 0.183 / 0.333 / 0.500 | 0.450 at 0.5 | 0.225 | **0.2** |
+
+Success falls smoothly as each cue weakens. For depth and thermal the chosen values are near those at which the
+segmentation networks locate the glass half-way (20%, 1.7-2.7 degC); for rgb they are not (alpha 0.10 there).
+
+**Definition** (`sim/configs/L0_vis.yaml`, level id 35): `L0_grid_clear` with the glass at alpha 0.5 where rgb shows
+it, and four more cells.
+
+| sensor | shows | faint | blind |
+|---|---|---|---|
+| rgb | glass at alpha 0.5 | alpha 0.2 | clear glass, not in the colour image (alpha 0.001) |
+| depth | 40% of the glass pixels are holes | 20% | see-through, no holes |
+| thermal | 5-35 degC from the room | 2.7-3.3 degC from the table behind it, either sign | within 0.1 degC of the table |
+
+| cell | rgb | depth | thermal | training demos (of 700) | test episodes per test set (of 660) |
+|---|---|---|---|---|---|
+| 0 | shows | shows | shows | 140 | 60 |
+| 1 | blind | shows | shows | 70 | 60 |
+| 2 | shows | blind | shows | 70 | 60 |
+| 3 | shows | shows | blind | 70 | 60 |
+| 4 | blind | blind | shows | 50 | 60 |
+| 5 | blind | shows | blind | 50 | 60 |
+| 6 | shows | blind | blind | 50 | 60 |
+| 7 | faint | blind | blind | 50 | 60 |
+| 8 | blind | faint | blind | 50 | 60 |
+| 9 | blind | blind | faint | 50 | 60 |
+| 10 | faint | faint | faint | 50 | 60 |
+
+- **Training and test** have the same cells and differ in proportions and seeds: the training set keeps the mix of
+  `L0_grid` for cells 0-6 and adds 50 demos per new cell (seeds 0-699, every (cell, object) pair 2 x weight times);
+  the test sets `j_cells11` and `k_cells11_heldout` (held-out background, lighting and distractor pools, as
+  `i_cells_heldout`) hold every (cell, object) pair 12 times, seeds 100000-100659.
+- **Protocol** (decision of the user, 11/20): a method is trained on the demos (sensor images, joint values, actions)
+  and acts on sensor images and joint values. Cells, visibility flags, glass masks and anything else only the
+  simulator knows are for the report, not for a method, in training either.
+- **Checks:** teacher 700 / 700 on the training seeds and 660 / 660 on each test set
+  ([`teacher_check_L0_vis.txt`](teacher_check_L0_vis.txt)); in the demos every cell has the alpha, thermal contrast
+  and see-through flag of its definition (alpha 0.5 / 0.2 / 0.001; contrast 4.7-36.8, 2.71-3.29 or at most 0.10
+  degC); existing levels unchanged (regression 190 / 190 on the default config, `L0_bench` and `L0_grid`).
+
+**Reporting rules, fixed before any policy is trained on the level:**
+
+- Evaluation: the last checkpoint on `j_cells11` and `k_cells11_heldout`, 660 episodes each.
+- For every policy: the per-cell table (120 episodes per cell and seed), the macro average over the eleven cells
+  (the headline number) with its bootstrap interval, and the averages over cells 0-6 and over cells 7-10.
+- Two policies are compared on the same episodes (sign test), per cell and for the macro average.
+- Cells a policy cannot solve, expected near 0 and examined if above 0.15: rgb in cells 1, 4, 5, 8, 9; rgbd in cells
+  4 and 9; rgbt in cells 5 and 8.
+
+**Baselines, listed before they start:** plain Diffusion Policy `L0_vis_{rgbdt,rgbd,rgbt,rgb}_700demos`, seed 42,
+default config, 101 epochs, rollouts during training on `j_cells11` (55 episodes, monitoring only), `TOPK=0`. Seeds 43
+and 44, the single-sensor references and other baselines are not part of this step.
+
+### Baselines on `L0_vis` (11/20 22:05; seed 42, 1320 test episodes per run, 120 per cell)
+
+Tables per test set and paired comparisons: [`vis_cells.txt`](vis_cells.txt).
+
+| cell | rgb / depth / thermal | rgbdt | rgbd | rgbt | rgb |
+|---|---|---|---|---|---|
+| 0 | shows / shows / shows | 0.675 | 0.633 | 0.167 | 0.100 |
+| 1 | blind / shows / shows | 0.567 | 0.633 | 0.025 | 0.025 |
+| 2 | shows / blind / shows | 0.092 | 0.092 | 0.192 | 0.092 |
+| 3 | shows / shows / blind | 0.633 | 0.600 | 0.225 | 0.100 |
+| 4 | blind / blind / shows | 0.050 | 0.017 | 0.058 | 0.017 |
+| 5 | blind / shows / blind | 0.492 | 0.550 | 0.075 | 0.025 |
+| 6 | shows / blind / blind | 0.100 | 0.108 | 0.183 | 0.075 |
+| 7 | faint / blind / blind | 0.058 | 0.050 | 0.108 | 0.050 |
+| 8 | blind / faint / blind | 0.375 | 0.442 | 0.033 | 0.042 |
+| 9 | blind / blind / faint | 0.067 | 0.058 | 0.050 | 0.042 |
+| 10 | faint / faint / faint | 0.350 | 0.292 | 0.117 | 0.067 |
+| | **macro average, eleven cells** | **0.314** | **0.316** | **0.112** | **0.058** |
+| | cells 0-6 | 0.373 | 0.376 | 0.132 | 0.062 |
+| | cells 7-10 | 0.212 | 0.210 | 0.077 | 0.050 |
+| | `j_cells11` / `k_cells11_heldout` | 0.329 / 0.300 | 0.330 / 0.302 | 0.111 / 0.114 | 0.064 / 0.052 |
+
+- **No leak.** Cells a policy cannot solve: rgb 0.017-0.042 (cells 1, 4, 5, 8, 9), rgbd 0.017 and 0.058 (4, 9), rgbt
+  0.075 and 0.033 (5, 8); all below 0.15.
+- **As on the earlier levels, a plain policy is a depth policy.** rgbdt and rgbd reach 0.49-0.68 where depth shows
+  the glass, 0.38-0.44 where it shows it faintly (0.29-0.35 when all three are faint) and at most 0.11 in the five
+  cells without depth, although rgb or thermal show the glass in four of them. rgbdt is not above rgbd (0.314 against
+  0.316).
+- Without depth, rgbt leans on rgb, weakly (0.17-0.23 where rgb shows the glass, 0.11 where faintly), and does not
+  use thermal (cells 4 and 9 at the floor). rgb alone stays at 0.02-0.10 even with the glass at alpha 0.5.
+- The faint cells are graded as intended for depth: 0.49-0.68 (shows), 0.38-0.44 (faint), 0.02-0.11 (blind).
+- Best baseline of every cell: mean 0.354, against 0.316 for the best single baseline.
+
+One seed. The single-sensor references of this level, seeds 43 and 44 and further baselines are not run.
+
+## Method probe: grasp maps per sensor from the demos alone (11/20; perception only, no policy yet)
+
+Asked by the user: a method on the rgbdt policy that uses the sensors by situation, with nothing but sensor images
+and joint values. This is a feasibility check of its first stage, not a benchmark result.
+
+**Idea.** The demo itself says where the glass was: the tool position at the first step that closes the gripper (arm
+kinematics), projected into the image with the camera calibration. Each sensor learns a distribution over the 96 x 96
+pixels of where the grasp will be (a small fully convolutional network: local receptive field, no global pooling,
+cross-entropy, image shifts). No cell, visibility flag or mask is used. A sensor's own reliability is learned from
+maps on demos it was not trained on (4 folds): did the peak hit the grasp pixel, predicted from four numbers of the
+map. Training: the 700 demos of `L0_vis`, first four frames; evaluation: 700 demos of other seeds, first frame
+(`research/heatmap_probe.py`, [`method_probe/heatmap_maps.txt`](method_probe/heatmap_maps.txt)).
+
+| sensor | pixel error where it shows the glass / faintly / not (median) | peak within 1.5 px | trained only where it shows the glass (uses the cells) | reliability: shows against blind (AUROC) |
+|---|---|---|---|---|
+| rgb | 0.20 / 0.25 / 3.91 | 0.99 / 0.97 / 0.11 | 0.17 / 0.16 | 0.924 |
+| depth | 0.27 / 0.44 / 3.64 | 0.99 / 0.94 / 0.12 | 0.31 / 0.47 | 0.940 |
+| thermal | 0.35 / 0.68 / 4.45 | 0.95 / 0.76 / 0.07 | 0.33 / 0.57 | 0.908 |
+
+(1 px is about 1.9 x 1.3 cm on the table.)
+
+- Trained on the mixed demos, every sensor finds the grasp pixel where it shows the glass as well as a network
+  trained only on the demos where it does. The demos where a sensor is blind do not hurt it.
+- Taking the sensor with the highest reliability gives a peak within 1.5 px in 0.90 of all held-out demos (per cell
+  0.74-0.99, thermal-faint cell 0.58); depth alone 0.65. The product of the three maps is worse (0.68, with the
+  reliabilities 0.74): a blind sensor still puts its peak somewhere and its reliability is not low enough (median
+  0.39-0.49). The fusion rule is open.
+- The same supervision as a regression of the grasp point from the whole image (ResNet trunk, soft-argmax keypoints,
+  [`method_probe/global_regression.txt`](method_probe/global_regression.txt), `research/hindsight_probe.py`) works
+  for depth only: where the sensor shows the glass 1.6 cm for depth, 4.1 cm for rgb and 3.0 cm for thermal, against
+  1.6 / 2.0 / 2.1 cm when trained only on such demos; reweighting by out-of-fold error does not recover it. So the
+  harm of mixed demos is not special to the diffusion loss, and a local architecture removes it.
+
+Not done: a policy that acts on the fused map, and its success on the benchmark.
+
 ## Files
 
 - `figure_cells.png`; `thermal_contrast_sweep.{txt,json}`; `real_thermal_contrast.{txt,json}`; `teacher_check.txt`;
@@ -567,6 +717,10 @@ the three sensors; the faint level of each sensor; the cells and sizes of the tr
 - Level `L0_grid_clear`: `sim/configs/L0_grid_clear.yaml`, `sim/check_clear.py`, `clear_check.txt`.
 - "rgb shows" level: `sim/configs/L0_grid_clear_a0{4,5}.yaml`, `L0_grid_clear_a0{4,5}_rgb_330demos_rgbshown/`,
   `alpha_cells.txt`. Faint level: `policy/sweep_visibility.py`, `visibility_sweep.{txt,json}`.
+- Baselines of the final level: `L0_vis_{rgbdt,rgbd,rgbt,rgb}_700demos/`, `vis_cells.txt`. Method probe:
+  `research/{heatmap,hindsight}_probe.py`, `method_probe/`.
+- Final level: `sim/configs/L0_vis.yaml`, `faint_calibration.txt`, `teacher_check_L0_vis.txt`; demo set
+  `results/data/sim_demos_L0_vis_700.zarr` (not in git).
 - Repair round and `L0_grid_clear` runs: `L0_grid_{rgb_330demos_rgbshown,rgb_1000demos,rgbt_500demos_cell4,rgbt_1000demos}/`,
   `L0_grid_clear_{rgbdt,rgbd,rgbt,rgb}_500demos/` (same files as the baselines); `repair_cells.txt`.
 - Not in git: the demo sets `results/data/sim_demos_L0_grid_{500,1000,330_rgbshown,500_cell4}.zarr` and

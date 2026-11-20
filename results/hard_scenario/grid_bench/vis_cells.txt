@@ -1,0 +1,264 @@
+### L0_vis_rgbdt_700demos
+1 run folder(s), test sets j_cells11, k_cells11_heldout: 1320 episodes
+| cell | sensors that show the glass | success |
+|---|---|---|
+| 0 | rgb+depth+thermal | 0.675 (81/120) |
+| 1 | depth+thermal | 0.567 (68/120) |
+| 2 | rgb+thermal | 0.092 (11/120) |
+| 3 | rgb+depth | 0.633 (76/120) |
+| 4 | thermal | 0.050 (6/120) |
+| 5 | depth | 0.492 (59/120) |
+| 6 | rgb | 0.100 (12/120) |
+| 7 | rgb (faint) | 0.058 (7/120) |
+| 8 | depth (faint) | 0.375 (45/120) |
+| 9 | thermal (faint) | 0.067 (8/120) |
+| 10 | rgb+depth+thermal (all faint) | 0.350 (42/120) |
+| | macro average (mean of the cells) | 0.314 (95% 0.293-0.336) |
+| | all episodes | 0.314 (415/1320) |
+1 run folder(s), test sets j_cells11: 660 episodes
+| cell | sensors that show the glass | success |
+|---|---|---|
+| 0 | rgb+depth+thermal | 0.700 (42/60) |
+| 1 | depth+thermal | 0.550 (33/60) |
+| 2 | rgb+thermal | 0.083 (5/60) |
+| 3 | rgb+depth | 0.617 (37/60) |
+| 4 | thermal | 0.067 (4/60) |
+| 5 | depth | 0.567 (34/60) |
+| 6 | rgb | 0.083 (5/60) |
+| 7 | rgb (faint) | 0.067 (4/60) |
+| 8 | depth (faint) | 0.433 (26/60) |
+| 9 | thermal (faint) | 0.050 (3/60) |
+| 10 | rgb+depth+thermal (all faint) | 0.400 (24/60) |
+| | macro average (mean of the cells) | 0.329 (95% 0.300-0.361) |
+| | all episodes | 0.329 (217/660) |
+1 run folder(s), test sets k_cells11_heldout: 660 episodes
+| cell | sensors that show the glass | success |
+|---|---|---|
+| 0 | rgb+depth+thermal | 0.650 (39/60) |
+| 1 | depth+thermal | 0.583 (35/60) |
+| 2 | rgb+thermal | 0.100 (6/60) |
+| 3 | rgb+depth | 0.650 (39/60) |
+| 4 | thermal | 0.033 (2/60) |
+| 5 | depth | 0.417 (25/60) |
+| 6 | rgb | 0.117 (7/60) |
+| 7 | rgb (faint) | 0.050 (3/60) |
+| 8 | depth (faint) | 0.317 (19/60) |
+| 9 | thermal (faint) | 0.083 (5/60) |
+| 10 | rgb+depth+thermal (all faint) | 0.300 (18/60) |
+| | macro average (mean of the cells) | 0.300 (95% 0.270-0.330) |
+| | all episodes | 0.300 (198/660) |
+
+### L0_vis_rgbd_700demos
+1 run folder(s), test sets j_cells11, k_cells11_heldout: 1320 episodes
+| cell | sensors that show the glass | success |
+|---|---|---|
+| 0 | rgb+depth+thermal | 0.633 (76/120) |
+| 1 | depth+thermal | 0.633 (76/120) |
+| 2 | rgb+thermal | 0.092 (11/120) |
+| 3 | rgb+depth | 0.600 (72/120) |
+| 4 | thermal | 0.017 (2/120) |
+| 5 | depth | 0.550 (66/120) |
+| 6 | rgb | 0.108 (13/120) |
+| 7 | rgb (faint) | 0.050 (6/120) |
+| 8 | depth (faint) | 0.442 (53/120) |
+| 9 | thermal (faint) | 0.058 (7/120) |
+| 10 | rgb+depth+thermal (all faint) | 0.292 (35/120) |
+| | macro average (mean of the cells) | 0.316 (95% 0.295-0.337) |
+| | all episodes | 0.316 (417/1320) |
+1 run folder(s), test sets j_cells11: 660 episodes
+| cell | sensors that show the glass | success |
+|---|---|---|
+| 0 | rgb+depth+thermal | 0.683 (41/60) |
+| 1 | depth+thermal | 0.650 (39/60) |
+| 2 | rgb+thermal | 0.117 (7/60) |
+| 3 | rgb+depth | 0.617 (37/60) |
+| 4 | thermal | 0.017 (1/60) |
+| 5 | depth | 0.500 (30/60) |
+| 6 | rgb | 0.100 (6/60) |
+| 7 | rgb (faint) | 0.033 (2/60) |
+| 8 | depth (faint) | 0.450 (27/60) |
+| 9 | thermal (faint) | 0.083 (5/60) |
+| 10 | rgb+depth+thermal (all faint) | 0.383 (23/60) |
+| | macro average (mean of the cells) | 0.330 (95% 0.300-0.361) |
+| | all episodes | 0.330 (218/660) |
+1 run folder(s), test sets k_cells11_heldout: 660 episodes
+| cell | sensors that show the glass | success |
+|---|---|---|
+| 0 | rgb+depth+thermal | 0.583 (35/60) |
+| 1 | depth+thermal | 0.617 (37/60) |
+| 2 | rgb+thermal | 0.067 (4/60) |
+| 3 | rgb+depth | 0.583 (35/60) |
+| 4 | thermal | 0.017 (1/60) |
+| 5 | depth | 0.600 (36/60) |
+| 6 | rgb | 0.117 (7/60) |
+| 7 | rgb (faint) | 0.067 (4/60) |
+| 8 | depth (faint) | 0.433 (26/60) |
+| 9 | thermal (faint) | 0.033 (2/60) |
+| 10 | rgb+depth+thermal (all faint) | 0.200 (12/60) |
+| | macro average (mean of the cells) | 0.302 (95% 0.273-0.330) |
+| | all episodes | 0.302 (199/660) |
+
+### L0_vis_rgbt_700demos
+1 run folder(s), test sets j_cells11, k_cells11_heldout: 1320 episodes
+| cell | sensors that show the glass | success |
+|---|---|---|
+| 0 | rgb+depth+thermal | 0.167 (20/120) |
+| 1 | depth+thermal | 0.025 (3/120) |
+| 2 | rgb+thermal | 0.192 (23/120) |
+| 3 | rgb+depth | 0.225 (27/120) |
+| 4 | thermal | 0.058 (7/120) |
+| 5 | depth | 0.075 (9/120) |
+| 6 | rgb | 0.183 (22/120) |
+| 7 | rgb (faint) | 0.108 (13/120) |
+| 8 | depth (faint) | 0.033 (4/120) |
+| 9 | thermal (faint) | 0.050 (6/120) |
+| 10 | rgb+depth+thermal (all faint) | 0.117 (14/120) |
+| | macro average (mean of the cells) | 0.112 (95% 0.095-0.128) |
+| | all episodes | 0.112 (148/1320) |
+1 run folder(s), test sets j_cells11: 660 episodes
+| cell | sensors that show the glass | success |
+|---|---|---|
+| 0 | rgb+depth+thermal | 0.200 (12/60) |
+| 1 | depth+thermal | 0.033 (2/60) |
+| 2 | rgb+thermal | 0.217 (13/60) |
+| 3 | rgb+depth | 0.183 (11/60) |
+| 4 | thermal | 0.100 (6/60) |
+| 5 | depth | 0.050 (3/60) |
+| 6 | rgb | 0.133 (8/60) |
+| 7 | rgb (faint) | 0.050 (3/60) |
+| 8 | depth (faint) | 0.033 (2/60) |
+| 9 | thermal (faint) | 0.050 (3/60) |
+| 10 | rgb+depth+thermal (all faint) | 0.167 (10/60) |
+| | macro average (mean of the cells) | 0.111 (95% 0.088-0.133) |
+| | all episodes | 0.111 (73/660) |
+1 run folder(s), test sets k_cells11_heldout: 660 episodes
+| cell | sensors that show the glass | success |
+|---|---|---|
+| 0 | rgb+depth+thermal | 0.133 (8/60) |
+| 1 | depth+thermal | 0.017 (1/60) |
+| 2 | rgb+thermal | 0.167 (10/60) |
+| 3 | rgb+depth | 0.267 (16/60) |
+| 4 | thermal | 0.017 (1/60) |
+| 5 | depth | 0.100 (6/60) |
+| 6 | rgb | 0.233 (14/60) |
+| 7 | rgb (faint) | 0.167 (10/60) |
+| 8 | depth (faint) | 0.033 (2/60) |
+| 9 | thermal (faint) | 0.050 (3/60) |
+| 10 | rgb+depth+thermal (all faint) | 0.067 (4/60) |
+| | macro average (mean of the cells) | 0.114 (95% 0.091-0.138) |
+| | all episodes | 0.114 (75/660) |
+
+### L0_vis_rgb_700demos
+1 run folder(s), test sets j_cells11, k_cells11_heldout: 1320 episodes
+| cell | sensors that show the glass | success |
+|---|---|---|
+| 0 | rgb+depth+thermal | 0.100 (12/120) |
+| 1 | depth+thermal | 0.025 (3/120) |
+| 2 | rgb+thermal | 0.092 (11/120) |
+| 3 | rgb+depth | 0.100 (12/120) |
+| 4 | thermal | 0.017 (2/120) |
+| 5 | depth | 0.025 (3/120) |
+| 6 | rgb | 0.075 (9/120) |
+| 7 | rgb (faint) | 0.050 (6/120) |
+| 8 | depth (faint) | 0.042 (5/120) |
+| 9 | thermal (faint) | 0.042 (5/120) |
+| 10 | rgb+depth+thermal (all faint) | 0.067 (8/120) |
+| | macro average (mean of the cells) | 0.058 (95% 0.045-0.070) |
+| | all episodes | 0.058 (76/1320) |
+1 run folder(s), test sets j_cells11: 660 episodes
+| cell | sensors that show the glass | success |
+|---|---|---|
+| 0 | rgb+depth+thermal | 0.117 (7/60) |
+| 1 | depth+thermal | 0.017 (1/60) |
+| 2 | rgb+thermal | 0.083 (5/60) |
+| 3 | rgb+depth | 0.083 (5/60) |
+| 4 | thermal | 0.033 (2/60) |
+| 5 | depth | 0.017 (1/60) |
+| 6 | rgb | 0.100 (6/60) |
+| 7 | rgb (faint) | 0.067 (4/60) |
+| 8 | depth (faint) | 0.050 (3/60) |
+| 9 | thermal (faint) | 0.050 (3/60) |
+| 10 | rgb+depth+thermal (all faint) | 0.083 (5/60) |
+| | macro average (mean of the cells) | 0.064 (95% 0.045-0.083) |
+| | all episodes | 0.064 (42/660) |
+1 run folder(s), test sets k_cells11_heldout: 660 episodes
+| cell | sensors that show the glass | success |
+|---|---|---|
+| 0 | rgb+depth+thermal | 0.083 (5/60) |
+| 1 | depth+thermal | 0.033 (2/60) |
+| 2 | rgb+thermal | 0.100 (6/60) |
+| 3 | rgb+depth | 0.117 (7/60) |
+| 4 | thermal | 0.000 (0/60) |
+| 5 | depth | 0.033 (2/60) |
+| 6 | rgb | 0.050 (3/60) |
+| 7 | rgb (faint) | 0.033 (2/60) |
+| 8 | depth (faint) | 0.033 (2/60) |
+| 9 | thermal (faint) | 0.033 (2/60) |
+| 10 | rgb+depth+thermal (all faint) | 0.050 (3/60) |
+| | macro average (mean of the cells) | 0.052 (95% 0.036-0.068) |
+| | all episodes | 0.052 (34/660) |
+
+### Paired comparisons (same test episodes)
+A = L0_vis_rgbdt_700demos; B = L0_vis_rgbd_700demos; test sets j_cells11, k_cells11_heldout
+| cell | sensors that show the glass | A | B | A - B | only A succeeds | only B succeeds | sign test p |
+|---|---|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.675 | 0.633 | +0.042 | 20 | 15 | 0.5 |
+| 1 | depth+thermal | 0.567 | 0.633 | -0.067 | 14 | 22 | 0.24 |
+| 2 | rgb+thermal | 0.092 | 0.092 | +0.000 | 8 | 8 | 1 |
+| 3 | rgb+depth | 0.633 | 0.600 | +0.033 | 17 | 13 | 0.58 |
+| 4 | thermal | 0.050 | 0.017 | +0.033 | 5 | 1 | 0.22 |
+| 5 | depth | 0.492 | 0.550 | -0.058 | 10 | 17 | 0.25 |
+| 6 | rgb | 0.100 | 0.108 | -0.008 | 7 | 8 | 1 |
+| 7 | rgb (faint) | 0.058 | 0.050 | +0.008 | 6 | 5 | 1 |
+| 8 | depth (faint) | 0.375 | 0.442 | -0.067 | 12 | 20 | 0.22 |
+| 9 | thermal (faint) | 0.067 | 0.058 | +0.008 | 5 | 4 | 1 |
+| 10 | rgb+depth+thermal (all faint) | 0.350 | 0.292 | +0.058 | 25 | 18 | 0.36 |
+| | all episodes (= macro average with equal cells) | 0.314 | 0.316 | -0.002 | 129 | 131 | 0.95 |
+
+A = L0_vis_rgbdt_700demos; B = L0_vis_rgbt_700demos; test sets j_cells11, k_cells11_heldout
+| cell | sensors that show the glass | A | B | A - B | only A succeeds | only B succeeds | sign test p |
+|---|---|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.675 | 0.167 | +0.508 | 65 | 4 | 3.1e-15 |
+| 1 | depth+thermal | 0.567 | 0.025 | +0.542 | 66 | 1 | 9.2e-19 |
+| 2 | rgb+thermal | 0.092 | 0.192 | -0.100 | 6 | 18 | 0.023 |
+| 3 | rgb+depth | 0.633 | 0.225 | +0.408 | 54 | 5 | 1.9e-11 |
+| 4 | thermal | 0.050 | 0.058 | -0.008 | 4 | 5 | 1 |
+| 5 | depth | 0.492 | 0.075 | +0.417 | 54 | 4 | 3.2e-12 |
+| 6 | rgb | 0.100 | 0.183 | -0.083 | 7 | 17 | 0.064 |
+| 7 | rgb (faint) | 0.058 | 0.108 | -0.050 | 7 | 13 | 0.26 |
+| 8 | depth (faint) | 0.375 | 0.033 | +0.342 | 43 | 2 | 5.9e-11 |
+| 9 | thermal (faint) | 0.067 | 0.050 | +0.017 | 8 | 6 | 0.79 |
+| 10 | rgb+depth+thermal (all faint) | 0.350 | 0.117 | +0.233 | 36 | 8 | 2.5e-05 |
+| | all episodes (= macro average with equal cells) | 0.314 | 0.112 | +0.202 | 350 | 83 | 4.5e-40 |
+
+A = L0_vis_rgbdt_700demos; B = L0_vis_rgb_700demos; test sets j_cells11, k_cells11_heldout
+| cell | sensors that show the glass | A | B | A - B | only A succeeds | only B succeeds | sign test p |
+|---|---|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.675 | 0.100 | +0.575 | 72 | 3 | 3.7e-18 |
+| 1 | depth+thermal | 0.567 | 0.025 | +0.542 | 66 | 1 | 9.2e-19 |
+| 2 | rgb+thermal | 0.092 | 0.092 | +0.000 | 9 | 9 | 1 |
+| 3 | rgb+depth | 0.633 | 0.100 | +0.533 | 67 | 3 | 9.7e-17 |
+| 4 | thermal | 0.050 | 0.017 | +0.033 | 6 | 2 | 0.29 |
+| 5 | depth | 0.492 | 0.025 | +0.467 | 56 | 0 | 2.8e-17 |
+| 6 | rgb | 0.100 | 0.075 | +0.025 | 11 | 8 | 0.65 |
+| 7 | rgb (faint) | 0.058 | 0.050 | +0.008 | 6 | 5 | 1 |
+| 8 | depth (faint) | 0.375 | 0.042 | +0.333 | 42 | 2 | 1.1e-10 |
+| 9 | thermal (faint) | 0.067 | 0.042 | +0.025 | 8 | 5 | 0.58 |
+| 10 | rgb+depth+thermal (all faint) | 0.350 | 0.067 | +0.283 | 41 | 7 | 6.2e-07 |
+| | all episodes (= macro average with equal cells) | 0.314 | 0.058 | +0.257 | 384 | 45 | 3.6e-68 |
+
+A = L0_vis_rgbd_700demos; B = L0_vis_rgbt_700demos; test sets j_cells11, k_cells11_heldout
+| cell | sensors that show the glass | A | B | A - B | only A succeeds | only B succeeds | sign test p |
+|---|---|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.633 | 0.167 | +0.467 | 61 | 5 | 2.6e-13 |
+| 1 | depth+thermal | 0.633 | 0.025 | +0.608 | 74 | 1 | 4e-21 |
+| 2 | rgb+thermal | 0.092 | 0.192 | -0.100 | 5 | 17 | 0.017 |
+| 3 | rgb+depth | 0.600 | 0.225 | +0.375 | 53 | 8 | 3e-09 |
+| 4 | thermal | 0.017 | 0.058 | -0.042 | 1 | 6 | 0.12 |
+| 5 | depth | 0.550 | 0.075 | +0.475 | 61 | 4 | 3.9e-14 |
+| 6 | rgb | 0.108 | 0.183 | -0.075 | 8 | 17 | 0.11 |
+| 7 | rgb (faint) | 0.050 | 0.108 | -0.058 | 4 | 11 | 0.12 |
+| 8 | depth (faint) | 0.442 | 0.033 | +0.408 | 52 | 3 | 1.5e-12 |
+| 9 | thermal (faint) | 0.058 | 0.050 | +0.008 | 5 | 4 | 1 |
+| 10 | rgb+depth+thermal (all faint) | 0.292 | 0.117 | +0.175 | 27 | 6 | 0.00032 |
+| | all episodes (= macro average with equal cells) | 0.316 | 0.112 | +0.204 | 351 | 82 | 1.1e-40 |
