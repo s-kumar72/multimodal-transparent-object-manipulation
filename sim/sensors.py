@@ -66,7 +66,8 @@ class Sensors:
         self.cam_id, self.focal = cam, 0.5 * height / np.tan(np.radians(model.cam_fovy[cam]) / 2)
         self.scene = None
 
-    def episode(self, seed, target, liquid, extras, data, region=((0.24, 0.56), (-0.24, 0.24)), force_seethrough=None):
+    def episode(self, seed, target, liquid, extras, data, region=((0.24, 0.56), (-0.24, 0.24)), force_seethrough=None,
+                glass_holes=None):
         """Per-episode sensor effects: liquid in the target, absorber holes and table hole patches (lever C).
         region: (x range, y range) on the table where the hole patches may go."""
         cfg, m = self.cfg, self.model
@@ -97,6 +98,8 @@ class Sensors:
             defects.update({("patch", i): self._defect_params(rng) for i in range(len(blobs))})
         self.scene = dict(target=target, liquid=liquid, holes=holes, blobs=blobs, defects=defects, rng=rng,
                           seethrough=int(seethrough))
+        if glass_holes is not None:          # visibility cells, depth faint: this share of the glass pixels are holes
+            self.scene["glass_holes"] = glass_holes
         return self.scene
 
     def _defect_params(self, rng):
@@ -162,7 +165,7 @@ class Sensors:
         on_glass = np.isin(seg, self.transparent_geoms)
         depth = depth_true.copy()
         depth[on_glass] = depth_behind[on_glass]
-        dots = rng.random(depth.shape) < cfg.glass_holes   # drawn in either mode, so the later draws stay the same
+        dots = rng.random(depth.shape) < scene.get("glass_holes", cfg.glass_holes)   # drawn in either mode, so the later draws stay the same
         defects = scene.get("defects", {})
         if "glass" in defects:
             self._blob_defects(depth, on_glass, depth_behind, defects["glass"], scene["rng"])

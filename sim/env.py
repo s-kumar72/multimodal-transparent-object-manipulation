@@ -146,13 +146,15 @@ class GlassPickEnv:
         self.t_env = r.uniform(*th.t_env)
         crossover = r.random() < th.crossover_p
         if cell is not None:
-            crossover = cell[3]
+            crossover = cell[3] == 1
         gap = r.uniform(*th.crossover_gap) if crossover else r.choice([-1, 1]) * r.uniform(*th.gap)
         self.temps = {self.obj: self.t_env + gap, "table": self.t_env + r.uniform(*th.table_dt)}
         self.temps.update({n: self.t_env + r.uniform(*th.link_dt) for n in self.link_names})
         self.emis = {self.obj: r.uniform(*th.obj_emis), "table": r.uniform(*th.table_emis)}
         if cell is not None and cell[3]:     # thermal blind: the glass looks as warm as the table behind it
-            c = factor_rng(seed, "cell").uniform(-th.blind_contrast, th.blind_contrast)
+            rc = factor_rng(seed, "cell")
+            c = rc.uniform(-th.blind_contrast, th.blind_contrast) if cell[3] == 1 else \
+                rc.choice([-1.0, 1.0]) * rc.uniform(*th.faint_contrast)   # 2, faint: a small step against the table
             self.temps[self.obj] = matching_temp(self.temps["table"], self.emis["table"], self.emis[self.obj],
                                                  self.t_env, c)
             gap = self.temps[self.obj] - self.t_env
@@ -169,24 +171,28 @@ class GlassPickEnv:
                     obj_emis=self.emis[self.obj])
         info.update(self._transparent(seed))
         assert cfg.rgb_blind in ("dark", "clear"), cfg.rgb_blind
-        if cell is not None and cell[1] and cfg.rgb_blind == "clear":   # rgb blind: the glass is not in the colour image
+        if cell is not None and (cell[1] == 2 or cell[1] == 1 and cfg.rgb_blind == "clear"):
+            a = cfg.faint_alpha if cell[1] == 2 else cfg.clear_alpha   # faint glass / not in the colour image at all
             for geoms in self.glass_geoms.values():
-                self.model.geom_rgba[geoms, 3] = cfg.clear_alpha
-            info["alpha"] = cfg.clear_alpha
+                self.model.geom_rgba[geoms, 3] = a
+            info["alpha"] = a
         info.update(self._background(seed))
-        self.dark = cell is not None and cell[1] and cfg.rgb_blind == "dark"
+        self.dark = cell is not None and cell[1] == 1 and cfg.rgb_blind == "dark"
         info.update(self._lighting(seed, self.dark))
         liquid = self._liquid(seed, info)
         extras = self._extras(seed, info) if self.uses_extras else []
         narrow = cfg.camera == "front_cam_narrow"
         self.sensor_scene = self.sensors.episode(seed, self.obj, liquid, extras, d,
                                                  (EXTRA_X_NARROW, EXTRA_Y_NARROW) if narrow else (EXTRA_X, EXTRA_Y),
-                                                 force_seethrough=None if cell is None else cell[2])
+                                                 force_seethrough=None if cell is None else cell[2] == 1,
+                                                 glass_holes=cfg.faint_holes if cell is not None and cell[2] == 2 else None)
         info["n_table_blobs"] = len(self.sensor_scene["blobs"])
         info["glass_seethrough"] = self.sensor_scene["seethrough"]   # 1 in a see-through episode (dots or blobs)
         if cell is not None:
             info.update(cell=cell[0], rgb_dark=int(self.dark), thermal_contrast=apparent_contrast(
                 self.temps[self.obj], self.emis[self.obj], self.temps["table"], self.emis["table"], self.t_env))
+            if any(2 in c[1:4] for c in cfg.cells):
+                info.update(rgb_faint=int(cell[1] == 2), depth_faint=int(cell[2] == 2), thermal_faint=int(cell[3] == 2))
         self.episode_info = info
 
         for _ in range(300):
@@ -228,7 +234,10 @@ class GlassPickEnv:
         pat = cell_pattern(cfg.cells, len(OBJECT_NAMES))
         k = int(factor_rng(None, "cell").integers(len(pat))) if seed is None else seed % len(pat)
         i = int(pat[k])
-        return (i, *(bool(x) for x in cfg.cells[i][1:4]), k % len(OBJECT_NAMES))
+        flags = tuple(int(x) for x in cfg.cells[i][1:4])   # per sensor: 0 shows, 1 blind, 2 faint
+        assert all(f in (0, 1, 2) for f in flags) and (flags[0] != 2 or cfg.faint_alpha is not None) and \
+            (flags[1] != 2 or cfg.faint_holes is not None) and (flags[2] != 2 or cfg.thermal.faint_contrast is not None), flags
+        return (i, *flags, k % len(OBJECT_NAMES))
 
     def _lighting(self, seed, dark=False):
         cfg, m = self.cfg, self.model

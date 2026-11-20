@@ -498,6 +498,63 @@ reference of rgb is in the range of depth and thermal (0.34 now; alpha 0.3 was s
 showed the glass); intermediate visibility levels set by measurement, first as test sets for the existing
 checkpoints; seeds 43 and 44; a baseline with random sensor dropout.
 
+### The "rgb shows" level: which alpha (plan of 11/20 09:20, written before the runs)
+
+**Why.** A policy with rgb alone, trained on the demos where rgb shows the glass, reaches 0.338; depth gives
+0.58-0.75 (rgbd where depth shows the glass) and thermal alone 0.575. Alpha 0.3 was set on `L0_bench` so that rgb
+would reach only about 0.4, because rgb showed the glass in every episode there. In the cell design the need for the
+other sensors comes from the cells, so rgb does not have to be kept weak. Decision of the user (11/20): raise it.
+
+**Runs:** `L0_grid_clear_a04_rgb_330demos_rgbshown` and `L0_grid_clear_a05_rgb_330demos_rgbshown`: the rgb policy on
+the 330 demos of cells 0, 2, 3, 6, with the glass at alpha 0.4 and 0.5 (levels `L0_grid_clear_a04` / `_a05`, ids 33 /
+34: `L0_grid_clear` with another `alpha`). Seed 42, settings and final evaluation of the baselines, on the test sets
+of the level. The demos are the episodes of the alpha-0.3 lit set (same seeds, actions, depth and thermal; 0.5% of
+the colour pixels differ).
+
+**Read-out and rule, fixed now.** The reference is the success over the four cells where rgb shows the glass (480
+episodes); 0.338 at alpha 0.3. Chosen: the alpha among 0.3, 0.4 and 0.5 whose reference is closest to 0.60, if that
+reference is within 0.50-0.70. If none is, nothing is chosen and a further value is proposed. The rgb-blind cells
+(clear glass, the same at every alpha) are reported and must stay below 0.15.
+
+### Result: the "rgb shows" level, and the first measurements for a faint level (11/20 10:36)
+
+Tables and paired comparisons: [`alpha_cells.txt`](alpha_cells.txt). The rgb policy on the 330 lit demos, seed 42:
+
+| alpha of the glass | cells where rgb shows the glass (480) | rgb-blind cells (360) | jar / the other four objects |
+|---|---|---|---|
+| 0.3 | 162 = 0.338 | 0.019 | 0.70 / 0.19-0.29 |
+| 0.4 | 190 = 0.396 | 0.056 | 0.78 / 0.20-0.34 |
+| 0.5 | 208 = 0.433 | 0.036 | 0.83 / 0.22-0.44 |
+
+- **By the rule, nothing is chosen:** no reference is within 0.50-0.70. A less transparent glass helps (0.4 against
+  0.3: 69 / 41 on the same episodes, p 0.010; 0.5 against 0.3: 91 / 45, p 0.0001; 0.5 against 0.4: 67 / 49, p 0.11),
+  but by 0.04-0.06 per step of 0.1, and most failures stay near the glass (closed within 8 cm without lifting:
+  180-219 of 480; dropped 38-60).
+- The rgb-blind cells stay at the floor.
+- The references of the three sensors were not measured alike: thermal alone (0.575) had 500 demos of one cell, rgb
+  330 demos. With 500 lit demos rgb gave 0.389 at alpha 0.3 on `L0_bench` (800 episodes) and 0.48 at alpha 0.4 on
+  `L0_distract_a04` (100 episodes).
+
+**Faint level: mechanism and a first measurement.** A cell flag can now be 2, "faint" (`sim/config.py`:
+`faint_alpha`, `faint_holes`, `thermal.faint_contrast`; off unless a level sets it; regression 190 / 190 on the
+default config, `L0_bench` and `L0_grid`; on 40 episodes the hole share on the glass is 0.39 / 0.20 / 0.00 for shows /
+faint at 0.2 / blind). `policy/sweep_visibility.py` ([`visibility_sweep.txt`](visibility_sweep.txt), first frame of
+300 test episodes, one sensor's strength set by hand, both segmentation networks given that sensor only): the
+strength at which the glass is located half-way between chance and the rate at full strength is
+
+| sensor | blind | half-way for the segmentation network | shows |
+|---|---|---|---|
+| rgb (alpha) | 0.001 | 0.10 (located 0.06 at 0.02, 0.91 at 0.15, 0.97 from 0.3 on) | 0.3 |
+| depth (share of glass pixels that are holes) | 0 | 0.20 (chance up to 0.10, 0.97 at 0.30) | 0.40 |
+| thermal (degC from the table) | 0.1 | 1.7 and 2.7 for the two networks (0.84-0.94 at 5) | 5-35 |
+
+A segmentation network and a policy do not agree on rgb: the network locates the glass in 0.95 of the frames at alpha
+0.2, a policy reaches 0.34 at alpha 0.3 and 0.02 at alpha 0.05-0.1 (`L0_faint`). A faint level set by the network
+would leave a policy nothing in rgb, so the faint levels are better set on policies. Not done.
+
+**Open, nothing started:** the alpha of "rgb shows" (the rule chose none); how the references are measured, alike for
+the three sensors; the faint level of each sensor; the cells and sizes of the training and test sets.
+
 ## Files
 
 - `figure_cells.png`; `thermal_contrast_sweep.{txt,json}`; `real_thermal_contrast.{txt,json}`; `teacher_check.txt`;
@@ -508,6 +565,8 @@ checkpoints; seeds 43 and 44; a baseline with random sensor dropout.
   (collect the seeds of chosen cells only), `ZARR` of `scripts/run_experiment.sh` (train on such a set); the
   defaults of both scripts are unchanged.
 - Level `L0_grid_clear`: `sim/configs/L0_grid_clear.yaml`, `sim/check_clear.py`, `clear_check.txt`.
+- "rgb shows" level: `sim/configs/L0_grid_clear_a0{4,5}.yaml`, `L0_grid_clear_a0{4,5}_rgb_330demos_rgbshown/`,
+  `alpha_cells.txt`. Faint level: `policy/sweep_visibility.py`, `visibility_sweep.{txt,json}`.
 - Repair round and `L0_grid_clear` runs: `L0_grid_{rgb_330demos_rgbshown,rgb_1000demos,rgbt_500demos_cell4,rgbt_1000demos}/`,
   `L0_grid_clear_{rgbdt,rgbd,rgbt,rgb}_500demos/` (same files as the baselines); `repair_cells.txt`.
 - Not in git: the demo sets `results/data/sim_demos_L0_grid_{500,1000,330_rgbshown,500_cell4}.zarr` and
