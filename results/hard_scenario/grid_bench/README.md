@@ -555,6 +555,25 @@ would leave a policy nothing in rgb, so the faint levels are better set on polic
 **Open, nothing started:** the alpha of "rgb shows" (the rule chose none); how the references are measured, alike for
 the three sensors; the faint level of each sensor; the cells and sizes of the training and test sets.
 
+### Final level: decisions of the user and how the faint levels are set (11/20 12:10, written before any run)
+
+Decisions of the user (11/20): "rgb shows" is alpha 0.5; the benchmark has eleven cells, the seven above, three in
+which a single sensor shows the glass and only faintly (rgb, depth, thermal), and one in which all three show it
+faintly; 700 training demos (the 500 as before and 50 per new cell), 60 test episodes per cell and test set.
+
+**Faint levels.** No new training: each single-sensor reference policy that exists is evaluated in its single-sensor
+cell with the cue weakened, on the same 120 test episodes (seeds 100000+, no held-out factor) per value:
+
+| sensor | policy (trained at full strength) | values | full strength |
+|---|---|---|---|
+| depth | `L0_grid_clear_rgbd_500demos`, rgb and thermal blind | 10%, 20%, 30% of the glass pixels are holes | 40% |
+| thermal | `L0_grid_rgbt_500demos_cell4`, rgb (dark) and depth blind | 1, 2, 3, 5 degC from the table (+-10%) | 5-35 degC |
+| rgb | `L0_grid_clear_a05_rgb_330demos_rgbshown`, depth and thermal blind | alpha 0.2, 0.3, 0.4 | 0.5 |
+
+**Rule, fixed now:** the faint level of a sensor is the value whose success is closest to half of the success at
+full strength on the same episodes. The policies have never seen a weakened cue, so this measures how much of the cue
+a policy trained on the full one can still use; the level's own baselines and references are measured afterwards.
+
 ## Files
 
 - `figure_cells.png`; `thermal_contrast_sweep.{txt,json}`; `real_thermal_contrast.{txt,json}`; `teacher_check.txt`;
