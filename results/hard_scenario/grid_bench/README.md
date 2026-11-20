@@ -785,6 +785,25 @@ Observations outside the read-out:
   Cells with depth (0, 1, 3, 5, 8, 10): reference 0.590 on average, best plain baseline 0.547. Cells without depth
   (2, 4, 6, 7, 9): reference 0.335, best plain baseline 0.122. The room for a method is in those five cells.
 
+### Thermal faint level kept; references on the fully visible demos (11/21 09:00, written before the runs)
+
+Decision of the user (11/21): the thermal faint level stays as it is (2.7-3.3 C from the table). Cell 9 is kept and
+reported with its reference; nothing of the level, the training set or the test sets changes.
+
+Approved by the user: `L0_vis_{rgb,depth,thermal}_330demos_full`, the single-sensor policy of stage 1 trained on the
+330 of the 700 training demos where its sensor shows the glass fully (rgb: cells 0, 2, 3, 6; depth: 0, 1, 3, 5;
+thermal: 0, 1, 2, 4; `policy/subset_demos.py`), seed 42, settings as before. Question: do the 100 faint demos of the
+430-demo recipe hold a reference down? For thermal the indication above is not controlled; for rgb and depth it has
+not been looked at.
+
+Read-out, fixed now. (1) Per sensor, the 330-demo policy against the 430-demo policy on the same test episodes,
+pooled over the four cells where the sensor shows the glass fully (480 episodes) and, separately, over the two where
+it shows it faintly (240 episodes); sign test. Above with p < 0.05 where the sensor shows the glass fully: the faint
+demos lowered that reference (the 330-demo policy has fewer demos, so the number of demos cannot be the reason). No
+difference: the recipe was not what held it down. (2) The reference of a cell remains the highest value among all
+reference policies whose sensor shows the glass in it, these three included; the thresholds 0.30 and 0.15 stay. One
+seed.
+
 ## Method probe: grasp maps per sensor from the demos alone (11/20; perception only, no policy yet)
 
 Asked by the user: a method on the rgbdt policy that uses the sensors by situation, with nothing but sensor images
