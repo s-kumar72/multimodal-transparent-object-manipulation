@@ -717,6 +717,14 @@ Read-out, fixed now: per cell and for the macro average against the plain rgbdt 
 In a cell without depth (2, 4, 6, 7, 9) the floor counts as filled if the mean over the three seeds is at least 0.30,
 and as raised if the policy is above the plain rgbdt there with p < 0.05 (pooled sign test).
 
+**Stage 4: separate policies combined at inference** (specified 11/21 02:05, before its runs).
+`L0_vis_depth_700demos` and `L0_vis_thermal_700demos`: plain single-sensor policies trained on all 700 demos, seed 42
+(the rgb one exists). They are baselines of their own, and the three are combined with `policy/eval_compose.py`: the
+mean of their noise predictions at every denoising step, weights 1/3 each, nothing selected
+(`L0_vis_compose_mean_700demos`, same test episodes). Read-out as in stage 3. Seeds 43 and 44 of the two new members
+are added only if the combination, with seed 42, has a macro average within 0.05 of the best baseline or above it;
+otherwise it is reported with one seed.
+
 ## Method probe: grasp maps per sensor from the demos alone (11/20; perception only, no policy yet)
 
 Asked by the user: a method on the rgbdt policy that uses the sensors by situation, with nothing but sensor images
