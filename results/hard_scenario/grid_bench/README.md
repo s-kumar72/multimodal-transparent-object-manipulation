@@ -670,6 +670,45 @@ Tables per test set and paired comparisons: [`vis_cells.txt`](vis_cells.txt).
 
 One seed. The single-sensor references of this level, seeds 43 and 44 and further baselines are not run.
 
+## Baseline programme on `L0_vis` (plan of 11/21, written before its runs)
+
+Decision of the user (11/21): before any method is applied, the benchmark gets reference levels and stronger
+baselines. Five of the eleven cells are at the floor for every plain baseline; the programme asks whether those cells
+can be solved at all on this level and whether known techniques fill them. Scenes, cells and test sets are not
+changed by it.
+
+| stage | runs | question |
+|---|---|---|
+| 1 | single-sensor reference policies (rgb, depth, thermal), each trained on the demos where its sensor shows the glass; they use the cells | what can be reached in each cell |
+| 2 | the four plain baselines, seeds 43 and 44 | how much the baseline numbers move with the seed |
+| 3 | rgbdt with random sensor dropout, three seeds | does the usual remedy fill the floor |
+| 4 | single-sensor policies trained on all demos (depth, thermal; rgb exists), and their combination at inference | does combining separate policies fill it |
+| 5 (optional) | rgbdt with pretrained image encoders, three seeds | is the encoder the obstacle |
+| 6 | the list of baselines and the comparison rules for a method are frozen | |
+
+Settings of every run: those of the `L0_vis` baselines (default config, 101 epochs, last checkpoint, 1320 test
+episodes). Stages 3 to 5 are specified here before they start.
+
+**Rules for all runs, fixed now.** (1) The same information for all: sensor images, joint values and the demo
+actions; the arm's kinematics and the camera calibration are allowed to any run; nothing else of the simulator, except
+in stage 1, whose policies are references and not baselines. (2) Default settings; nothing is selected on the test
+sets. (3) Three seeds for every baseline that is compared; two policies are compared on the same episodes. (4) A
+method is compared, cell by cell, with the best baseline of that cell (mean over seeds, over the baselines of stages
+2 to 5). (5) "Better in nearly every case" means: no cell in which the method is below that best baseline with
+p < 0.05 (pooled sign test on the same episodes), and a macro average above every baseline.
+
+**Stage 1: references.** `L0_vis_{rgb,depth,thermal}_430demos_shown`: plain Diffusion Policy with that sensor's image
+and the joints only (new variants `depth` and `thermal` of `policy/train.sh`), trained on the 430 demos of the cells
+where the sensor shows the glass fully or faintly (rgb: cells 0, 2, 3, 6, 7, 10; depth: 0, 1, 3, 5, 8, 10; thermal:
+0, 1, 2, 4, 9, 10; `policy/subset_demos.py`), seed 42. Read-out, fixed now: the reference of a cell is the highest
+success among the policies whose sensor shows the glass in it. A cell with a reference of at least 0.30 counts as
+shown to be solvable. If the reference of a single-sensor cell (4 to 9) is below 0.15, that sensor's level in that
+cell is too weak for a policy; this is reported before anything else is concluded from the level, and whether the
+level is changed is the user's decision.
+
+**Stage 2: seeds.** `L0_vis_{rgbdt,rgbd,rgbt,rgb}_700demos_seed{43,44}`. Reported: per cell and for the macro
+average the mean over the three seeds and their range, and the pooled tables.
+
 ## Method probe: grasp maps per sensor from the demos alone (11/20; perception only, no policy yet)
 
 Asked by the user: a method on the rgbdt policy that uses the sensors by situation, with nothing but sensor images

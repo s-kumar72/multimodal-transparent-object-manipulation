@@ -3,7 +3,7 @@
 #
 # Run from repo root with the Diffusion Policy repo cloned next to this one (or set DP_ROOT):
 #   CUDA_VISIBLE_DEVICES=0 policy/train.sh rgbdt data/sim_demos.zarr [extra hydra overrides]
-# Variants: rgb | rgbd | rgbt | rgbdt (joint angles are always included)
+# Variants: rgb | rgbd | rgbt | rgbdt, and the single-sensor ones depth | thermal (joint angles are always included)
 set -e
 VARIANT=$1
 ZARR=$2
@@ -15,7 +15,9 @@ case $VARIANT in
     rgbd)  DROP="~task.shape_meta.obs.thermal" ;;
     rgbt)  DROP="~task.shape_meta.obs.depth" ;;
     rgbdt) DROP="" ;;
-    *) echo "variant must be one of rgb | rgbd | rgbt | rgbdt"; exit 1 ;;
+    depth)   DROP="~task.shape_meta.obs.rgb ~task.shape_meta.obs.thermal" ;;
+    thermal) DROP="~task.shape_meta.obs.rgb ~task.shape_meta.obs.depth" ;;
+    *) echo "variant must be one of rgb | rgbd | rgbt | rgbdt | depth | thermal"; exit 1 ;;
 esac
 
 export PYTHONPATH=$PWD:$PWD/sim:$DP_ROOT:$PYTHONPATH
