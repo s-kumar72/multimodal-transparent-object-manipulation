@@ -498,6 +498,24 @@ reference of rgb is in the range of depth and thermal (0.34 now; alpha 0.3 was s
 showed the glass); intermediate visibility levels set by measurement, first as test sets for the existing
 checkpoints; seeds 43 and 44; a baseline with random sensor dropout.
 
+### The "rgb shows" level: which alpha (plan of 11/20 09:20, written before the runs)
+
+**Why.** A policy with rgb alone, trained on the demos where rgb shows the glass, reaches 0.338; depth gives
+0.58-0.75 (rgbd where depth shows the glass) and thermal alone 0.575. Alpha 0.3 was set on `L0_bench` so that rgb
+would reach only about 0.4, because rgb showed the glass in every episode there. In the cell design the need for the
+other sensors comes from the cells, so rgb does not have to be kept weak. Decision of the user (11/20): raise it.
+
+**Runs:** `L0_grid_clear_a04_rgb_330demos_rgbshown` and `L0_grid_clear_a05_rgb_330demos_rgbshown`: the rgb policy on
+the 330 demos of cells 0, 2, 3, 6, with the glass at alpha 0.4 and 0.5 (levels `L0_grid_clear_a04` / `_a05`, ids 33 /
+34: `L0_grid_clear` with another `alpha`). Seed 42, settings and final evaluation of the baselines, on the test sets
+of the level. The demos are the episodes of the alpha-0.3 lit set (same seeds, actions, depth and thermal; 0.5% of
+the colour pixels differ).
+
+**Read-out and rule, fixed now.** The reference is the success over the four cells where rgb shows the glass (480
+episodes); 0.338 at alpha 0.3. Chosen: the alpha among 0.3, 0.4 and 0.5 whose reference is closest to 0.60, if that
+reference is within 0.50-0.70. If none is, nothing is chosen and a further value is proposed. The rgb-blind cells
+(clear glass, the same at every alpha) are reported and must stay below 0.15.
+
 ## Files
 
 - `figure_cells.png`; `thermal_contrast_sweep.{txt,json}`; `real_thermal_contrast.{txt,json}`; `teacher_check.txt`;
