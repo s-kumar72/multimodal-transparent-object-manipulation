@@ -42,6 +42,9 @@ class ThermalConfig:
     # this many degC of that of the table behind it (sensors.matching_temp). 0.1 is about the camera noise: 2.73
     # counts per pixel at 34 counts per degC = 0.08 degC. Not used without cells.
     blind_contrast: float = 0.1
+    # Visibility cells, thermal faint episode (cell flag 2): the apparent temperature of the glass is this many degC
+    # (range, either sign) from that of the table behind it.
+    faint_contrast: tuple = None
     distractor_ambient_p: float = 0.7   # distractors within +-1 degC of ambient, else +-distractor_gap
     distractor_gap: tuple = (5.0, 35.0)
     liquid_temp: dict = field(default_factory=lambda: {"cold": (4.0, 10.0), "room": None, "warm": (40.0, 60.0)})
@@ -120,6 +123,11 @@ class SceneConfig:
     # distractors but not the glass (rgb blind hides only the glass, as depth blind and thermal blind do).
     rgb_blind: str = "dark"
     clear_alpha: float = 0.001
+    # A cell flag may also be 2, "faint": the sensor shows the glass weakly. rgb: the glass at faint_alpha; depth:
+    # faint_holes of the glass pixels are holes instead of glass_holes; thermal: thermal.faint_contrast. Episode info
+    # then also has rgb_faint, depth_faint and thermal_faint (only in levels that have such a cell).
+    faint_alpha: float = None
+    faint_holes: float = None
 
     def pool(self, factor):
         """Value pool of a factor for this config's split."""

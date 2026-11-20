@@ -1,0 +1,44 @@
+L0_grid_clear (h_cells), first frame of 300 episodes; glass mask 36 px of 96x96
+
+== rgb
+value | located / chance (data/fusion_bench/runs/mix_ws/best.pt) | located / chance (data/grid_bench/runs/mix_ws/best.pt)
+ 0.001 | 0.050 / 0.140 | 0.027 / 0.097
+ 0.020 | 0.063 / 0.142 | 0.040 / 0.097
+ 0.050 | 0.183 / 0.162 | 0.120 / 0.100
+ 0.075 | 0.377 / 0.204 | 0.380 / 0.169
+ 0.100 | 0.647 / 0.249 | 0.620 / 0.225
+ 0.150 | 0.910 / 0.321 | 0.887 / 0.301
+ 0.200 | 0.960 / 0.336 | 0.943 / 0.323
+ 0.300 | 0.977 / 0.343 | 0.967 / 0.339
+ 0.400 | 0.980 / 0.342 | 0.970 / 0.343
+ 0.500 | 0.973 / 0.341 | 0.977 / 0.343
+half (data/fusion_bench/runs/mix_ws/best.pt): located 0.616 at 0.097
+half (data/grid_bench/runs/mix_ws/best.pt): located 0.605 at 0.098
+
+== depth
+value | located / chance (data/fusion_bench/runs/mix_ws/best.pt) | located / chance (data/grid_bench/runs/mix_ws/best.pt)
+ 0.000 | 0.293 / 0.268 | 0.333 / 0.275
+ 0.010 | 0.297 / 0.269 | 0.327 / 0.276
+ 0.020 | 0.293 / 0.268 | 0.313 / 0.279
+ 0.050 | 0.267 / 0.258 | 0.293 / 0.279
+ 0.100 | 0.223 / 0.209 | 0.250 / 0.241
+ 0.150 | 0.307 / 0.200 | 0.327 / 0.205
+ 0.200 | 0.623 / 0.252 | 0.633 / 0.249
+ 0.300 | 0.970 / 0.327 | 0.963 / 0.325
+ 0.400 | 0.983 / 0.325 | 0.987 / 0.326
+half (data/fusion_bench/runs/mix_ws/best.pt): located 0.624 at 0.200
+half (data/grid_bench/runs/mix_ws/best.pt): located 0.630 at 0.199
+
+== thermal
+value | located / chance (data/fusion_bench/runs/mix_ws/best.pt) | located / chance (data/grid_bench/runs/mix_ws/best.pt)
+ 0.100 | 0.247 / 0.275 | 0.167 / 0.145
+ 0.500 | 0.340 / 0.276 | 0.177 / 0.146
+ 1.000 | 0.457 / 0.274 | 0.223 / 0.153
+ 1.500 | 0.593 / 0.282 | 0.290 / 0.172
+ 2.000 | 0.667 / 0.298 | 0.400 / 0.204
+ 3.000 | 0.833 / 0.310 | 0.623 / 0.268
+ 5.000 | 0.943 / 0.322 | 0.843 / 0.315
+10.000 | 0.963 / 0.325 | 0.930 / 0.321
+20.000 | 0.940 / 0.322 | 0.893 / 0.320
+half (data/fusion_bench/runs/mix_ws/best.pt): located 0.619 at 1.676
+half (data/grid_bench/runs/mix_ws/best.pt): located 0.560 at 2.717
