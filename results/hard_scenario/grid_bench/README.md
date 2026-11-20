@@ -706,6 +706,17 @@ shown to be solvable. If the reference of a single-sensor cell (4 to 9) is below
 cell is too weak for a policy; this is reported before anything else is concluded from the level, and whether the
 level is changed is the user's decision.
 
+**Stage 1, addition: single-cell references for thermal** (specified 11/21 04:50, before the runs; approved by the
+user after the first stage-1 results). With the 430 demos where its sensor shows the glass fully or faintly, the
+thermal-only reference reaches 0.20-0.22 where thermal shows the glass and 0.12-0.16 where faintly (depth-only:
+0.60-0.69 and 0.45-0.48; rgb-only, first test set: 0.27-0.37 and 0.27-0.28). On `L0_grid` a policy trained on 500
+demos of the thermal-only cell reached 0.575 there, so the mixed training set of the reference may be what holds it
+down, not the cell. `L0_vis_thermal_500demos_cell4` and `L0_vis_thermal_500demos_cell9`: the thermal-only policy on
+500 demos of that cell alone (`collect_demos.py --cells`), seed 42. Read-out, fixed now, on the cell the policy was
+trained for (120 episodes): at least 0.30, the cell is solvable and the stage-1 recipe understates it; below 0.15,
+the thermal level of that cell is too weak for a policy and the user decides whether the level changes; between,
+partial. Single-cell references for the other four single-sensor cells are decided after this.
+
 **Stage 2: seeds.** `L0_vis_{rgbdt,rgbd,rgbt,rgb}_700demos_seed{43,44}`. Reported: per cell and for the macro
 average the mean over the three seeds and their range, and the pooled tables.
 
