@@ -46,10 +46,13 @@ class Corruption:
              8-bit image and to thermal_raw alike, so the contrast cue drops with the image.
     depth:   connected blobs of missing readings covering a fraction ~ U(depth_hole_frac) of the frame (blurred noise
              thresholded), with probability depth_hole_p. The validity channel and cue follow since both read depth > 0.
+    sensor dropout (off by default): each image (rgb / depth / thermal) is blank with probability sensor_dropout_p,
+             independently, and at least one stays.
     """
 
     def __init__(self, thermal_contrast_p=0.5, thermal_contrast=(0.0, 0.6), depth_hole_p=0.5,
-                 depth_hole_frac=(0.1, 0.6), depth_blob_cells=(6, 16)):
+                 depth_hole_frac=(0.1, 0.6), depth_blob_cells=(6, 16), sensor_dropout_p=0.0):
+        self.sensor_dropout_p = sensor_dropout_p
         self.thermal_contrast_p, self.thermal_contrast = thermal_contrast_p, tuple(thermal_contrast)
         self.depth_hole_p, self.depth_hole_frac = depth_hole_p, tuple(depth_hole_frac)
         self.depth_blob_cells = tuple(depth_blob_cells)
@@ -76,6 +79,13 @@ class Corruption:
             d = d.copy()
             d[:, hole] = 0
             out["depth"] = d
+        if self.sensor_dropout_p > 0:
+            keys = [k for k in ("rgb", "depth", "thermal") if k in out]
+            drop = [k for k in keys if rng.random() < self.sensor_dropout_p]
+            if len(drop) == len(keys):
+                drop.pop(int(rng.integers(len(drop))))
+            for k in drop:
+                out[k] = np.zeros_like(out[k])
         return out
 
 

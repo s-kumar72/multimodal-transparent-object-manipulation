@@ -709,6 +709,14 @@ level is changed is the user's decision.
 **Stage 2: seeds.** `L0_vis_{rgbdt,rgbd,rgbt,rgb}_700demos_seed{43,44}`. Reported: per cell and for the macro
 average the mean over the three seeds and their range, and the pooled tables.
 
+**Stage 3: random sensor dropout** (specified 11/21 02:00, before its runs).
+`L0_vis_rgbdt_700demos_drop`, `..._drop_seed43`, `..._drop_seed44` (`TRAIN=policy/train_dropout.sh`): the plain rgbdt
+policy; in training each of the three images of a sample (both observation steps) is blank with probability 0.3,
+independently, and at least one stays. Validation and evaluation see all sensors. The probability is not tuned.
+Read-out, fixed now: per cell and for the macro average against the plain rgbdt of the same seed on the same episodes.
+In a cell without depth (2, 4, 6, 7, 9) the floor counts as filled if the mean over the three seeds is at least 0.30,
+and as raised if the policy is above the plain rgbdt there with p < 0.05 (pooled sign test).
+
 ## Method probe: grasp maps per sensor from the demos alone (11/20; perception only, no policy yet)
 
 Asked by the user: a method on the rgbdt policy that uses the sensors by situation, with nothing but sensor images
