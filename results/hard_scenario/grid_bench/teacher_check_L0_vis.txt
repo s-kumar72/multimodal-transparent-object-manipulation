@@ -1,0 +1,4 @@
+== test set j_cells11
+L0_vis test  teacher 660/660  tumbler 132/132 bottle 132/132 wineglass 132/132 jar 132/132 flask 132/132  | episodes that moved a distractor > 2 cm: 0
+== test set k_cells11_heldout
+L0_vis test  teacher 660/660  tumbler 132/132 bottle 132/132 wineglass 132/132 jar 132/132 flask 132/132  | episodes that moved a distractor > 2 cm: 0

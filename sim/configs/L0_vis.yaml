@@ -1,0 +1,31 @@
+# Visibility benchmark level (results/hard_scenario/grid_bench/, final level): which of rgb / depth / thermal show the
+# glass, and how well. Each episode gets one of eleven cells; per sensor a cell says shows (0), blind (1) or faint (2):
+#   rgb      shows: glass at alpha 0.5; faint: alpha 0.2; blind: clear glass, not in the colour image (alpha 0.001)
+#   depth    shows: 40% of the glass pixels are holes; faint: 20%; blind: see-through, no holes
+#   thermal  shows: the glass 5-35 degC from the room; faint: 2.7-3.3 degC from the table behind it, either sign;
+#            blind: within 0.1 degC of the table
+# Cells 0-6 are the seven combinations of shows / blind (L0_grid_clear with the glass at alpha 0.5); in cells 7-9 a
+# single sensor shows the glass and only faintly; in cell 10 all three show it faintly. The faint values are those at
+# which a policy trained on the full cue keeps about half of its success (README). Scene otherwise as L0_bench.
+# Training weights 14 : 7 : 7 : 7 : 5 x 7 of 70 consecutive seeds (700 demos = the 500 of L0_grid's mix and 50 per new
+# cell); the test sets j / k use equal weights (sim/configs/manifest.json). meta/ep_level id 35.
+base: L0_grid_clear.yaml
+name: L0_vis
+level: 35
+alpha: [0.5, 0.5]
+faint_alpha: 0.2
+faint_holes: 0.2
+thermal:
+  faint_contrast: [2.7, 3.3]
+cells:                # [weight, rgb, depth, thermal]; 0 shows, 1 blind, 2 faint
+  - [14, 0, 0, 0]     # 0 all three show the glass
+  - [7, 1, 0, 0]      # 1 rgb blind
+  - [7, 0, 1, 0]      # 2 depth blind
+  - [7, 0, 0, 1]      # 3 thermal blind
+  - [5, 1, 1, 0]      # 4 only thermal shows it
+  - [5, 1, 0, 1]      # 5 only depth shows it
+  - [5, 0, 1, 1]      # 6 only rgb shows it
+  - [5, 2, 1, 1]      # 7 only rgb, faintly
+  - [5, 1, 2, 1]      # 8 only depth, faintly
+  - [5, 1, 1, 2]      # 9 only thermal, faintly
+  - [5, 2, 2, 2]      # 10 all three, faintly

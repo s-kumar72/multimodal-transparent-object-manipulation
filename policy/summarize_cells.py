@@ -21,7 +21,16 @@ from pathlib import Path
 import click
 import numpy as np
 
-CELLS = ["rgb+depth+thermal", "depth+thermal", "rgb+thermal", "rgb+depth", "thermal", "depth", "rgb"]
+CELLS = ["rgb+depth+thermal", "depth+thermal", "rgb+thermal", "rgb+depth", "thermal", "depth", "rgb",
+         "rgb (faint)", "depth (faint)", "thermal (faint)", "rgb+depth+thermal (all faint)"]   # 7-10: level L0_vis
+SETS = [("j_cells11", "k_cells11_heldout"), ("h_cells", "i_cells_heldout")]   # test sets of a level with cells
+
+
+def default_sets(run_dirs, test_sets):
+    """The test sets given, or the pair of cell test sets that the first run folder has."""
+    if test_sets:
+        return tuple(test_sets)
+    return next((p for p in SETS if (Path(run_dirs[0]) / p[0]).exists()), SETS[-1])
 
 
 def load(run_dirs, test_sets):
@@ -78,10 +87,11 @@ def versus(run_dirs, others, test_sets):
 
 @click.command()
 @click.argument("run_dirs", nargs=-1, required=True)
-@click.option("--test_set", "test_sets", multiple=True, default=("h_cells", "i_cells_heldout"), show_default=True)
+@click.option("--test_set", "test_sets", multiple=True, help="default: the cell test sets found in the run folder")
 @click.option("--json", "json_out", default=None)
 @click.option("--versus", "others", multiple=True, help="paired comparison with these run folders instead")
 def main(run_dirs, test_sets, json_out, others):
+    test_sets = default_sets(run_dirs, test_sets)
     if others:
         rows = versus(run_dirs, others, test_sets)
         print(f"A = {', '.join(Path(r).name for r in run_dirs)}; B = {', '.join(Path(r).name for r in others)}; "

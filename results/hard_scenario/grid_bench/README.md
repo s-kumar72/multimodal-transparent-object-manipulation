@@ -555,7 +555,7 @@ would leave a policy nothing in rgb, so the faint levels are better set on polic
 **Open, nothing started:** the alpha of "rgb shows" (the rule chose none); how the references are measured, alike for
 the three sensors; the faint level of each sensor; the cells and sizes of the training and test sets.
 
-### Final level: decisions of the user and how the faint levels are set (11/20 12:10, written before any run)
+### Final level: decisions of the user and how the faint levels are set (11/20 16:00, written before any run)
 
 Decisions of the user (11/20): "rgb shows" is alpha 0.5; the benchmark has eleven cells, the seven above, three in
 which a single sensor shows the glass and only faintly (rgb, depth, thermal), and one in which all three show it
@@ -574,6 +574,67 @@ cell with the cue weakened, on the same 120 test episodes (seeds 100000+, no hel
 full strength on the same episodes. The policies have never seen a weakened cue, so this measures how much of the cue
 a policy trained on the full one can still use; the level's own baselines and references are measured afterwards.
 
+## Final level `L0_vis` (11/20)
+
+**Faint levels** ([`faint_calibration.txt`](faint_calibration.txt); rule and runs as fixed above):
+
+| sensor | cue weakened to | success of the reference policy | full strength | half of it | chosen |
+|---|---|---|---|---|---|
+| depth (share of glass pixels that are holes) | 10% / 20% / 30% | 0.050 / 0.275 / 0.483 | 0.600 at 40% | 0.300 | **20%** |
+| thermal (degC from the table) | 1 / 2 / 3 / 5 | 0.067 / 0.233 / 0.317 / 0.425 | 0.575 at 5-35 | 0.288 | **3 (2.7-3.3)** |
+| rgb (alpha) | 0.2 / 0.3 / 0.4 | 0.183 / 0.333 / 0.500 | 0.450 at 0.5 | 0.225 | **0.2** |
+
+Success falls smoothly as each cue weakens. For depth and thermal the chosen values are near those at which the
+segmentation networks locate the glass half-way (20%, 1.7-2.7 degC); for rgb they are not (alpha 0.10 there).
+
+**Definition** (`sim/configs/L0_vis.yaml`, level id 35): `L0_grid_clear` with the glass at alpha 0.5 where rgb shows
+it, and four more cells.
+
+| sensor | shows | faint | blind |
+|---|---|---|---|
+| rgb | glass at alpha 0.5 | alpha 0.2 | clear glass, not in the colour image (alpha 0.001) |
+| depth | 40% of the glass pixels are holes | 20% | see-through, no holes |
+| thermal | 5-35 degC from the room | 2.7-3.3 degC from the table behind it, either sign | within 0.1 degC of the table |
+
+| cell | rgb | depth | thermal | training demos (of 700) | test episodes per test set (of 660) |
+|---|---|---|---|---|---|
+| 0 | shows | shows | shows | 140 | 60 |
+| 1 | blind | shows | shows | 70 | 60 |
+| 2 | shows | blind | shows | 70 | 60 |
+| 3 | shows | shows | blind | 70 | 60 |
+| 4 | blind | blind | shows | 50 | 60 |
+| 5 | blind | shows | blind | 50 | 60 |
+| 6 | shows | blind | blind | 50 | 60 |
+| 7 | faint | blind | blind | 50 | 60 |
+| 8 | blind | faint | blind | 50 | 60 |
+| 9 | blind | blind | faint | 50 | 60 |
+| 10 | faint | faint | faint | 50 | 60 |
+
+- **Training and test** have the same cells and differ in proportions and seeds: the training set keeps the mix of
+  `L0_grid` for cells 0-6 and adds 50 demos per new cell (seeds 0-699, every (cell, object) pair 2 x weight times);
+  the test sets `j_cells11` and `k_cells11_heldout` (held-out background, lighting and distractor pools, as
+  `i_cells_heldout`) hold every (cell, object) pair 12 times, seeds 100000-100659.
+- **Protocol** (decision of the user, 11/20): a method is trained on the demos (sensor images, joint values, actions)
+  and acts on sensor images and joint values. Cells, visibility flags, glass masks and anything else only the
+  simulator knows are for the report, not for a method, in training either.
+- **Checks:** teacher 700 / 700 on the training seeds and 660 / 660 on each test set
+  ([`teacher_check_L0_vis.txt`](teacher_check_L0_vis.txt)); in the demos every cell has the alpha, thermal contrast
+  and see-through flag of its definition (alpha 0.5 / 0.2 / 0.001; contrast 4.7-36.8, 2.71-3.29 or at most 0.10
+  degC); existing levels unchanged (regression 190 / 190 on the default config, `L0_bench` and `L0_grid`).
+
+**Reporting rules, fixed before any policy is trained on the level:**
+
+- Evaluation: the last checkpoint on `j_cells11` and `k_cells11_heldout`, 660 episodes each.
+- For every policy: the per-cell table (120 episodes per cell and seed), the macro average over the eleven cells
+  (the headline number) with its bootstrap interval, and the averages over cells 0-6 and over cells 7-10.
+- Two policies are compared on the same episodes (sign test), per cell and for the macro average.
+- Cells a policy cannot solve, expected near 0 and examined if above 0.15: rgb in cells 1, 4, 5, 8, 9; rgbd in cells
+  4 and 9; rgbt in cells 5 and 8.
+
+**Baselines, listed before they start:** plain Diffusion Policy `L0_vis_{rgbdt,rgbd,rgbt,rgb}_700demos`, seed 42,
+default config, 101 epochs, rollouts during training on `j_cells11` (55 episodes, monitoring only), `TOPK=0`. Seeds 43
+and 44, the single-sensor references and other baselines are not part of this step.
+
 ## Files
 
 - `figure_cells.png`; `thermal_contrast_sweep.{txt,json}`; `real_thermal_contrast.{txt,json}`; `teacher_check.txt`;
@@ -586,6 +647,8 @@ a policy trained on the full one can still use; the level's own baselines and re
 - Level `L0_grid_clear`: `sim/configs/L0_grid_clear.yaml`, `sim/check_clear.py`, `clear_check.txt`.
 - "rgb shows" level: `sim/configs/L0_grid_clear_a0{4,5}.yaml`, `L0_grid_clear_a0{4,5}_rgb_330demos_rgbshown/`,
   `alpha_cells.txt`. Faint level: `policy/sweep_visibility.py`, `visibility_sweep.{txt,json}`.
+- Final level: `sim/configs/L0_vis.yaml`, `faint_calibration.txt`, `teacher_check_L0_vis.txt`; demo set
+  `results/data/sim_demos_L0_vis_700.zarr` (not in git).
 - Repair round and `L0_grid_clear` runs: `L0_grid_{rgb_330demos_rgbshown,rgb_1000demos,rgbt_500demos_cell4,rgbt_1000demos}/`,
   `L0_grid_clear_{rgbdt,rgbd,rgbt,rgb}_500demos/` (same files as the baselines); `repair_cells.txt`.
 - Not in git: the demo sets `results/data/sim_demos_L0_grid_{500,1000,330_rgbshown,500_cell4}.zarr` and
