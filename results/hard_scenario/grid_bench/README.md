@@ -889,6 +889,128 @@ method is compared with (rule 4). Pooled tables and the paired comparisons: [`se
   both stay below 0.18 in every cell.
 - Best baseline of every cell: mean 0.325 (best single baseline: rgbd, 0.309).
 
+### Results of stage 3 (11/21 20:00; seeds 42, 43 and 44, 1320 test episodes per run)
+
+rgbdt with random sensor dropout in training (p = 0.3 per image), against the plain rgbdt of the same seed on the same
+episodes. Mean over the three seeds and, in brackets, their range; differences and sign tests pooled over the three
+seeds (360 episodes per cell). Per run: `cells.json` in its folder.
+
+| cell | rgb / depth / thermal | rgbdt with dropout | plain rgbdt | difference | only dropout succeeds | only plain succeeds | sign test p |
+|---|---|---|---|---|---|---|---|
+| 0 | shows / shows / shows | 0.433 (0.417-0.458) | 0.611 | -0.178 | 29 | 93 | 5.2e-09 |
+| 1 | blind / shows / shows | 0.433 (0.392-0.492) | 0.508 | -0.075 | 49 | 76 | 0.020 |
+| 2 | shows / blind / shows | 0.081 (0.058-0.100) | 0.142 | -0.061 | 18 | 40 | 0.0054 |
+| 3 | shows / shows / blind | 0.408 (0.367-0.433) | 0.625 | -0.217 | 30 | 108 | 1.6e-11 |
+| 4 | blind / blind / shows | 0.033 (0.025-0.042) | 0.050 | -0.017 | 10 | 16 | 0.33 |
+| 5 | blind / shows / blind | 0.467 (0.442-0.508) | 0.442 | +0.025 | 57 | 48 | 0.44 |
+| 6 | shows / blind / blind | 0.106 (0.075-0.125) | 0.092 | +0.014 | 27 | 22 | 0.57 |
+| 7 | faint / blind / blind | 0.053 (0.050-0.058) | 0.064 | -0.011 | 16 | 20 | 0.62 |
+| 8 | blind / faint / blind | 0.333 (0.275-0.367) | 0.319 | +0.014 | 51 | 46 | 0.68 |
+| 9 | blind / blind / faint | 0.036 (0.033-0.042) | 0.061 | -0.025 | 12 | 21 | 0.16 |
+| 10 | faint / faint / faint | 0.328 (0.267-0.367) | 0.308 | +0.019 | 51 | 44 | 0.54 |
+| | **macro average, eleven cells** | **0.246** (0.225-0.267) | **0.293** | -0.046 | 350 | 534 | 6.5e-10 |
+| | cells without depth (2, 4, 6, 7, 9) | 0.062 | 0.082 | | | | |
+| | cells with depth (0, 1, 3, 5, 8, 10) | 0.400 | 0.469 | | | | |
+| | macro average, seeds 42 / 43 / 44 | 0.247 / 0.267 / 0.225 | 0.314 / 0.288 / 0.277 | | | | |
+
+Read-out by the rules fixed before the runs:
+
+- **Sensor dropout does not fill the floor and does not raise it.** In the five cells without depth the mean over
+  the three seeds is 0.033 to 0.106 (mean 0.062); none reaches 0.30, and in none is the policy above the plain rgbdt
+  with p < 0.05 (the largest positive difference is +0.014 in cell 6, p = 0.57). In cell 2 it is below the plain
+  rgbdt (-0.061, p = 0.0054).
+- **It is below the plain rgbdt overall.** Macro average 0.246 against 0.293 (p = 6.5e-10), with every seed below its
+  plain run (-0.067, -0.020, -0.052; p = 2.7e-07, 0.13, 8.2e-05). The loss is where two or three sensors show the
+  glass fully: cells 0, 1 and 3 (-0.178, -0.075, -0.217) and cell 2. Where one sensor shows the glass, or all are
+  faint (cells 4 to 10), there is no difference with p < 0.05 in either direction.
+- As a baseline of its own it is the best of no cell: its three-seed mean is below the best plain baseline in every
+  cell (closest: cell 5, 0.467 against 0.475, and cell 10, 0.328 against 0.333). Against rgbd, pooled: 0.246 and
+  0.309, p = 7.3e-17.
+
+### Results of the references on the fully visible demos (11/21 20:00; seed 42, 1320 test episodes per run)
+
+`L0_vis_{rgb,depth,thermal}_330demos_full`: success per cell, in brackets the cells where the policy's sensor does not
+show the glass. Per run: `cells.json` in its folder.
+
+| cell | rgb / depth / thermal | rgb only, 330 | depth only, 330 | thermal only, 330 | reference before | **reference now** | best baseline (three seeds) |
+|---|---|---|---|---|---|---|---|
+| 0 | shows / shows / shows | 0.367 | 0.742 | 0.425 | 0.658 | **0.742** | 0.611 |
+| 1 | blind / shows / shows | (0.033) | 0.817 | 0.333 | 0.658 | **0.817** | 0.639 |
+| 2 | shows / blind / shows | 0.400 | (0.067) | 0.375 | 0.408 | **0.408** | 0.175 |
+| 3 | shows / shows / blind | 0.333 | 0.717 | (0.025) | 0.692 | **0.717** | 0.625 |
+| 4 | blind / blind / shows | (0.033) | (0.008) | 0.383 | 0.417 | **0.417** | 0.050 |
+| 5 | blind / shows / blind | (0.042) | 0.717 | (0.033) | 0.600 | **0.717** | 0.475 |
+| 6 | shows / blind / blind | 0.317 | (0.025) | (0.017) | 0.392 | **0.392** | 0.133 |
+| 7 | faint / blind / blind | 0.142 | (0.025) | (0.042) | 0.267 | **0.267** | 0.092 |
+| 8 | blind / faint / blind | (0.033) | 0.292 | (0.058) | 0.450 | **0.450** | 0.381 |
+| 9 | blind / blind / faint | (0.042) | (0.033) | 0.175 | 0.192 | **0.192** | 0.064 |
+| 10 | faint / faint / faint | 0.133 | 0.300 | 0.158 | 0.483 | **0.483** | 0.333 |
+| | **mean of the eleven cells** | 0.170 | 0.340 | 0.184 | 0.474 | **0.509** | 0.325 |
+| | cells without depth (2, 4, 6, 7, 9) | | | | 0.335 | 0.335 | 0.103 |
+| | cells with depth (0, 1, 3, 5, 8, 10) | | | | 0.590 | 0.654 | 0.511 |
+
+The 330-demo policy against the 430-demo policy of the same sensor, on the same test episodes:
+
+| sensor | cells | episodes | 330 demos | 430 demos | difference | only 330 succeeds | only 430 succeeds | sign test p |
+|---|---|---|---|---|---|---|---|---|
+| rgb | shows fully: 0, 2, 3, 6 | 480 | 0.354 | 0.312 | +0.042 | 77 | 57 | 0.10 |
+| rgb | shows faintly: 7, 10 | 240 | 0.138 | 0.267 | -0.129 | 16 | 47 | 0.00012 |
+| depth | shows fully: 0, 1, 3, 5 | 480 | 0.748 | 0.652 | +0.096 | 69 | 23 | 1.7e-06 |
+| depth | shows faintly: 8, 10 | 240 | 0.296 | 0.467 | -0.171 | 27 | 68 | 3.1e-05 |
+| thermal | shows fully: 0, 1, 2, 4 | 480 | 0.379 | 0.210 | +0.169 | 118 | 37 | 4.7e-11 |
+| thermal | shows faintly: 9, 10 | 240 | 0.167 | 0.138 | +0.029 | 26 | 19 | 0.37 |
+
+Read-out by the rules fixed before the runs:
+
+- **Depth and thermal: the faint demos lowered the reference.** Where the sensor shows the glass fully the policy
+  with 100 demos fewer is above the 430-demo policy: depth 0.748 against 0.652 (p = 1.7e-06), thermal 0.379 against
+  0.210 (p = 4.7e-11). The number of demos cannot be the reason.
+- **Rgb: no difference** where rgb shows the glass fully (0.354 against 0.312, p = 0.10). The recipe was not what
+  held the rgb reference down.
+- **References.** They rise in the four cells where depth shows the glass fully (cells 0, 1, 3 and 5: 0.742, 0.817,
+  0.717, 0.717) and are unchanged in the other seven; mean 0.509 (before 0.474). The same nine cells are shown to be
+  solvable. Cell 7 (rgb faint, 0.267) and cell 9 (thermal faint, 0.192) stay below 0.30, and no single-sensor cell
+  is below 0.15.
+
+Observations outside the read-out:
+
+- **The faint demos are needed for the faint cells of rgb and depth, and cost success in the clear ones.** Without
+  them the policy loses where its sensor is faint (rgb -0.129, depth -0.171) and, for depth and thermal, gains where
+  it is clear. For thermal the faint demos gave nothing in the faint cells either (0.138 with them, 0.167 without).
+  One policy per sensor trained on everything is therefore not the best at both; the reference takes the better of
+  the two per cell.
+- The thermal-only policy on the 330 demos is level with the one trained on 500 demos of cell 4 alone (0.379 and
+  0.410 where thermal shows the glass fully, p = 0.29): the earlier gap between the 430-demo recipe and the cell-4
+  policy came from the faint demos, not from mixing cells.
+- **The plain baselines are now below the reference where depth shows the glass as well.** Cells 0, 1, 3 and 5: the
+  depth-only policy on 330 demos has 0.748, the plain rgbd of seed 42 0.604 and the plain rgbdt 0.592 on the same
+  episodes (p = 5.1e-09 and 4.3e-10). A policy with one image and 330 demos is above the policies with two or three
+  images and all 700 demos. In the cells without depth, against the plain rgbdt and rgbt of seed 42: thermal only
+  0.379 in cells 2 and 4 against 0.071 and 0.125; rgb only 0.358 in cells 2 and 6 against 0.096 and 0.188.
+- The reference is the highest of up to eight policies with 120 episodes per cell and one seed, so it leans high; the
+  best baseline is a mean over three seeds. The gap between them (0.07 to 0.37 per cell, 0.18 on average) is read
+  with that in mind.
+
+### State after stages 1 to 4 (11/21 20:00)
+
+| | macro average | cells without depth | cells with depth | seeds |
+|---|---|---|---|---|
+| reference (best single-sensor policy of the cell; uses the cells) | 0.509 | 0.335 | 0.654 | 1 |
+| best baseline of each cell | 0.325 | 0.103 | 0.511 | 3 |
+| rgbd | 0.309 | 0.072 | 0.506 | 3 |
+| rgbdt | 0.293 | 0.082 | 0.469 | 3 |
+| rgbdt with sensor dropout | 0.246 | 0.062 | 0.400 | 3 |
+| depth only, all 700 demos | 0.227 | 0.045 | 0.379 | 1 |
+| combination of the three single-sensor policies | 0.125 | 0.038 | 0.197 | 1 |
+| rgbt | 0.088 | 0.098 | 0.080 | 3 |
+| rgb | 0.068 | 0.069 | 0.067 | 3 |
+| thermal only, all 700 demos | 0.020 | 0.027 | 0.014 | 1 |
+
+No baseline and neither of the two known remedies (sensor dropout, combining separate policies) reaches the
+reference; the best baseline of every cell is one of the four plain policies. Open before stage 6: whether stage 5
+(pretrained image encoders) is run, which is the user's decision. The baselines with one seed are below a three-seed
+baseline in every cell except cell 4 (depth only 0.067, rgbdt 0.050; both at the floor).
+
 ## Method probe: grasp maps per sensor from the demos alone (11/20; perception only, no policy yet)
 
 Asked by the user: a method on the rgbdt policy that uses the sensors by situation, with nothing but sensor images
