@@ -1030,6 +1030,53 @@ obstacle if the macro average is above the plain rgbdt with p < 0.05; otherwise 
 policy down. (3) With its three seeds the policy joins the baselines, and the best baseline of every cell (rule 4) is
 taken again with it.
 
+### Where the baselines fail (11/22 03:00; from the evaluation records, no new runs, outside the read-outs)
+
+`policy/analyze_failures.py` on the `episodes.json` files of the runs so far; full tables with the failure types in
+[`failure_analysis.txt`](failure_analysis.txt). Measured: the horizontal distance between gripper and glass when the
+gripper closes for the last time (the grasp the outcome is judged from). This is an analysis after the fact, not a
+pre-registered read-out; the stage-5 runs are not in it yet (the script includes them once they exist).
+
+Success against that distance, 29040 episodes of twelve policies pooled:
+
+| distance (cm) | 0-0.5 | 0.5-1 | 1-1.5 | 1.5-2 | 2-3 | 3-4 | 4-8 | over 8 |
+|---|---|---|---|---|---|---|---|---|
+| success | 0.961 | 0.803 | 0.413 | 0.264 | 0.205 | 0.070 | 0.007 | 0.000 |
+
+"Reached": closed within 4 cm of the glass. "Placed": within 1.5 cm.
+
+| cells | policy | success | reached | placed | median distance (cm) | success when placed |
+|---|---|---|---|---|---|---|
+| depth shows fully (0, 1, 3, 5) | depth only, 330 fully visible demos | 0.748 | 0.950 | 0.810 | 0.7 | 0.889 |
+| | rgbd (3 seeds) | 0.581 | 0.974 | 0.692 | 1.0 | 0.757 |
+| | rgbdt (3 seeds) | 0.547 | 0.958 | 0.640 | 1.2 | 0.746 |
+| | depth only, all 700 demos | 0.421 | 0.915 | 0.517 | 1.5 | 0.706 |
+| | rgbdt with sensor dropout (3 seeds) | 0.435 | 0.919 | 0.494 | 1.5 | 0.705 |
+| no depth, thermal shows fully (2, 4) | thermal only, 330 fully visible demos | 0.379 | 0.796 | 0.433 | 1.8 | 0.692 |
+| | rgbt (3 seeds) | 0.107 | 0.399 | 0.118 | 4.9 | 0.529 |
+| | rgbdt (3 seeds) | 0.096 | 0.286 | 0.076 | 6.3 | 0.673 |
+| | depth only, 330 (blind in these cells) | 0.037 | 0.062 | 0.021 | 15.0 | - |
+| no depth, rgb shows fully (2, 6) | rgb only, 330 fully visible demos | 0.358 | 0.842 | 0.396 | 1.9 | 0.716 |
+| | rgbt (3 seeds) | 0.154 | 0.615 | 0.188 | 3.4 | 0.533 |
+| | rgbdt (3 seeds) | 0.117 | 0.369 | 0.104 | 5.2 | 0.560 |
+| | depth only, 330 (blind in these cells) | 0.046 | 0.058 | 0.008 | 13.9 | - |
+
+- **The task is decided by where the gripper closes, to about 1 cm.** 0.96 within 0.5 cm, 0.80 up to 1 cm, 0.41 up to
+  1.5 cm, nothing beyond 4 cm. Once the gripper is placed within 1.5 cm the policies succeed at similar rates (0.53 to
+  0.89); they differ in how often they get there.
+- **Without depth the plain policies do not find the glass.** rgbdt closes within 4 cm of it in 0.29 of the episodes
+  where thermal shows it and 0.37 where rgb shows it, typically 5 to 6 cm away, and "closed away from every object"
+  is 0.30 of all episodes in the five cells without depth. The single-sensor policy of the sensor that shows the glass
+  reaches it in 0.80 and 0.84, typically within 2 cm; a policy that is blind there in 0.06 (14 to 15 cm away). The
+  plain rgbdt is between the two: it reads rgb and thermal a little.
+- **Where depth shows the glass the plain policies find it and lose on precision.** All policies with depth close
+  within 4 cm in 0.92 to 0.98 of the episodes. Placed within 1.5 cm: 0.81 for the depth-only policy on the fully
+  visible demos, 0.69 for rgbd, 0.64 for rgbdt, about 0.50 for the depth-only policy on all 700 demos and for sensor
+  dropout. The failures there are missed grasps (0.26 to 0.28: closed near the glass, not lifted).
+- **Rgb and thermal are coarser than depth even at their best.** Their single-sensor policies place the gripper
+  within 1.5 cm in 0.40 and 0.43 of the episodes where the sensor shows the glass fully (depth: 0.81). This is what
+  bounds the references of the cells without depth (0.38 to 0.42).
+
 ## Method probe: grasp maps per sensor from the demos alone (11/20; perception only, no policy yet)
 
 Asked by the user: a method on the rgbdt policy that uses the sensors by situation, with nothing but sensor images
