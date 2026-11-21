@@ -1011,7 +1011,7 @@ reference; the best baseline of every cell is one of the four plain policies. Op
 (pretrained image encoders) is run, which is the user's decision. The baselines with one seed are below a three-seed
 baseline in every cell except cell 4 (depth only 0.067, rgbdt 0.050; both at the floor).
 
-### Stage 5: pretrained image encoders (specified 11/22 02:45, before its runs; approved by the user)
+### Stage 5: pretrained image encoders (specified 11/22 02:37, before its runs; approved by the user)
 
 `L0_vis_rgbdt_700demos_imagenet`, `..._imagenet_seed43`, `..._imagenet_seed44`: the plain rgbdt policy with the
 override `policy.obs_encoder.rgb_model.weights=IMAGENET1K_V1`, the "ImageNet" recipe of the diagnosis round
