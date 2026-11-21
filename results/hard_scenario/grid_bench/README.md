@@ -804,6 +804,51 @@ difference: the recipe was not what held it down. (2) The reference of a cell re
 reference policies whose sensor shows the glass in it, these three included; the thresholds 0.30 and 0.15 stay. One
 seed.
 
+### Results of stage 4 (11/21 17:00; seed 42, 1320 test episodes per run, 120 per cell)
+
+The three single-sensor policies trained on all 700 demos, and their equal-weight combination at inference
+(`L0_vis_compose_mean_700demos`). Per run: `cells.json` in its folder.
+
+| cell | rgb / depth / thermal | rgb only | depth only | thermal only | **combination** | plain rgbdt | plain rgbd |
+|---|---|---|---|---|---|---|---|
+| 0 | shows / shows / shows | 0.100 | 0.450 | 0.025 | **0.217** | 0.675 | 0.633 |
+| 1 | blind / shows / shows | 0.025 | 0.433 | 0.033 | **0.242** | 0.567 | 0.633 |
+| 2 | shows / blind / shows | 0.092 | 0.033 | 0.042 | **0.050** | 0.092 | 0.092 |
+| 3 | shows / shows / blind | 0.100 | 0.400 | 0.017 | **0.225** | 0.633 | 0.600 |
+| 4 | blind / blind / shows | 0.017 | 0.067 | 0.042 | **0.017** | 0.050 | 0.017 |
+| 5 | blind / shows / blind | 0.025 | 0.400 | 0.008 | **0.208** | 0.492 | 0.550 |
+| 6 | shows / blind / blind | 0.075 | 0.050 | 0.008 | **0.017** | 0.100 | 0.108 |
+| 7 | faint / blind / blind | 0.050 | 0.058 | 0.017 | **0.075** | 0.058 | 0.050 |
+| 8 | blind / faint / blind | 0.042 | 0.267 | 0.000 | **0.150** | 0.375 | 0.442 |
+| 9 | blind / blind / faint | 0.042 | 0.017 | 0.025 | **0.033** | 0.067 | 0.058 |
+| 10 | faint / faint / faint | 0.067 | 0.325 | 0.000 | **0.142** | 0.350 | 0.292 |
+| | **macro average, eleven cells** | **0.058** | **0.227** | **0.020** | **0.125** | **0.314** | **0.316** |
+| | cells without depth (2, 4, 6, 7, 9) | 0.055 | 0.045 | 0.027 | 0.038 | 0.073 | 0.065 |
+| | cells with depth (0, 1, 3, 5, 8, 10) | 0.060 | 0.379 | 0.014 | 0.197 | 0.515 | 0.525 |
+
+Read-out by the rules fixed before the runs:
+
+- **Combining the separate policies does not fill the floor.** In the five cells without depth the combination has
+  0.017 to 0.075 (mean 0.038); none reaches 0.30 and none is above the plain rgbdt with p < 0.05 (the only positive
+  difference is +0.017 in cell 7, p = 0.75).
+- **It is below the plain baselines everywhere else.** Macro average 0.125 against 0.314 for the plain rgbdt on the
+  same episodes (only the combination succeeds in 52 episodes, only rgbdt in 302; p = 5.6e-44), and below its own
+  depth member (0.227; p = 2.7e-17).
+- The macro average is not within 0.05 of the best baseline (0.316), so the combination is reported with one seed
+  and seeds 43 and 44 of its members are not run.
+- **The members as baselines of their own.** Depth only: 0.227, with 0.40 to 0.45 where depth shows the glass fully.
+  Thermal only: 0.020, at most 0.042 in any cell; it learned nothing. Rgb only (from the baselines): 0.058.
+
+Observations outside the read-out:
+
+- Two of the three members did not learn their sensor, so the mean of the noise predictions is the depth policy
+  diluted by two policies that do not see the glass: about half of the depth member where depth shows the glass
+  (0.21-0.24 against 0.40-0.45). Combining at inference cannot supply what the members did not learn.
+- **A single-sensor policy is lowered by the demos in which its sensor does not show the glass, for depth as well.**
+  Where the sensor shows the glass fully: depth only 0.60-0.69 on the 430 demos where depth shows the glass, 0.40-0.45
+  on all 700 (270 more demos, all with depth blind); thermal only 0.20-0.22 on its 430, 0.03-0.04 on all 700; rgb only
+  0.26-0.39 on its 430, 0.08-0.10 on all 700. More demos, lower success, for all three sensors.
+
 ## Method probe: grasp maps per sensor from the demos alone (11/20; perception only, no policy yet)
 
 Asked by the user: a method on the rgbdt policy that uses the sensors by situation, with nothing but sensor images
