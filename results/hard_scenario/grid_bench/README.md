@@ -1011,6 +1011,25 @@ reference; the best baseline of every cell is one of the four plain policies. Op
 (pretrained image encoders) is run, which is the user's decision. The baselines with one seed are below a three-seed
 baseline in every cell except cell 4 (depth only 0.067, rgbdt 0.050; both at the floor).
 
+### Stage 5: pretrained image encoders (specified 11/22 02:45, before its runs; approved by the user)
+
+`L0_vis_rgbdt_700demos_imagenet`, `..._imagenet_seed43`, `..._imagenet_seed44`: the plain rgbdt policy with the
+override `policy.obs_encoder.rgb_model.weights=IMAGENET1K_V1`, the "ImageNet" recipe of the diagnosis round
+([`../diagnosis/README.md`](../diagnosis/README.md)): each of the three image encoders (rgb, depth, thermal) starts
+from the ImageNet weights of ResNet-18 instead of random ones and is trained end to end as before. Nothing else
+differs from the plain rgbdt: the architecture is unchanged (GroupNorm in place of BatchNorm, as in the default, so
+the statistics of the pretrained normalization layers are not used), same optimizer and learning rate, 101 epochs,
+last checkpoint, 1320 test episodes. No other pretrained recipe (frozen encoders, other weights, another learning
+rate for the encoders) is tried and nothing is tuned.
+
+Read-out, fixed now, as in stage 3: per cell and for the macro average against the plain rgbdt of the same seed on
+the same episodes (pooled sign test over the three seeds). (1) In a cell without depth (2, 4, 6, 7, 9) the floor
+counts as filled if the mean over the three seeds is at least 0.30, and as raised if the policy is above the plain
+rgbdt there with p < 0.05. (2) The question of the stage: the random initialization of the encoders counts as an
+obstacle if the macro average is above the plain rgbdt with p < 0.05; otherwise it is not what holds the plain
+policy down. (3) With its three seeds the policy joins the baselines, and the best baseline of every cell (rule 4) is
+taken again with it.
+
 ## Method probe: grasp maps per sensor from the demos alone (11/20; perception only, no policy yet)
 
 Asked by the user: a method on the rgbdt policy that uses the sensors by situation, with nothing but sensor images
