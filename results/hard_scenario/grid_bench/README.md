@@ -785,6 +785,110 @@ Observations outside the read-out:
   Cells with depth (0, 1, 3, 5, 8, 10): reference 0.590 on average, best plain baseline 0.547. Cells without depth
   (2, 4, 6, 7, 9): reference 0.335, best plain baseline 0.122. The room for a method is in those five cells.
 
+### Thermal faint level kept; references on the fully visible demos (11/21 09:00, written before the runs)
+
+Decision of the user (11/21): the thermal faint level stays as it is (2.7-3.3 C from the table). Cell 9 is kept and
+reported with its reference; nothing of the level, the training set or the test sets changes.
+
+Approved by the user: `L0_vis_{rgb,depth,thermal}_330demos_full`, the single-sensor policy of stage 1 trained on the
+330 of the 700 training demos where its sensor shows the glass fully (rgb: cells 0, 2, 3, 6; depth: 0, 1, 3, 5;
+thermal: 0, 1, 2, 4; `policy/subset_demos.py`), seed 42, settings as before. Question: do the 100 faint demos of the
+430-demo recipe hold a reference down? For thermal the indication above is not controlled; for rgb and depth it has
+not been looked at.
+
+Read-out, fixed now. (1) Per sensor, the 330-demo policy against the 430-demo policy on the same test episodes,
+pooled over the four cells where the sensor shows the glass fully (480 episodes) and, separately, over the two where
+it shows it faintly (240 episodes); sign test. Above with p < 0.05 where the sensor shows the glass fully: the faint
+demos lowered that reference (the 330-demo policy has fewer demos, so the number of demos cannot be the reason). No
+difference: the recipe was not what held it down. (2) The reference of a cell remains the highest value among all
+reference policies whose sensor shows the glass in it, these three included; the thresholds 0.30 and 0.15 stay. One
+seed.
+
+### Results of stage 4 (11/21 17:00; seed 42, 1320 test episodes per run, 120 per cell)
+
+The three single-sensor policies trained on all 700 demos, and their equal-weight combination at inference
+(`L0_vis_compose_mean_700demos`). Per run: `cells.json` in its folder.
+
+| cell | rgb / depth / thermal | rgb only | depth only | thermal only | **combination** | plain rgbdt | plain rgbd |
+|---|---|---|---|---|---|---|---|
+| 0 | shows / shows / shows | 0.100 | 0.450 | 0.025 | **0.217** | 0.675 | 0.633 |
+| 1 | blind / shows / shows | 0.025 | 0.433 | 0.033 | **0.242** | 0.567 | 0.633 |
+| 2 | shows / blind / shows | 0.092 | 0.033 | 0.042 | **0.050** | 0.092 | 0.092 |
+| 3 | shows / shows / blind | 0.100 | 0.400 | 0.017 | **0.225** | 0.633 | 0.600 |
+| 4 | blind / blind / shows | 0.017 | 0.067 | 0.042 | **0.017** | 0.050 | 0.017 |
+| 5 | blind / shows / blind | 0.025 | 0.400 | 0.008 | **0.208** | 0.492 | 0.550 |
+| 6 | shows / blind / blind | 0.075 | 0.050 | 0.008 | **0.017** | 0.100 | 0.108 |
+| 7 | faint / blind / blind | 0.050 | 0.058 | 0.017 | **0.075** | 0.058 | 0.050 |
+| 8 | blind / faint / blind | 0.042 | 0.267 | 0.000 | **0.150** | 0.375 | 0.442 |
+| 9 | blind / blind / faint | 0.042 | 0.017 | 0.025 | **0.033** | 0.067 | 0.058 |
+| 10 | faint / faint / faint | 0.067 | 0.325 | 0.000 | **0.142** | 0.350 | 0.292 |
+| | **macro average, eleven cells** | **0.058** | **0.227** | **0.020** | **0.125** | **0.314** | **0.316** |
+| | cells without depth (2, 4, 6, 7, 9) | 0.055 | 0.045 | 0.027 | 0.038 | 0.073 | 0.065 |
+| | cells with depth (0, 1, 3, 5, 8, 10) | 0.060 | 0.379 | 0.014 | 0.197 | 0.515 | 0.525 |
+
+Read-out by the rules fixed before the runs:
+
+- **Combining the separate policies does not fill the floor.** In the five cells without depth the combination has
+  0.017 to 0.075 (mean 0.038); none reaches 0.30 and none is above the plain rgbdt with p < 0.05 (the only positive
+  difference is +0.017 in cell 7, p = 0.75).
+- **It is below the plain baselines everywhere else.** Macro average 0.125 against 0.314 for the plain rgbdt on the
+  same episodes (only the combination succeeds in 52 episodes, only rgbdt in 302; p = 5.6e-44), and below its own
+  depth member (0.227; p = 2.7e-17).
+- The macro average is not within 0.05 of the best baseline (0.316), so the combination is reported with one seed
+  and seeds 43 and 44 of its members are not run.
+- **The members as baselines of their own.** Depth only: 0.227, with 0.40 to 0.45 where depth shows the glass fully.
+  Thermal only: 0.020, at most 0.042 in any cell; it learned nothing. Rgb only (from the baselines): 0.058.
+
+Observations outside the read-out:
+
+- Two of the three members did not learn their sensor, so the mean of the noise predictions is the depth policy
+  diluted by two policies that do not see the glass: about half of the depth member where depth shows the glass
+  (0.21-0.24 against 0.40-0.45). Combining at inference cannot supply what the members did not learn.
+- **A single-sensor policy is lowered by the demos in which its sensor does not show the glass, for depth as well.**
+  Where the sensor shows the glass fully: depth only 0.60-0.69 on the 430 demos where depth shows the glass, 0.40-0.45
+  on all 700 (270 more demos, all with depth blind); thermal only 0.20-0.22 on its 430, 0.03-0.04 on all 700; rgb only
+  0.26-0.39 on its 430, 0.08-0.10 on all 700. More demos, lower success, for all three sensors.
+
+### Results of stage 2 (11/21 17:25; seeds 42, 43 and 44, 1320 test episodes per run)
+
+Mean over the three seeds and, in brackets, their range. Best baseline: the highest mean of the cell; this is what a
+method is compared with (rule 4). Pooled tables and the paired comparisons: [`seeds_cells.txt`](seeds_cells.txt).
+
+| cell | rgb / depth / thermal | rgbdt | rgbd | rgbt | rgb | best baseline |
+|---|---|---|---|---|---|---|
+| 0 | shows / shows / shows | 0.611 (0.567-0.675) | 0.583 (0.558-0.633) | 0.100 (0.067-0.167) | 0.103 (0.083-0.125) | 0.611 (rgbdt) |
+| 1 | blind / shows / shows | 0.508 (0.450-0.567) | 0.639 (0.633-0.650) | 0.025 (0.025-0.025) | 0.036 (0.025-0.058) | 0.639 (rgbd) |
+| 2 | shows / blind / shows | 0.142 (0.092-0.175) | 0.094 (0.083-0.108) | 0.175 (0.133-0.200) | 0.100 (0.092-0.117) | 0.175 (rgbt) |
+| 3 | shows / shows / blind | 0.625 (0.592-0.650) | 0.625 (0.583-0.692) | 0.158 (0.108-0.225) | 0.108 (0.083-0.142) | 0.625 (rgbdt) |
+| 4 | blind / blind / shows | 0.050 (0.050-0.050) | 0.025 (0.017-0.033) | 0.039 (0.017-0.058) | 0.025 (0.008-0.050) | 0.050 (rgbdt) |
+| 5 | blind / shows / blind | 0.442 (0.367-0.492) | 0.475 (0.433-0.550) | 0.056 (0.025-0.075) | 0.039 (0.025-0.050) | 0.475 (rgbd) |
+| 6 | shows / blind / blind | 0.092 (0.083-0.100) | 0.103 (0.083-0.117) | 0.133 (0.092-0.183) | 0.103 (0.075-0.117) | 0.133 (rgbt) |
+| 7 | faint / blind / blind | 0.064 (0.058-0.075) | 0.072 (0.050-0.092) | 0.092 (0.067-0.108) | 0.078 (0.050-0.108) | 0.092 (rgbt) |
+| 8 | blind / faint / blind | 0.319 (0.267-0.375) | 0.381 (0.317-0.442) | 0.033 (0.025-0.042) | 0.036 (0.033-0.042) | 0.381 (rgbd) |
+| 9 | blind / blind / faint | 0.061 (0.042-0.075) | 0.064 (0.050-0.083) | 0.050 (0.042-0.058) | 0.039 (0.033-0.042) | 0.064 (rgbd) |
+| 10 | faint / faint / faint | 0.308 (0.275-0.350) | 0.333 (0.292-0.367) | 0.108 (0.092-0.117) | 0.081 (0.067-0.108) | 0.333 (rgbd) |
+| | **macro average, eleven cells** | **0.293** (0.277-0.314) | **0.309** (0.298-0.316) | **0.088** (0.070-0.112) | **0.068** (0.058-0.074) | 0.325 |
+| | cells without depth (2, 4, 6, 7, 9) | 0.082 | 0.072 | 0.098 | 0.069 | 0.103 |
+| | cells with depth (0, 1, 3, 5, 8, 10) | 0.469 | 0.506 | 0.080 | 0.067 | 0.511 |
+| | cells 0-6 | 0.353 | 0.363 | 0.098 | 0.073 | 0.387 |
+| | cells 7-10 | 0.188 | 0.212 | 0.071 | 0.058 | 0.217 |
+| | macro average, seeds 42 / 43 / 44 | 0.314 / 0.288 / 0.277 | 0.316 / 0.311 / 0.298 | 0.112 / 0.083 / 0.070 | 0.058 / 0.072 / 0.074 | |
+
+- **The baseline numbers are stable.** The macro average moves by at most 0.04 between seeds (standard deviation
+  0.02 for rgbdt and rgbt, 0.01 for rgbd and rgb), and the order of the four baselines is the same for every seed
+  except rgbt and rgb with seed 44 (0.070 and 0.074).
+- **With three seeds rgbdt is not above rgbd; it is slightly below.** 0.293 against 0.309, pooled on the same
+  episodes: only rgbdt succeeds in 369, only rgbd in 431, p = 0.031. By cell: below where depth and thermal show the
+  glass and rgb does not (cell 1, -0.131, p = 1.7e-05) and where depth is faint (cell 8, -0.061, p = 0.035), above in
+  cell 2 (rgb and thermal, +0.047, p = 0.027), which stays near the floor (0.142). The thermal image does not help the
+  plain policy.
+- **The floor holds with three seeds.** In the five cells without depth the best baseline of each cell has 0.050 to
+  0.175 (mean 0.103), against a reference of 0.192 to 0.417 (mean 0.335). Where depth shows the glass the best
+  baseline has 0.333 to 0.639 (mean 0.511; reference 0.590).
+- rgbt is above rgb by 0.020 (p = 0.00015), mostly from cells 2 and 3 (+0.075, p = 0.0013, and +0.050, p = 0.033);
+  both stay below 0.18 in every cell.
+- Best baseline of every cell: mean 0.325 (best single baseline: rgbd, 0.309).
+
 ## Method probe: grasp maps per sensor from the demos alone (11/20; perception only, no policy yet)
 
 Asked by the user: a method on the rgbdt policy that uses the sensors by situation, with nothing but sensor images
