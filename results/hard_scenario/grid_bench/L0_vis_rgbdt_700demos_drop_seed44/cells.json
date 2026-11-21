@@ -1,0 +1,62 @@
+{
+ "runs": [
+  "results/hard_scenario/grid_bench/L0_vis_rgbdt_700demos_drop_seed44"
+ ],
+ "test_sets": [
+  "j_cells11",
+  "k_cells11_heldout"
+ ],
+ "macro": 0.22499999999999998,
+ "macro_ci": [
+  0.20454545454545456,
+  0.24696969696969698
+ ],
+ "cells": {
+  "0": {
+   "success": 51,
+   "n": 120
+  },
+  "1": {
+   "success": 47,
+   "n": 120
+  },
+  "2": {
+   "success": 12,
+   "n": 120
+  },
+  "3": {
+   "success": 44,
+   "n": 120
+  },
+  "4": {
+   "success": 5,
+   "n": 120
+  },
+  "5": {
+   "success": 54,
+   "n": 120
+  },
+  "6": {
+   "success": 9,
+   "n": 120
+  },
+  "7": {
+   "success": 6,
+   "n": 120
+  },
+  "8": {
+   "success": 33,
+   "n": 120
+  },
+  "9": {
+   "success": 4,
+   "n": 120
+  },
+  "10": {
+   "success": 32,
+   "n": 120
+  }
+ },
+ "success": 297,
+ "n": 1320
+}
