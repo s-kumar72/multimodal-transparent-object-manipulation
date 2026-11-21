@@ -1102,7 +1102,7 @@ Observations outside the read-out:
 Open before stage 6, for the user to decide: whether the list is frozen as it is, or the other baselines and the
 references are first run with ImageNet encoders as well (see the second observation above).
 
-### Stage 5, addition: the other baselines and the references with ImageNet encoders (specified 11/22 07:50, before the runs; decision of the user)
+### Stage 5, addition: the other baselines and the references with ImageNet encoders (specified 11/22 07:48, before the runs; decision of the user)
 
 Decision of the user (11/22): the list is not frozen with one baseline on ImageNet encoders and everything else on
 random ones; the comparison is made like for like first. Fifteen runs, all with the override of stage 5
