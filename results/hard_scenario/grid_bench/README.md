@@ -1102,6 +1102,36 @@ Observations outside the read-out:
 Open before stage 6, for the user to decide: whether the list is frozen as it is, or the other baselines and the
 references are first run with ImageNet encoders as well (see the second observation above).
 
+### Stage 5, addition: the other baselines and the references with ImageNet encoders (specified 11/22 07:50, before the runs; decision of the user)
+
+Decision of the user (11/22): the list is not frozen with one baseline on ImageNet encoders and everything else on
+random ones; the comparison is made like for like first. Fifteen runs, all with the override of stage 5
+(`policy.obs_encoder.rgb_model.weights=IMAGENET1K_V1`) and otherwise the settings of their counterparts with random
+encoders (same demo sets, 101 epochs, last checkpoint, 1320 test episodes):
+
+- **Baselines, three seeds:** `L0_vis_{rgbd,rgbt,rgb}_700demos_imagenet`, `..._imagenet_seed43`, `..._imagenet_seed44`.
+- **References, seed 42:** `L0_vis_{rgb,depth,thermal}_330demos_full_imagenet` (the 330 demos where the sensor shows
+  the glass fully) and `L0_vis_{rgb,depth,thermal}_430demos_shown_imagenet` (the 430 where it shows it fully or
+  faintly), the two recipes of stage 1 that use only the 700 training demos.
+
+Not rerun with ImageNet encoders: sensor dropout, the single-sensor policies on all 700 demos and their combination
+(stages 3 and 4, both below the plain rgbdt with random encoders), and the thermal references on 500 demos of one
+cell (demos outside the training set). They stay in the tables as they are.
+
+Read-out, fixed now.
+(1) Baselines: per cell and for the macro average the mean over the three seeds and their range, as in stage 2, and
+each against its counterpart with random encoders on the same episodes. The ImageNet rgbdt against the ImageNet rgbd,
+rgbt and rgb on the same episodes, pooled over the seeds (sign test): if rgbdt is above rgbd with p < 0.05 on the
+macro average, the thermal image helps the plain policy once the encoders are pretrained; if not, the stage-2 finding
+(rgbdt is not above rgbd) holds for ImageNet encoders too. The best baseline of every cell (rule 4) is taken again
+over all baselines with three seeds.
+(2) References: per sensor and recipe, the ImageNet policy against its counterpart with random encoders on the same
+episodes, pooled over the four cells where the sensor shows the glass fully (480 episodes) and over the two where it
+shows it faintly (240); sign test. The reference of a cell remains the highest value among all reference policies
+whose sensor shows the glass in it, with random or ImageNet encoders; the thresholds 0.30 and 0.15 stay. One seed.
+(3) Reported after both: per cell the best baseline against the reference, and where the best baseline is below the
+single-sensor policy of a sensor that shows the glass (same seed, same episodes, sign test).
+
 ### Where the baselines fail (11/22 03:50, updated 07:00 with the stage-5 runs; from the evaluation records, no new runs, outside the read-outs)
 
 `policy/analyze_failures.py` on the `episodes.json` files of the runs so far; full tables with the failure types in
