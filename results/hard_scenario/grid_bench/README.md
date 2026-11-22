@@ -1197,18 +1197,141 @@ Observations outside the read-out:
   the policy with three images and all 700 demos in every group of cells.
 - The reference stays the highest of several policies with 120 episodes per cell and one seed, so it leans high.
 
-### Where the baselines fail (11/22 03:50, updated 07:00 with the stage-5 runs; from the evaluation records, no new runs, outside the read-outs)
+### Results of the baselines with ImageNet encoders (11/22 18:30; seeds 42, 43 and 44, 1320 test episodes per run)
+
+Second part of the addition to stage 5. Mean over the three seeds and, in brackets, their range. Best baseline: the
+highest mean of the cell. Reference: from the section above. Per run: `cells.json` in its folder.
+
+| cell | rgb / depth / thermal | rgbdt | rgbd | rgbt | rgb | best baseline | reference |
+|---|---|---|---|---|---|---|---|
+| 0 | shows / shows / shows | 0.781 (0.775-0.792) | 0.725 (0.692-0.758) | 0.364 (0.342-0.400) | 0.244 (0.200-0.267) | 0.781 (rgbdt) | 0.900 |
+| 1 | blind / shows / shows | 0.758 (0.750-0.775) | 0.686 (0.625-0.733) | 0.208 (0.200-0.217) | 0.047 (0.042-0.058) | 0.758 (rgbdt) | 0.875 |
+| 2 | shows / blind / shows | 0.286 (0.225-0.333) | 0.178 (0.167-0.192) | 0.397 (0.392-0.408) | 0.311 (0.300-0.325) | 0.397 (rgbt) | 0.642 |
+| 3 | shows / shows / blind | 0.692 (0.650-0.733) | 0.700 (0.683-0.717) | 0.208 (0.158-0.267) | 0.281 (0.242-0.350) | 0.700 (rgbd) | 0.867 |
+| 4 | blind / blind / shows | 0.183 (0.175-0.192) | 0.050 (0.042-0.058) | 0.189 (0.158-0.242) | 0.039 (0.025-0.058) | 0.189 (rgbt) | 0.608 |
+| 5 | blind / shows / blind | 0.658 (0.625-0.700) | 0.697 (0.633-0.742) | 0.047 (0.042-0.058) | 0.047 (0.042-0.058) | 0.697 (rgbd) | 0.858 |
+| 6 | shows / blind / blind | 0.144 (0.108-0.167) | 0.169 (0.117-0.225) | 0.214 (0.183-0.242) | 0.256 (0.217-0.275) | 0.256 (rgb) | 0.492 |
+| 7 | faint / blind / blind | 0.131 (0.092-0.150) | 0.136 (0.108-0.183) | 0.156 (0.142-0.175) | 0.181 (0.150-0.225) | 0.181 (rgb) | 0.333 |
+| 8 | blind / faint / blind | 0.486 (0.458-0.525) | 0.481 (0.458-0.500) | 0.044 (0.025-0.058) | 0.053 (0.042-0.067) | 0.486 (rgbdt) | 0.742 |
+| 9 | blind / blind / faint | 0.089 (0.050-0.117) | 0.064 (0.033-0.092) | 0.094 (0.067-0.108) | 0.056 (0.050-0.058) | 0.094 (rgbt) | 0.383 |
+| 10 | faint / faint / faint | 0.503 (0.467-0.558) | 0.481 (0.450-0.508) | 0.217 (0.208-0.233) | 0.167 (0.158-0.183) | 0.503 (rgbdt) | 0.717 |
+| | **macro average, eleven cells** | **0.428** (0.414-0.440) | **0.397** (0.387-0.404) | **0.194** (0.190-0.198) | **0.153** (0.140-0.161) | 0.458 | 0.674 |
+| | cells without depth (2, 4, 6, 7, 9) | 0.167 | 0.119 | 0.210 | 0.168 | 0.223 | 0.492 |
+| | cells with depth (0, 1, 3, 5, 8, 10) | 0.646 | 0.628 | 0.181 | 0.140 | 0.654 | 0.826 |
+| | cells 0-6 | 0.500 | 0.458 | 0.233 | 0.175 | 0.540 | 0.749 |
+| | cells 7-10 | 0.302 | 0.290 | 0.128 | 0.114 | 0.316 | 0.544 |
+| | macro average, seeds 42 / 43 / 44 | 0.414 / 0.440 / 0.431 | 0.404 / 0.400 / 0.387 | 0.195 / 0.198 / 0.190 | 0.158 / 0.140 / 0.161 | | |
+
+Read-out (1) by the rules fixed before the runs:
+
+- **Every baseline is higher with ImageNet encoders than with random ones**, pooled on the same episodes: rgbdt
+  0.428 against 0.293, rgbd 0.397 against 0.309, rgbt 0.194 against 0.088, rgb 0.153 against 0.068 (p from 2.2e-28
+  to 1.8e-57). The macro average moves by at most 0.026 between seeds.
+- **With ImageNet encoders rgbdt is above rgbd, so the thermal image helps the plain policy once the encoders are
+  pretrained.** 0.428 against 0.397; only rgbdt succeeds in 545 episodes, only rgbd in 421, p = 7.4e-05. The
+  stage-2 finding (rgbdt not above rgbd) was for random encoders and does not hold here. The difference is in the
+  four cells where thermal shows the glass fully: cells 0, 1, 2 and 4 (+0.056, +0.072, +0.108, +0.133; p = 0.022,
+  0.0088, 0.00021, 2.4e-09); none in the other seven.
+- **No baseline is the best everywhere.** Best of the cell: rgbdt in cells 0, 1, 8 and 10, rgbd in 3 and 5, rgbt in
+  2, 4 and 9, rgb in 6 and 7. Mean of the best baselines 0.458; the best single baseline is rgbdt with 0.428.
+- **rgbdt is below a policy with fewer sensors where the extra sensors do not show the glass.** Cell 2 (rgb and
+  thermal): below rgbt, -0.111, p = 0.00026. Cell 6 (rgb only): below rgbt, -0.069, p = 0.0052, and below rgb,
+  -0.111, p = 5.5e-05. Cell 7 (rgb faint): below rgb, -0.050, p = 0.047. Likewise rgbd is below rgbt in cells 2 and
+  4 (-0.219 and -0.139). Against rgbt and rgb overall rgbdt is far above (0.428 against 0.194 and 0.153), from the
+  cells where depth shows the glass.
+
+Read-out (3): the best baseline of each cell against the reference, and its seed-42 run against the reference policy
+of that cell on the same 120 episodes.
+
+| cell | best baseline (three seeds) | reference | seed 42 of that baseline | reference policy | only the baseline succeeds | only the reference succeeds | sign test p |
+|---|---|---|---|---|---|---|---|
+| 0 | 0.781 (rgbdt) | 0.900 | 0.775 | depth, 430 demos | 6 | 21 | 0.0059 |
+| 1 | 0.758 (rgbdt) | 0.875 | 0.750 | depth, 430 demos | 5 | 20 | 0.0041 |
+| 2 | 0.397 (rgbt) | 0.642 | 0.408 | rgb, 430 demos | 7 | 35 | 1.5e-05 |
+| 3 | 0.700 (rgbd) | 0.867 | 0.700 | depth, 330 demos | 1 | 21 | 1.1e-05 |
+| 4 | 0.189 (rgbt) | 0.608 | 0.167 | thermal, 330 demos | 3 | 56 | 1.2e-13 |
+| 5 | 0.697 (rgbd) | 0.858 | 0.633 | depth, 330 demos | 8 | 35 | 4.2e-05 |
+| 6 | 0.256 (rgb) | 0.492 | 0.275 | rgb, 430 demos | 11 | 37 | 0.00022 |
+| 7 | 0.181 (rgb) | 0.333 | 0.167 | rgb, 430 demos | 9 | 29 | 0.0017 |
+| 8 | 0.486 (rgbdt) | 0.742 | 0.525 | depth, 430 demos | 9 | 35 | 0.00011 |
+| 9 | 0.094 (rgbt) | 0.383 | 0.108 | thermal, 430 demos | 6 | 39 | 5.4e-07 |
+| 10 | 0.503 (rgbdt) | 0.717 | 0.483 | depth, 430 demos | 8 | 36 | 2.5e-05 |
+
+- **In every cell the best baseline is below the single-sensor reference policy** (p from 0.0059 to 1.2e-13; over
+  the eleven cells only the baseline succeeds in 73 episodes, only the reference in 364). The gap is 0.12 to 0.42 per
+  cell, 0.216 on average; the reference leans high (one seed, the highest of several policies), and the test above
+  is on the reference policy's own cell, so it leans the same way.
+
+### State after stage 5 (11/22 18:30; all runs with ImageNet encoders)
+
+| | macro average | cells without depth | cells with depth | seeds |
+|---|---|---|---|---|
+| reference (best single-sensor policy of the cell; uses the cells) | 0.674 | 0.492 | 0.826 | 1 |
+| best baseline of each cell | 0.458 | 0.223 | 0.654 | 3 |
+| rgbdt | 0.428 | 0.167 | 0.646 | 3 |
+| rgbd | 0.397 | 0.119 | 0.628 | 3 |
+| rgbt | 0.194 | 0.210 | 0.181 | 3 |
+| rgb | 0.153 | 0.168 | 0.140 | 3 |
+
+### Stage 6: the benchmark, its baselines and the comparison rules, frozen (11/22 18:40)
+
+**Benchmark.** Level `L0_vis` (`sim/configs/L0_vis.yaml`), eleven visibility cells. Training set: the 700 demos of
+`results/data/sim_demos_L0_vis_700.zarr` (seeds 0 to 699; 140 of cell 0, 70 each of cells 1 to 3, 50 each of cells 4
+to 10). Test sets: `j_cells11` and `k_cells11_heldout`, 660 episodes each, 60 per cell. Protocol: 101 epochs, the
+last checkpoint, default settings, nothing selected on the test sets, seeds 42, 43 and 44. Headline number: the macro
+average over the eleven cells (1320 episodes per run), always with the table per cell
+(`python policy/summarize_cells.py <run folders> [--versus <run folders>]`).
+
+**Baselines of the comparison** (rule 4): the plain Diffusion Policy with rgbdt, rgbd, rgbt and rgb, ImageNet
+encoders (`policy.obs_encoder.rgb_model.weights=IMAGENET1K_V1`), three seeds each. Frozen numbers:
+
+| cell | rgb / depth / thermal | best baseline | which | reference (not a baseline) |
+|---|---|---|---|---|
+| 0 | shows / shows / shows | 0.781 | rgbdt | 0.900 |
+| 1 | blind / shows / shows | 0.758 | rgbdt | 0.875 |
+| 2 | shows / blind / shows | 0.397 | rgbt | 0.642 |
+| 3 | shows / shows / blind | 0.700 | rgbd | 0.867 |
+| 4 | blind / blind / shows | 0.189 | rgbt | 0.608 |
+| 5 | blind / shows / blind | 0.697 | rgbd | 0.858 |
+| 6 | shows / blind / blind | 0.256 | rgb | 0.492 |
+| 7 | faint / blind / blind | 0.181 | rgb | 0.333 |
+| 8 | blind / faint / blind | 0.486 | rgbdt | 0.742 |
+| 9 | blind / blind / faint | 0.094 | rgbt | 0.383 |
+| 10 | faint / faint / faint | 0.503 | rgbdt | 0.717 |
+| | **macro average** | 0.458 (best single baseline: rgbdt, 0.428) | | 0.674 |
+
+**Reported, not in the comparison** (each is below the best baseline above in every cell): the four baselines with
+random encoders (three seeds), rgbdt with sensor dropout (random encoders, three seeds), and the single-sensor
+policies on all 700 demos with their combination (random encoders, one seed).
+
+**Reference.** The highest success among the single-sensor policies whose sensor shows the glass in the cell,
+trained on the demos where it does. It uses the cells and has one seed; it shows what is reachable in a cell and is
+not something a method has to reach.
+
+**Rules for a method** (fixed 11/21, unchanged): (1) the same information as the baselines: sensor images, joint
+values and the demo actions; the arm's kinematics, the camera calibration and ImageNet weights are allowed to any
+run; (2) default settings, nothing selected on the test sets; (3) three seeds, and two policies are compared on the
+same episodes; (4) per cell against the best baseline of that cell in the table above; (5) "better in nearly every
+case": no cell in which the method is below that best baseline with p < 0.05 (pooled sign test on the same
+episodes), and a macro average above every baseline (0.428). Runs that use more than rule 1 allows, such as a
+segmentation pre-training on the simulator's glass masks, are reported apart from this comparison, with a control
+that has the same supervision ([`../fusion_vis/README.md`](../fusion_vis/README.md)).
+
+**Open, not blocking.** The reference has one seed. Sensor dropout and the combination of single-sensor policies
+were not rerun with ImageNet encoders.
+
+### Where the baselines fail (11/22 03:50, updated 18:30 with all ImageNet runs; from the evaluation records, no new runs, outside the read-outs)
 
 `policy/analyze_failures.py` on the `episodes.json` files of the runs so far; full tables with the failure types in
 [`failure_analysis.txt`](failure_analysis.txt). Measured: the horizontal distance between gripper and glass when the
 gripper closes for the last time (the grasp the outcome is judged from). This is an analysis after the fact, not a
 pre-registered read-out.
 
-Success against that distance, 33000 episodes of thirteen policies pooled:
+Success against that distance, 52800 episodes of 22 policies pooled:
 
 | distance (cm) | 0-0.5 | 0.5-1 | 1-1.5 | 1.5-2 | 2-3 | 3-4 | 4-8 | over 8 |
 |---|---|---|---|---|---|---|---|---|
-| success | 0.967 | 0.839 | 0.456 | 0.294 | 0.216 | 0.074 | 0.010 | 0.000 |
+| success | 0.969 | 0.845 | 0.460 | 0.299 | 0.222 | 0.077 | 0.010 | 0.000 |
 
 "Reached": closed within 4 cm of the glass. "Placed": within 1.5 cm.
 
@@ -1231,7 +1354,7 @@ Success against that distance, 33000 episodes of thirteen policies pooled:
 | | rgbdt (3 seeds) | 0.117 | 0.369 | 0.104 | 5.2 | 0.560 |
 | | depth only, 330 (blind in these cells) | 0.046 | 0.058 | 0.008 | 13.9 | - |
 
-- **The task is decided by where the gripper closes, to about 1 cm.** 0.97 within 0.5 cm, 0.84 up to 1 cm, 0.46 up to
+- **The task is decided by where the gripper closes, to about 1 cm.** 0.97 within 0.5 cm, 0.85 up to 1 cm, 0.46 up to
   1.5 cm, nothing beyond 4 cm. Once the gripper is placed within 1.5 cm the policies with random encoders succeed in
   0.53 to 0.89 of the episodes and the ImageNet rgbdt in 0.78 to 0.96; the larger differences are in how often a
   policy gets there.
@@ -1248,6 +1371,31 @@ Success against that distance, 33000 episodes of thirteen policies pooled:
 - **Rgb and thermal are coarser than depth even at their best.** Their single-sensor policies place the gripper
   within 1.5 cm in 0.40 and 0.43 of the episodes where the sensor shows the glass fully (depth: 0.81). This is what
   bounds the references of the cells without depth (0.38 to 0.42).
+
+**With ImageNet encoders** (added 11/22 18:30, all runs of the addition to stage 5):
+
+| cells | policy (ImageNet encoders) | success | reached | placed | median distance (cm) | success when placed |
+|---|---|---|---|---|---|---|
+| depth shows fully (0, 1, 3, 5) | depth only, 330 fully visible demos | 0.863 | 0.973 | 0.908 | 0.5 | 0.933 |
+| | rgbdt (3 seeds) | 0.722 | 0.889 | 0.684 | 0.8 | 0.964 |
+| | rgbd (3 seeds) | 0.702 | 0.951 | 0.780 | 0.8 | 0.858 |
+| no depth, thermal shows fully (2, 4) | thermal only, 330 fully visible demos | 0.583 | 0.850 | 0.683 | 1.0 | 0.780 |
+| | rgbt (3 seeds) | 0.293 | 0.564 | 0.274 | 3.1 | 0.777 |
+| | rgbdt (3 seeds) | 0.235 | 0.393 | 0.143 | 5.2 | 0.835 |
+| | rgbd (3 seeds) | 0.114 | 0.344 | 0.096 | 5.8 | 0.623 |
+| no depth, rgb shows fully (2, 6) | rgb only, 430 demos | 0.567 | 0.879 | 0.629 | 1.1 | 0.775 |
+| | rgb (3 seeds) | 0.283 | 0.757 | 0.304 | 2.3 | 0.644 |
+| | rgbt (3 seeds) | 0.306 | 0.706 | 0.326 | 2.4 | 0.715 |
+| | rgbd (3 seeds) | 0.174 | 0.469 | 0.136 | 4.3 | 0.612 |
+| | rgbdt (3 seeds) | 0.215 | 0.390 | 0.142 | 5.0 | 0.784 |
+
+- **The picture is the same with ImageNet encoders, at a higher level.** The single-sensor policies place the
+  gripper within 1.5 cm in 0.91 (depth), 0.68 (thermal) and 0.63 (rgb) of the episodes where their sensor shows the
+  glass fully (with random encoders 0.81, 0.43 and 0.40); the baselines trained on all demos in 0.68 to 0.78 where
+  depth shows the glass and in 0.10 to 0.33 where it does not.
+- **A sensor that does not show the glass makes the plain policy find it less often.** Where rgb shows the glass
+  and depth does not (cells 2 and 6), the gripper closes within 4 cm of the glass in 0.76 of the episodes for rgb,
+  0.71 for rgbt, 0.47 for rgbd and 0.39 for rgbdt.
 
 ## Method probe: grasp maps per sensor from the demos alone (11/20; perception only, no policy yet)
 
