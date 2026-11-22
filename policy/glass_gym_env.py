@@ -38,6 +38,21 @@ class GlassPickGymEnv(gym.Env):
         self._split = "test"
         self._frame = None
         self._log = None
+        self._hcue_model = self._hcue = None
+
+    def _with_hcue(self, raw, reset=False):
+        """Adds the hindsight cue (policy/hindsight_cue.py) when the policy has the `hcue` observation: computed from
+        the first frame of the episode and kept for all its steps."""
+        if "hcue" not in self.obs_meta:
+            return raw
+        if reset:
+            if self._hcue_model is None:
+                import torch
+                from policy.hindsight_cue import HindsightCue
+                torch.set_num_threads(1)      # env workers are forked processes; one thread each, like DataLoader workers
+                self._hcue_model = HindsightCue(self.obs_meta["hcue"]["ckpt"])
+            self._hcue = self._hcue_model(raw)
+        return dict(raw, hcue=self._hcue)
 
     def seed(self, seed=None):
         self._seed = seed
@@ -64,9 +79,9 @@ class GlassPickGymEnv(gym.Env):
         obj = objects[self._seed % len(objects)] if self._seed is not None else None
         raw = self._env.reset(self._seed, obj=obj)
         e = self._env
-        self._log = dict(max_lift=0.0, closes=[], z0=e.obj_z0)
+        self._log = dict(max_lift=0.0, closes=[], z0=e.obj_z0, target0=e.data.body(e.obj).xpos.copy())
         self._frame = raw["rgb"]
-        return to_policy_obs(raw, self.obs_meta)
+        return to_policy_obs(self._with_hcue(raw, reset=True), self.obs_meta)
 
     def step(self, action):
         e = self._env
@@ -82,7 +97,7 @@ class GlassPickGymEnv(gym.Env):
         self._log["max_lift"] = max(self._log["max_lift"], float(e.data.body(e.obj).xpos[2] - self._log["z0"]))
         self._frame = raw["rgb"]
         reward = float(e.success())
-        return to_policy_obs(raw, self.obs_meta), reward, done, {}
+        return to_policy_obs(self._with_hcue(raw), self.obs_meta), reward, done, {}
 
     @property
     def outcome(self):
@@ -119,8 +134,11 @@ class GlassPickGymEnv(gym.Env):
             return None
         info = {k: (v if not isinstance(v, (np.floating, np.integer)) else v.item())
                 for k, v in self._env.episode_info.items()}
-        return dict(info, outcome=self.outcome, obj_name=self._env.obj, max_lift=self._log["max_lift"],
-                    closes=self._log["closes"])
+        rec = dict(info, outcome=self.outcome, obj_name=self._env.obj, max_lift=self._log["max_lift"],
+                   closes=self._log["closes"])
+        if self._hcue is not None:      # the cue the policy was given, and where the glass really was (for the analysis)
+            rec.update(hcue=[float(v) for v in self._hcue], target_xyz=[float(v) for v in self._log["target0"]])
+        return rec
 
     def render(self, mode="rgb_array"):
         return self._frame
