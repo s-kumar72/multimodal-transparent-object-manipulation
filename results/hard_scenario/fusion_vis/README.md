@@ -125,3 +125,53 @@ three sensors are weighted equally.
   that would be P9 with the weights fixed at 1/3; a control for the masks would be P9 without the pre-training.
   Neither has been run.
 - Not decided: second seeds for P9, these two controls, and the other ablations.
+
+## Round 2: runs around P9 (plan of 11/23 09:00 KST, written before the runs; decision of the user)
+
+The other ablations of `fusion/attention/ablations.MD` change one thing in P0, which is below the baseline (0.242).
+Instead of them, five runs that change one thing in P9 (`fusion_kp`), the run above the baseline. Protocol as in the
+first round (700 demos, 101 epochs, last checkpoint, default settings, 660 episodes on each of `j_cells11` and
+`k_cells11_heldout`, the sensor weights saved per step); the segmentation checkpoint is the `mix_ws` of the first
+round, not retrained.
+
+| run | relation to `ablations.MD` | what differs from P9 (`L0_vis_rgbdt_700demos_fusion_kp`, seed 42) |
+|---|---|---|
+| `L0_vis_rgbdt_700demos_fusion_kp_seed43`, `..._seed44` | P9, more seeds | the seed (43, 44) |
+| `L0_vis_rgbdt_700demos_fusion_kp_scratch` | P1 on P9 | no segmentation pre-training: the same network, built as `mix_ws` was before its training (rgb encoder from ImageNet, depth and thermal encoders random), trained with the policy only. It uses no glass mask |
+| `L0_vis_rgbdt_700demos_fusion_kp_frozen` | P2 on P9 | the pre-trained network is frozen; only the readout and the U-Net learn. The sensor weights stay those of `mix_ws` |
+| `L0_vis_rgbd_700demos_fusion_kp` | P10 on P9 | no thermal image (the encoder treats thermal as missing) |
+
+Overrides (after `training.seed=<seed> task.env_runner.test_set=j_cells11`), with
+`PRE = policy.obs_encoder.pretrained=data/fusion_vis/runs/mix_ws/best.pt` and
+`KP = policy.obs_encoder.readout=[avg,mask,centroid,area,max,gates,keypoint,ssm]`: seeds `PRE KP`; scratch
+`++policy.obs_encoder.model_cfg={fusion_mode:weighted_sum,gate_norm:softmax} KP`; frozen
+`PRE policy.obs_encoder.freeze_segmenter=true KP`; rgbd `PRE KP` with the variant `rgbd` of
+`scripts/train_fusion_policy.sh`. Correction to the plan of the first round: of the encoders of the segmentation
+network only the rgb one starts from ImageNet weights.
+
+The runs are started one at a time as a GPU becomes free, behind the runs of
+[`../cue_gate/README.md`](../cue_gate/README.md), in the order of the table. A run that fails is not started again.
+
+**Read-out, fixed now.** "Same episodes" = the same test set and episode seed; sign test on the episodes in which
+exactly one of the two succeeds; all cells and per cell.
+
+1. *P9 with three seeds.* Macro average of each seed and their mean. The three seeds pooled against the three seeds
+   of the rgbdt ImageNet baseline (seed 42 with 42, 43 with 43, 44 with 44) on the same episodes: P9 counts as above
+   the baseline if the macro average is above with p < 0.05; the cells in which it is below with p < 0.05 are
+   listed. Also listed, cell by cell, against the three seeds of the best baseline of that cell (the table of stage
+   6): the cells in which P9 is below it with p < 0.05. P9 stays outside the comparison of stage 6 whatever the
+   result (it uses the simulator's masks).
+2. *Pre-training.* `fusion_kp_scratch` against P9 of seed 42, same episodes: if P9 is above with p < 0.05, the
+   pre-training on masks contributes; otherwise it is not shown to matter. `fusion_kp_scratch` against the rgbdt
+   ImageNet baseline of seed 42: if it is above with p < 0.05, the readout of P9 is above the baseline without any
+   mask. Its share of episodes with a close within 1.5 cm of the glass is reported.
+3. *Frozen encoder.* `fusion_kp_frozen` against P9 of seed 42, same episodes, in both directions with p < 0.05.
+   Its sensor weights by cell and the AUC of each sensor's weight between the cells in which it shows the glass and
+   those in which it does not are reported. If it is above P9, keeping the pre-trained network helps; this run
+   cannot separate the kept weights from the kept features.
+4. *Thermal.* P9 of seed 42 against `L0_vis_rgbd_700demos_fusion_kp`, same episodes, over all cells, over the cells
+   in which thermal shows the glass and depth does not (2, 4, 9) and over those in which thermal does not show it
+   (3, 5, 6, 7, 8): if P9 is above with p < 0.05 the thermal image contributes there; otherwise it is not shown to.
+
+Points 2 to 4 have one seed each; no claim about the method is made from them alone. More seeds for them and the
+other ablations are decided after this round.
