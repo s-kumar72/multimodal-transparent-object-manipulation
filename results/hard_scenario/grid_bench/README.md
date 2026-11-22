@@ -1102,7 +1102,7 @@ Observations outside the read-out:
 Open before stage 6, for the user to decide: whether the list is frozen as it is, or the other baselines and the
 references are first run with ImageNet encoders as well (see the second observation above).
 
-### Stage 5, addition: the other baselines and the references with ImageNet encoders (specified 11/22 07:50, before the runs; decision of the user)
+### Stage 5, addition: the other baselines and the references with ImageNet encoders (specified 11/22 07:48, before the runs; decision of the user)
 
 Decision of the user (11/22): the list is not frozen with one baseline on ImageNet encoders and everything else on
 random ones; the comparison is made like for like first. Fifteen runs, all with the override of stage 5
@@ -1131,6 +1131,71 @@ shows it faintly (240); sign test. The reference of a cell remains the highest v
 whose sensor shows the glass in it, with random or ImageNet encoders; the thresholds 0.30 and 0.15 stay. One seed.
 (3) Reported after both: per cell the best baseline against the reference, and where the best baseline is below the
 single-sensor policy of a sensor that shows the glass (same seed, same episodes, sign test).
+
+### Results of the references with ImageNet encoders (11/22 11:30; seed 42, 1320 test episodes per run)
+
+First part of the addition to stage 5; the nine baseline runs are still running. Success per cell, in brackets the
+cells where the policy's sensor does not show the glass. Per run: `cells.json` in its folder.
+
+| cell | rgb / depth / thermal | rgb, 330 | rgb, 430 | depth, 330 | depth, 430 | thermal, 330 | thermal, 430 | reference before | **reference now** | rgbdt, ImageNet (three seeds) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | shows / shows / shows | 0.517 | 0.542 | 0.867 | 0.900 | 0.575 | 0.608 | 0.742 | **0.900** | 0.781 |
+| 1 | blind / shows / shows | (0.050) | (0.058) | 0.858 | 0.875 | 0.567 | 0.475 | 0.817 | **0.875** | 0.758 |
+| 2 | shows / blind / shows | 0.575 | 0.642 | (0.000) | (0.025) | 0.558 | 0.567 | 0.408 | **0.642** | 0.286 |
+| 3 | shows / shows / blind | 0.567 | 0.508 | 0.867 | 0.817 | (0.025) | (0.008) | 0.717 | **0.867** | 0.692 |
+| 4 | blind / blind / shows | (0.008) | (0.008) | (0.000) | (0.008) | 0.608 | 0.583 | 0.417 | **0.608** | 0.183 |
+| 5 | blind / shows / blind | (0.042) | (0.050) | 0.858 | 0.800 | (0.000) | (0.008) | 0.717 | **0.858** | 0.658 |
+| 6 | shows / blind / blind | 0.425 | 0.492 | (0.000) | (0.058) | (0.008) | (0.000) | 0.392 | **0.492** | 0.144 |
+| 7 | faint / blind / blind | 0.242 | 0.333 | (0.000) | (0.050) | (0.042) | (0.025) | 0.267 | **0.333** | 0.131 |
+| 8 | blind / faint / blind | (0.008) | (0.017) | 0.467 | 0.742 | (0.033) | (0.025) | 0.450 | **0.742** | 0.486 |
+| 9 | blind / blind / faint | (0.008) | (0.025) | (0.017) | (0.008) | 0.217 | 0.383 | 0.192 | **0.383** | 0.089 |
+| 10 | faint / faint / faint | 0.200 | 0.367 | 0.492 | 0.717 | 0.308 | 0.333 | 0.483 | **0.717** | 0.503 |
+| | **mean of the eleven cells** | 0.240 | 0.277 | 0.402 | 0.455 | 0.267 | 0.274 | 0.509 | **0.674** | 0.428 |
+| | cells without depth (2, 4, 6, 7, 9) | | | | | | | 0.335 | 0.492 | 0.167 |
+| | cells with depth (0, 1, 3, 5, 8, 10) | | | | | | | 0.654 | 0.826 | 0.646 |
+
+The ImageNet policy against its counterpart with random encoders, on the same test episodes:
+
+| sensor | demos | cells | episodes | ImageNet | random | difference | only ImageNet succeeds | only random succeeds | sign test p |
+|---|---|---|---|---|---|---|---|---|---|
+| rgb | 330, fully visible | shows fully: 0, 2, 3, 6 | 480 | 0.521 | 0.354 | +0.167 | 137 | 57 | 8.8e-09 |
+| rgb | 330, fully visible | shows faintly: 7, 10 | 240 | 0.221 | 0.138 | +0.083 | 42 | 22 | 0.017 |
+| rgb | 430, fully or faintly | shows fully: 0, 2, 3, 6 | 480 | 0.546 | 0.312 | +0.233 | 156 | 44 | 6.8e-16 |
+| rgb | 430, fully or faintly | shows faintly: 7, 10 | 240 | 0.350 | 0.267 | +0.083 | 43 | 23 | 0.019 |
+| depth | 330, fully visible | shows fully: 0, 1, 3, 5 | 480 | 0.863 | 0.748 | +0.115 | 80 | 25 | 6.9e-08 |
+| depth | 330, fully visible | shows faintly: 8, 10 | 240 | 0.479 | 0.296 | +0.183 | 58 | 14 | 1.6e-07 |
+| depth | 430, fully or faintly | shows fully: 0, 1, 3, 5 | 480 | 0.848 | 0.652 | +0.196 | 113 | 19 | 1.8e-17 |
+| depth | 430, fully or faintly | shows faintly: 8, 10 | 240 | 0.729 | 0.467 | +0.262 | 75 | 12 | 2.7e-12 |
+| thermal | 330, fully visible | shows fully: 0, 1, 2, 4 | 480 | 0.577 | 0.379 | +0.198 | 136 | 41 | 4.2e-13 |
+| thermal | 330, fully visible | shows faintly: 9, 10 | 240 | 0.263 | 0.167 | +0.096 | 40 | 17 | 0.0032 |
+| thermal | 430, fully or faintly | shows fully: 0, 1, 2, 4 | 480 | 0.558 | 0.210 | +0.348 | 195 | 28 | 5.5e-32 |
+| thermal | 430, fully or faintly | shows faintly: 9, 10 | 240 | 0.358 | 0.138 | +0.221 | 69 | 16 | 5.2e-09 |
+
+Read-out (2) by the rules fixed before the runs:
+
+- **Every reference policy is higher with ImageNet encoders**, for the three sensors, both recipes, where the sensor
+  shows the glass fully and where faintly (p from 0.019 to 5.5e-32).
+- **The reference rises in every cell: mean 0.674 (before 0.509).** Cells without depth 0.492 (0.335), cells with
+  depth 0.826 (0.654).
+- **All eleven cells are now shown to be solvable** (reference at least 0.30): cell 7 (rgb faint) 0.333 and cell 9
+  (thermal faint) 0.383, the two that were below it. No single-sensor cell is below 0.15.
+
+Observations outside the read-out:
+
+- **With ImageNet encoders the faint demos no longer cost success where the sensor is clear**, and they are still
+  needed where it is faint. The 430-demo policy against the 330-demo one, same episodes: where the sensor shows the
+  glass fully rgb +0.025 (p = 0.29), depth -0.015 (p = 0.40), thermal -0.019 (p = 0.47); where faintly rgb +0.129
+  (p = 4.7e-05), depth +0.250 (p = 2.7e-11), thermal +0.096 (p = 0.013). With random encoders the faint demos lowered
+  depth and thermal where the sensor is clear.
+- **The best baseline is below the reference in every cell again** (by 0.12 to 0.43; 0.428 against 0.674 on
+  average), also where depth shows the glass (0.646 against 0.826). Seed 42 of the ImageNet rgbdt against the
+  single-sensor ImageNet policy of a sensor that shows the glass, same episodes: cells 0, 1, 3, 5, depth on 330 demos
+  0.863 against 0.706 (p = 3.2e-12); cells 8 and 10, depth on 430 demos 0.729 against 0.504 (p = 5.2e-09); cells 2
+  and 4, thermal on 330 demos 0.583 against 0.208 (p = 1.8e-17); cells 2 and 6, rgb on 430 demos 0.567 against 0.192
+  (p = 8e-20); cell 7, rgb on 430 demos 0.333 against 0.092 (p = 4.9e-06); cell 9, thermal on 430 demos 0.383
+  against 0.050 (p = 2e-11). A policy with one image, trained on the demos where that sensor shows the glass, is above
+  the policy with three images and all 700 demos in every group of cells.
+- The reference stays the highest of several policies with 120 episodes per cell and one seed, so it leans high.
 
 ### Where the baselines fail (11/22 03:50, updated 07:00 with the stage-5 runs; from the evaluation records, no new runs, outside the read-outs)
 
