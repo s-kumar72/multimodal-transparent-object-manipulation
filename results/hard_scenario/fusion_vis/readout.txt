@@ -1,0 +1,60 @@
+## 1. Success per cell (120 episodes per cell and run; seed 42; against L0_vis_rgbdt_700demos_imagenet on the same episodes, sign test, marked where p < 0.05)
+
+| cell | sensors that show the glass | P0 fusion | P9 fusion_kp | P5 fusion_static | rgbdt ImageNet, seed 42 | best baseline (3 seeds, frozen) | reference |
+|---|---|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.500 (below) | 0.692 | 0.283 (below) | 0.775 | 0.781 | 0.900 |
+| 1 | depth+thermal | 0.333 (below) | 0.625 (below) | 0.225 (below) | 0.750 | 0.758 | 0.875 |
+| 2 | rgb+thermal | 0.058 (below) | 0.550 (above) | 0.092 (below) | 0.225 | 0.397 | 0.642 |
+| 3 | rgb+depth | 0.433 (below) | 0.667 | 0.225 (below) | 0.650 | 0.700 | 0.867 |
+| 4 | thermal | 0.033 (below) | 0.492 (above) | 0.000 (below) | 0.192 | 0.189 | 0.608 |
+| 5 | depth | 0.392 (below) | 0.583 | 0.225 (below) | 0.650 | 0.697 | 0.858 |
+| 6 | rgb | 0.058 (below) | 0.492 (above) | 0.058 (below) | 0.158 | 0.256 | 0.492 |
+| 7 | rgb (faint) | 0.058 | 0.367 (above) | 0.033 | 0.092 | 0.181 | 0.333 |
+| 8 | depth (faint) | 0.342 (below) | 0.458 | 0.225 (below) | 0.525 | 0.486 | 0.742 |
+| 9 | thermal (faint) | 0.050 | 0.342 (above) | 0.092 | 0.050 | 0.094 | 0.383 |
+| 10 | all faint | 0.400 | 0.583 | 0.250 (below) | 0.483 | 0.503 | 0.717 |
+| macro average |  | 0.242 (below) | 0.532 (above) | 0.155 (below) | 0.414 | 0.458 | 0.674 |
+
+P0 fusion against the baseline, all episodes: 0.242 against 0.414, only the run succeeds 105, only the baseline 332, p = 1.6e-28
+P9 fusion_kp against the baseline, all episodes: 0.532 against 0.414, only the run succeeds 319, only the baseline 163, p = 1.1e-12
+P5 fusion_static against the baseline, all episodes: 0.155 against 0.414, only the run succeeds 61, only the baseline 402, p = 1.2e-62
+
+## 2. Where the gripper closes (last close of the episode; no close counts as not there)
+
+| cells | policy | success | closes within 4 cm of the glass | within 1.5 cm | success when within 1.5 cm | median distance, cm |
+|---|---|---|---|---|---|---|
+| all cells | P0 fusion | 0.242 | 0.560 | 0.262 | 0.720 | 3.28 |
+| all cells | P9 fusion_kp | 0.532 | 0.889 | 0.623 | 0.785 | 1.11 |
+| all cells | P5 fusion_static | 0.155 | 0.450 | 0.152 | 0.721 | 4.47 |
+| all cells | rgbdt ImageNet, seed 42 | 0.414 | 0.575 | 0.364 | 0.940 | 2.98 |
+| depth shows (0, 1, 3, 5, 8, 10) | P0 fusion | 0.400 | 0.835 | 0.439 | 0.741 | 1.71 |
+| depth shows (0, 1, 3, 5, 8, 10) | P9 fusion_kp | 0.601 | 0.931 | 0.706 | 0.809 | 0.92 |
+| depth shows (0, 1, 3, 5, 8, 10) | P5 fusion_static | 0.239 | 0.631 | 0.239 | 0.773 | 3.08 |
+| depth shows (0, 1, 3, 5, 8, 10) | rgbdt ImageNet, seed 42 | 0.639 | 0.814 | 0.599 | 0.961 | 1.03 |
+| depth blind (2, 4, 6, 7, 9) | P0 fusion | 0.052 | 0.230 | 0.050 | 0.500 | 7.03 |
+| depth blind (2, 4, 6, 7, 9) | P9 fusion_kp | 0.448 | 0.838 | 0.523 | 0.745 | 1.44 |
+| depth blind (2, 4, 6, 7, 9) | P5 fusion_static | 0.055 | 0.233 | 0.048 | 0.414 | 6.95 |
+| depth blind (2, 4, 6, 7, 9) | rgbdt ImageNet, seed 42 | 0.143 | 0.288 | 0.082 | 0.755 | 6.90 |
+
+P9 against P0, all episodes: 0.532 against 0.242, only P9 succeeds 473, only P0 90, p = 1e-63
+
+## 3. P0 (learned weights) against P5 (weights fixed at 1/3), same episodes
+
+all cells: P0 0.242, P5 0.155, only P0 succeeds 187, only P5 73, p = 1e-12
+cells 1 to 9: P0 0.195, P5 0.131, only P0 succeeds 125, only P5 55, p = 1.9e-07
+
+## 4. Mean weight of each sensor during the evaluation, by cell (rgb / depth / thermal; mean over the decisions of an episode, then over the 120 episodes)
+
+| cell | sensors that show the glass | P0 fusion | P9 fusion_kp | P5 fusion_static |
+|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.50 / 0.50 / 0.00 | 0.34 / 0.34 / 0.33 | 0.33 / 0.33 / 0.33 |
+| 1 | depth+thermal | 0.50 / 0.50 / 0.00 | 0.34 / 0.34 / 0.33 | 0.33 / 0.33 / 0.33 |
+| 2 | rgb+thermal | 0.50 / 0.50 / 0.00 | 0.34 / 0.34 / 0.33 | 0.33 / 0.33 / 0.33 |
+| 3 | rgb+depth | 0.50 / 0.50 / 0.00 | 0.34 / 0.34 / 0.33 | 0.33 / 0.33 / 0.33 |
+| 4 | thermal | 0.50 / 0.49 / 0.00 | 0.34 / 0.34 / 0.33 | 0.33 / 0.33 / 0.33 |
+| 5 | depth | 0.50 / 0.50 / 0.00 | 0.34 / 0.34 / 0.33 | 0.33 / 0.33 / 0.33 |
+| 6 | rgb | 0.50 / 0.49 / 0.00 | 0.34 / 0.34 / 0.33 | 0.33 / 0.33 / 0.33 |
+| 7 | rgb (faint) | 0.50 / 0.49 / 0.00 | 0.34 / 0.34 / 0.33 | 0.33 / 0.33 / 0.33 |
+| 8 | depth (faint) | 0.50 / 0.50 / 0.00 | 0.34 / 0.34 / 0.33 | 0.33 / 0.33 / 0.33 |
+| 9 | thermal (faint) | 0.50 / 0.49 / 0.00 | 0.34 / 0.34 / 0.33 | 0.33 / 0.33 / 0.33 |
+| 10 | all faint | 0.50 / 0.50 / 0.00 | 0.34 / 0.34 / 0.33 | 0.33 / 0.33 / 0.33 |
