@@ -189,3 +189,149 @@ s_ok came out lower than the 0.84 of L0_distract rgbd that the plan assumed, mos
 - Depth (`glass_depth_bench.png`, `python sim/preview_glass_depth.py --levels L0_distract_a03 L0_bench --seeds 0 1 2 3 4 5 6 7`):
   see-through seeds 0, 2, 6, 7 have no missing or wrong glass pixel; seeds 1, 3, 4, 5 have 0.37 / 0.38 / 0.50 / 0.44 of
   the glass missing, the same as A3. No pixel off the glass is missing.
+
+## Results
+
+All numbers below are computed from the `episodes.json` files of the runs (script output kept with the analysis; 95%
+intervals are Wilson intervals, p values two-sided Fisher exact tests). With 50 episodes per test set, differences
+under about 0.15 are within noise, and with this many comparisons a p near 0.05 can be chance.
+
+### Failed runs
+
+No run failed in the end; every run has its (a) and (g) evaluation. Some attempts failed at the start of training with
+CUDA out of memory, because another user's jobs on the shared GPUs took the free memory while our training was still
+allocating its own (the logs end in `torch.OutOfMemoryError: CUDA out of memory ... of which 33-86 MiB is free`):
+- step 1: the smoke test once (`data/runs/smoke_bench1_oom1.log`), A4 once, S5d three times. All were retried and
+  finished. After the third S5d failure the runner was replaced by one with 30 retries per run (same runs, same
+  settings), which took over A4 while it was running.
+- step 2: no failed attempt.
+
+Order: step 2 was started at 10:33 KST, before S5t (which does not enter the selection) had finished, at the user's
+request. The selection had been made from A3, A4 and S5d before that.
+
+### Summary
+
+`python policy/summarize_runs.py table results/hard_scenario/benchmark/*/` is saved as `summary_table.md` (all 12
+runs: success, failure types, training rollouts, validation loss, success by condition).
+
+### Step 1
+
+**rgb by alpha** (alpha 0.2 = the two existing build-up runs, 200 episodes):
+
+| alpha | (a) | (g) | (a) + (g) | \|rgb − 0.40\| | failure types ((a) + (g)) | last gripper close to the target, median: all / failed episodes |
+|---|---|---|---|---|---|---|
+| 0.2 | 19/100 | 29/100 | 48/200 = 0.24 (0.19-0.30) | 0.16 | missed_grasp 98, wrong_height 33, dropped 10, other 8, wrong_object 2, timeout 1 | 2.5 / 3.4 cm |
+| 0.3 | 16/50 | 17/50 | 33/100 = 0.33 (0.25-0.43) | 0.07 | missed_grasp 45, wrong_height 9, dropped 8, other 4, wrong_object 1 | 2.0 / 3.0 cm |
+| 0.4 | 24/50 | 24/50 | 48/100 = 0.48 (0.38-0.58) | 0.08 | missed_grasp 34, dropped 9, wrong_height 5, other 4 | 1.2 / 2.6 cm |
+
+The less transparent glass helps RGB the way intended: the gripper closes closer to the glass (median 2.5 → 2.0 → 1.2
+cm) and there are fewer missed grasps. The failures stay "close but not on it" (failed episodes close 2.6-3.4 cm from
+the target), not wrong objects.
+
+**S5 (see-through in half of the episodes) by episode type** ((a) and (g) share the same 22 see-through and 28 normal
+episodes):
+
+| run | normal (a) / (g) | normal (a) + (g) | see-through (a) / (g) | see-through (a) + (g) | crossover (a) + (g) |
+|---|---|---|---|---|---|
+| S5d rgbd | 15/28, 24/28 | 39/56 = 0.70 (0.57-0.80) | 6/22, 7/22 | 13/44 = 0.30 (0.18-0.44) | 7/12 |
+| S5t rgbdt | 17/28, 18/28 | 35/56 = 0.63 (0.49-0.74) | 13/22, 10/22 | 23/44 = 0.52 (0.38-0.66) | 1/12 |
+
+- In S5, see-through rgbd (0.30) is at rgb level: 0.24 at alpha 0.2, difference 0.055, p = 0.45. Its failed
+  see-through episodes close 3.2 cm from the glass (median), against 2.3 cm for failed normal episodes.
+- rgbdt fills part of the see-through loss: 23/44 against 13/44 (+0.23, p = 0.050). On normal episodes it is not
+  better (35/56 against 39/56, p = 0.55). It fails on thermal crossover (1/12, against 7/12 for rgbd).
+- Selection (see "Selection after step 1"): alpha* = 0.3 (0.07 from 0.40, against 0.08 for alpha 0.4), and
+  p* = (0.696 − 0.60) / (0.696 − 0.33) = 0.096 / 0.366 = 0.263 → 0.25.
+
+### Step 2: L0_bench (alpha 0.3, see-through p 0.25)
+
+| input | seed 42 (a) / (g) | seed 43 (a) / (g) | together (200 episodes, 95% CI) | target | met |
+|---|---|---|---|---|---|
+| rgb | 0.40 / 0.34 | 0.44 / 0.34 | 76/200 = **0.38** (0.32-0.45) | 0.3-0.5 | yes |
+| rgbd | 0.60 / 0.64 | 0.66 / 0.60 | 125/200 = **0.625** (0.56-0.69) | 0.5-0.7 | yes |
+| rgbdt | 0.58 / 0.54 | 0.70 / 0.60 | 121/200 = **0.605** (0.54-0.67) | baseline (expected about 0.65) | - |
+| rgbt | 0.56 / 0.66 | 0.42 / 0.42 | 103/200 = **0.515** (0.45-0.58) | baseline | - |
+
+**Comparisons** (`python policy/summarize_runs.py compare`, successes out of 50, Fisher p):
+
+| pair | seed 42 (a) | seed 42 (g) | seed 43 (a) | seed 43 (g) |
+|---|---|---|---|---|
+| rgb vs rgbd | 20 vs 30, p 0.071 | 17 vs 32, p 0.005 | 22 vs 33, p 0.044 | 17 vs 30, p 0.016 |
+| rgbd vs rgbdt | 30 vs 29, p 1 | 32 vs 27, p 0.42 | 33 vs 35, p 0.83 | 30 vs 30, p 1 |
+| rgbt vs rgbdt | 28 vs 29, p 1 | 33 vs 27, p 0.31 | 21 vs 35, p 0.008 | 21 vs 30, p 0.11 |
+| rgb vs rgbt | 20 vs 28, p 0.16 | 17 vs 33, p 0.003 | 22 vs 21, p 1 | 17 vs 21, p 0.54 |
+
+Only rgb < rgbd holds in all four columns. rgbd and rgbdt are equal. rgbt vs rgbdt and rgb vs rgbt each differ in one
+column only, and in opposite seeds.
+
+**Where each input fails** (both seeds, (a) + (g); 44 see-through and 24 crossover episodes out of 200):
+
+| input | normal | see-through | no crossover | crossover | normal, no crossover | normal + crossover | see-through, no crossover | see-through + crossover |
+|---|---|---|---|---|---|---|---|---|
+| rgb | 58/156 = 0.37 | 18/44 = 0.41 | 68/176 = 0.39 | 8/24 = 0.33 | 51/136 | 7/20 | 17/40 | 1/4 |
+| rgbd | 123/156 = 0.79 | **2/44 = 0.05** | 107/176 = 0.61 | 18/24 = 0.75 | 106/136 | 17/20 | 1/40 | 1/4 |
+| rgbdt | 111/156 = 0.71 | 10/44 = 0.23 | 111/176 = 0.63 | 10/24 = 0.42 | 101/136 | 10/20 | 10/40 | 0/4 |
+| rgbt | 79/156 = 0.51 | 24/44 = 0.55 | 90/176 = 0.51 | 13/24 = 0.54 | 68/136 | 11/20 | 22/40 | 2/4 |
+
+- **Depth that sees through the glass is worse than no depth.** On see-through episodes rgbd succeeds 2/44, against
+  18/44 for rgb on the same episodes (p = 7e-5). Its failed see-through episodes close a median 6.6 cm from the glass
+  (30 of 42 more than 5 cm away), against 1.7 cm for its failed normal episodes. The policy trusts the depth image,
+  which shows only the table, and reaches for the wrong place.
+- **The simple fusion does not pick the right sensor.** rgbdt recovers some of the see-through episodes (10/44 against
+  2/44 for rgbd, p = 0.026), but far less than rgbt (24/44, p = 0.004 against rgbdt). On crossover episodes it loses
+  against rgbd (10/24 against 18/24, p = 0.039), and on normal episodes it is 0.08 below rgbd (p = 0.15). It ends
+  equal to rgbd overall (p = 0.76).
+- rgbt is the only input that is about as good on see-through as on normal episodes (thermal does not depend on
+  depth), and it is not hurt by crossover in this sample (13/24; crossover episodes are only 12% of the test seeds).
+
+**Expected against actual rgbd.** The formula gave (1 − 0.25) × 0.696 + 0.25 × 0.33 = 0.605, and the result is
+0.625. That match is a coincidence of two errors that cancel:
+- normal episodes do better than s_ok: 123/156 = 0.79 against 0.70 in S5 (p = 0.20; L0_bench trains on three
+  normal demos out of four instead of one out of two, with RGB at alpha 0.3);
+- see-through episodes do much worse than rgb: 0.05 against 0.38 (p = 4e-6), not "≈ rgb" as in S5;
+- the test sets hold 22% see-through episodes (11 of 50), not 25%.
+
+Recombined with the L0_bench terms, 0.75 × 0.79 + 0.25 × 0.05 = 0.60. The assumption "see-through rgbd ≈ rgb" held at
+p = 0.5 (S5) and fails at p = 0.25: with fewer see-through demos the policy relies more on depth.
+
+**Seeds** (the same setup with training seed 42 and 43, 100 episodes each):
+
+| input | seed 42 | seed 43 | difference | p |
+|---|---|---|---|---|
+| rgb | 37/100 | 39/100 | +0.02 | 0.88 |
+| rgbd | 62/100 | 63/100 | +0.01 | 1 |
+| rgbdt | 56/100 | 65/100 | +0.09 | 0.25 |
+| rgbt | 61/100 | 42/100 | −0.19 | 0.011 |
+
+rgb and rgbd are stable across seeds; rgbdt moves by 0.09; rgbt by 0.19 (seed 43 has 41 missed grasps against 26). A
+single seed of rgbt would have given either 0.61 or 0.42.
+
+## Conclusion
+
+**The benchmark can be confirmed.** On L0_bench, rgb is 0.38 (0.32-0.45) and rgbd is 0.625 (0.56-0.69), both inside
+their target ranges, both stable across the two seeds, and rgb < rgbd in every seed and test set. Its character is
+not the one the plan assumed: rgbd is about 0.6 because it is very good on normal episodes (0.79) and almost always
+fails on see-through ones (0.05, below rgb), not because see-through episodes fall to rgb level. For a fusion method
+that is a sharper test: in 22% of the episodes depth is confidently wrong, and in 12% thermal is blind.
+
+**Numbers for the fusion method** (rgbdt baseline 0.605 = 121/200):
+- target 0.8-0.9: +0.20 to +0.30, that is 39 to 59 more successes out of 200. The baseline fails 79 episodes:
+  - 35 normal episodes without crossover (101/136 succeed);
+  - 10 crossover episodes with normal depth (10/20; rgbd gets 17/20);
+  - 30 see-through episodes without crossover (10/40; rgbt gets 22/40);
+  - 4 episodes that are both (0/4).
+- If every see-through and every crossover episode succeeded and the normal ones stayed as they are, rgbdt would
+  reach 165/200 = 0.825. So 0.8 needs almost all of them, and 0.9 also needs the normal episodes without crossover at
+  0.85 or more (116/136, against 0.74 now and 0.78 for rgbd).
+- Picking the best existing input in each group (rgbd on normal depth, rgbt on see-through) gives 147/200 = 0.735. A
+  fusion that only switches to the right sensor reaches about 0.74 on this benchmark; the see-through episodes need
+  more than rgbt's 0.55 to get to 0.8.
+
+**Next steps (proposed, not run):**
+1. The two fusion methods from the team (the cue-driven gate of `policy/cue-gating` and the learned attention weighting
+   of `fusion/`) are being trained on L0_bench at the user's request, with the same protocol and two seeds; their
+   results go to `results/hard_scenario/fusion_bench/`.
+2. For the fusion comparisons, evaluate on more of the two hard episode types: only 44 see-through and 24 crossover
+   episodes are in the 200. A test set with see-through in every episode and test set (f) (crossover) would measure
+   them directly.
+3. A third training seed of rgbt and rgbdt, since they move by 0.19 and 0.09 between seeds.

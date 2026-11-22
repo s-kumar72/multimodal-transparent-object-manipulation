@@ -1,0 +1,51 @@
+# Diffusion Policy on the sim glass-pick task with the reliability-aware fusion encoder (fusion/attention/policy_encoder.py)
+# instead of one ResNet per modality. Everything else is policy/config/train_glass_unet_image.yaml.
+
+# Run from the repo root, e.g. through fusion/attention/train.sh STAGES=policy, or:
+#   python $DP_ROOT/train.py --config-dir=fusion/attention/config --config-name=train_glass_fusion_image \
+#       task.zarr_path=data/sim_demos_L4b.zarr task.env_runner.level=L4b \
+#       policy.obs_encoder.pretrained=data/fusion/runs/mix/best.pt
+
+# Modalities: drop one like policy/train.sh does (~task.shape_meta.obs.depth); the encoder will then treat it as missing.
+defaults:
+  - train_glass_unet_image
+  - _self_
+
+hydra:
+  searchpath:
+    - file://policy/config
+
+name: train_glass_fusion_image
+exp_name: rgbdt_fusion
+
+policy:
+  # DP's DiffusionUnetImagePolicy plus optional ablation terms; with both weights at 0 it is exactly DP's policy
+  _target_: fusion.attention.fusion_policy.FusionDiffusionPolicy
+  anchor_weight: 0.0           # > 0 needs obs_encoder.anchor=true (fusion/attention/ablations.MD, P4)
+  gate_sup_weight: 0.0         # sensor-weight supervision from the episode flags (P6)
+  gate_sup_anneal_steps: 20000
+  log_every: 500
+  obs_encoder:
+    _target_: fusion.attention.policy_encoder.FusionObsEncoder
+    shape_meta: ${shape_meta}
+    pretrained: null           # train_seg.py checkpoint (best.pt); null = train the fusion net from scratch
+    model_cfg: null            # fusion/attention/model.py DEFAULT_CFG overrides when pretrained is null
+    crop_shape: [84, 84]
+    random_crop: True
+    out_dim: 512
+    mask_pool: True            # glass-attention pooling + glass centroid / area from the segmentation head
+    thermal_renorm: minmax     # match train_seg.py --sim_thermal minmax
+    freeze_segmenter: False
+    # ablation switches (fusion/attention/ablations.MD); the defaults are the original encoder
+    readout: null              # null = avg mask centroid area max gates; e.g. [avg, gates] or add keypoint, ssm
+    ssm_keypoints: 32
+    freeze_steps: 0            # segmenter frozen for the first N training steps
+    anchor: False              # frozen copy of the pretrained net for anchor_weight
+    model_overrides: null      # fusion/attention/model.py options applied to the pretrained net, e.g. {gate_mode: static}
+
+    # MultiImageObsEncoder options from the base config, not used here
+    rgb_model: null
+    resize_shape: null
+    use_group_norm: null
+    share_rgb_model: null
+    imagenet_norm: null
