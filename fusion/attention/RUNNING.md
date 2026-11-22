@@ -4,7 +4,7 @@
 
 ## What is being run
 
-`fusion/train.sh` trains seven glass-segmentation models and tests them all the same way. Together they answer two
+`fusion/attention/train.sh` trains seven glass-segmentation models and tests them all the same way. Together they answer two
 questions:
 
 - **Question 1: which training data works best?** Compare `sim`, `real`, `real2sim` and `mix`.
@@ -40,7 +40,7 @@ pip install -r sim/requirements.txt -r real_data/requirements.txt pyyaml
 **3. Run the tests.** This takes about a minute and needs no GPU:
 
 ```bash
-python -m fusion.test_fusion
+python -m fusion.attention.test_fusion
 ```
 
 You should see six lines starting with `ok`. 
@@ -53,7 +53,7 @@ answered. Pick one:
 - **Download it**:
 
   ```bash
-  STAGES="setup real" DOWNLOAD_REAL=1 bash fusion/train.sh
+  STAGES="setup real" DOWNLOAD_REAL=1 bash fusion/attention/train.sh
   ```
 
 - **Use a copy someone already converted:**
@@ -68,7 +68,7 @@ see `real_data/README.md`. Everything works without it.
 ## [OPTIONAL] Step 3: Do a short speed test (10 minutes)
 
 ```bash
-N_TRAIN_EPS=20 N_VAL_EPS=4 N_TEST_EPS=5 ITERS=500 RUNS=sim DATA=data/fusion_speedtest bash fusion/train.sh
+N_TRAIN_EPS=20 N_VAL_EPS=4 N_TEST_EPS=5 ITERS=500 RUNS=sim DATA=data/fusion_speedtest bash fusion/attention/train.sh
 ```
 
 Look for lines like this:
@@ -89,7 +89,7 @@ Start it in `tmux` (or `screen`, or a batch job):
 
 ```bash
 tmux new -s fusion
-bash fusion/train.sh
+bash fusion/attention/train.sh
 ```
 
 The script does these stages in order:
@@ -116,10 +116,10 @@ right after `real` on the same GPU, because it starts from `real`'s result.
 GPU 3 finishes early. You can give it two extra comparisons at no extra time:
 
 ```bash
-RUNS="mix_ws sim real real2sim mix mix_static mix_rgb mix_paper mix_softmax" bash fusion/train.sh
+RUNS="mix_ws sim real real2sim mix mix_static mix_rgb mix_paper mix_softmax" bash fusion/attention/train.sh
 ```
 
-To use only some GPUs: `GPUS="2 3" bash fusion/train.sh`. On a single GPU the runs go one after another.
+To use only some GPUs: `GPUS="2 3" bash fusion/attention/train.sh`. On a single GPU the runs go one after another.
 
 ### Watching it
 
@@ -269,7 +269,7 @@ with open("results/fusion/all_results.csv", "w", newline="") as fh:
 
 ### Settings
 
-Set these in front of the command, for example `ITERS=10000 bash fusion/train.sh`.
+Set these in front of the command, for example `ITERS=10000 bash fusion/attention/train.sh`.
 
 | setting | default | what it changes |
 |---|---|---|
@@ -315,8 +315,8 @@ results/fusion/summary.md     the three result tables
 #SBATCH -o fusion_%j.out
 source ~/miniconda3/etc/profile.d/conda.sh && conda activate <your env>
 cd <path to>/multimodal-transparent-object-manipulation
-bash fusion/train.sh
+bash fusion/attention/train.sh
 ```
 
-If the compute nodes have no internet, first run `STAGES=setup bash fusion/train.sh` (and the real-data download)
+If the compute nodes have no internet, first run `STAGES=setup bash fusion/attention/train.sh` (and the real-data download)
 on a login node. 

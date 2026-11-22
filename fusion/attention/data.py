@@ -4,9 +4,10 @@ Sim and real glass-segmentation data in one in-memory format including training-
 Every source becomes a SegArrays with uint8 arrays at size S x S (96 = the policy's observation size):
     rgb (N,S,S,3) · depth (N,S,S,1) (sim encoding: clip(m, 0, 2) / 2 * 255, 0 = no reading) · thermal (N,S,S,1)
     mask (N,S,S) (0..255, soft at sim object borders) · valid (N,S,S) (0 = ignore) · avail (N,3) bool (rgb, depth,
-    thermal present) · meta: is_crossover, thermal_gap (sim; NaN for real)
+    thermal present) · meta: is_crossover, thermal_gap (sim; NaN for real), and glass_seethrough also NaN for sim frames collected before collect_sim.py recorded it)
 
-Items are torch tensors in [0, 1], cropped to `crop` and (when train=True) corrupted.
+Items are torch tensors in [0, 1], cropped to `crop` and (when train=True) corrupted. Each item also carries the gate labels for gate_reliability_loss: unreliable / labelled (B, M) and glass_region (sensors that are only wrong on the glass).
+With sup_seethrough=True, depth in a see-through frame (sim flag or depth see-through corruption) is labeled unreliable on the glass only.
 
 Sources (strings, as used by train_seg.py --train / --eval):
     sim:<npz>                     a file written by collect_sim.py, e.g. sim:data/fusion/sim/L4b_train.npz
@@ -38,8 +39,9 @@ def minmax_u8(raw):
 
 
 class SegArrays(Dataset):
-    def __init__(self, arrays, name, crop=84, train=False, aug=None, modalities=MODS):
+    def __init__(self, arrays, name, crop=84, train=False, aug=None, modalities=MODS, sup_seethrough=False):
         self.a, self.name, self.crop, self.train = arrays, name, crop, train
+        self.sup_seethrough = sup_seethrough 
         self.aug = Augment(**(aug or {})) if train else None
         self.mod_idx = [MODS.index(m) for m in modalities]
         self.modalities = list(modalities)
@@ -70,14 +72,22 @@ class SegArrays(Dataset):
         item = dict(rgb=x[0:3], depth=x[3:4], thermal=x[4:5], mask=x[5:6], valid=x[6:7], avail=avail,
                     corrupt=torch.zeros(3, dtype=torch.bool), unreliable=torch.zeros(3, dtype=torch.bool),
                     is_crossover=torch.tensor(float(a["is_crossover"][i]) if "is_crossover" in a else float("nan")),
-                    thermal_gap=torch.tensor(float(a["thermal_gap"][i]) if "thermal_gap" in a else float("nan")))
+                    is_seethrough=torch.tensor(float(a["glass_seethrough"][i]) if "glass_seethrough" in a else float("nan")),
+                    thermal_gap=torch.tensor(float(a["thermal_gap"][i]) if "thermal_gap" in a else float("nan")),
+                    glass_region=torch.zeros(3, dtype=torch.bool))
         if item["is_crossover"] == 1:   # sim frame in thermal crossover: the glass is not in the thermal image
             item["unreliable"][2] = True
+        if item["is_seethrough"] == 1 and self.sup_seethrough:
+            item["unreliable"][1] = item["glass_region"][1] = True
         if self.aug is not None:
             self.aug(item)
+            if item["corrupt"][1] and item.pop("_seethrough", False) and self.sup_seethrough:
+                item["unreliable"][1] = item["glass_region"][1] = True
+        item.pop("_seethrough", None)
+
         # gate labels: unreliable sensors, and untouched ones (reliable); partly corrupted ones are left out
         item["labelled"] = item["unreliable"] | ~item["corrupt"]
-        for k in ("avail", "corrupt", "unreliable", "labelled"):
+        for k in ("avail", "corrupt", "unreliable", "labelled", "glass_region"):
             item[k] = item[k][self.mod_idx]
         return item
 
@@ -102,15 +112,18 @@ class Augment:
 
     thermal_crossover  contrast scaled by U(0, 0.3) + noise, then per-frame min-max again (amplified noise)
     depth_holes        connected missing blobs over 5-50% of the image; depth_wrong: blobs with a smooth offset
+    depth_seethrough   on the glass, depth is replaced by the depth of the surface around it (what a time-of-flight camera reports through clear glass;
+                       L0_bench's see-through episodes); this is off by default
     rgb_lowlight       darker + sensor noise; blank: the modality is all zeros (dead sensor / lens covered)
     drop               modality dropout: the modality is marked missing (avail = False), so every modality has to be
                        useful on its own and the fusion cannot lean on one of them only
     """
 
     def __init__(self, thermal_crossover=0.25, depth_holes=0.3, depth_wrong=0.15, rgb_lowlight=0.25, blank=0.05,
-                 blank_rgb=0.02, drop=0.15):
+                 blank_rgb=0.02, drop=0.15, depth_seethrough=0.0):
         self.p = dict(thermal_crossover=thermal_crossover, depth_holes=depth_holes, depth_wrong=depth_wrong,
-                      rgb_lowlight=rgb_lowlight, blank=blank, blank_rgb=blank_rgb, drop=drop)
+                      rgb_lowlight=rgb_lowlight, blank=blank, blank_rgb=blank_rgb, drop=drop,
+                      depth_seethrough=depth_seethrough)
 
     def __call__(self, it):
         p, r = self.p, np.random.rand
@@ -129,6 +142,16 @@ class Augment:
             m = _blobs(d.shape[-2:], np.random.uniform(0.05, 0.3), np.random.uniform(2, 6))
             d[0][m & (d[0] > 0)] = (d[0] + np.random.uniform(-0.15, 0.15)).clamp(0.01, 1)[m & (d[0] > 0)]
             it["corrupt"][1] = True
+        if av[1] and r() < p["depth_seethrough"]:
+            glass = it["mask"][0] > 0.5
+            if glass.sum() >= 4:
+                d = it["depth"][0]
+                ring = (F.max_pool2d(glass[None, None].float(), 7, 1, 3)[0, 0] > 0) & ~glass & (d > 0)
+                if ring.sum() >= 4:
+                    d[glass] = d[ring].median() + 0.003 * torch.randn(int(glass.sum()))
+                    d.clamp_(0.01, 1)
+                    it["corrupt"][1] = True
+                    it["_seethrough"] = True
         if r() < p["rgb_lowlight"]:
             it["rgb"] = (it["rgb"] * np.random.uniform(0.25, 0.8)
                          + np.random.uniform(0.01, 0.06) * torch.randn_like(it["rgb"])).clamp(0, 1)
@@ -158,7 +181,8 @@ def load_sim(path, size=96, sim_thermal="minmax"):
         thermal = minmax_u8(d["thermal_raw"])
     return dict(rgb=d["rgb"], depth=d["depth"], thermal=thermal, mask=d["mask"],
                 avail=np.ones((n, 3), bool), is_crossover=d["is_crossover"].astype(np.float32),
-                thermal_gap=d["thermal_gap"].astype(np.float32), object=d["object"], seed=d["seed"])
+                thermal_gap=d["thermal_gap"].astype(np.float32), object=d["object"], seed=d["seed"],
+                **({"glass_seethrough": d["glass_seethrough"].astype(np.float32)} if "glass_seethrough" in d else {}))
 
 
 def load_real(dataset, split, size=96, cache_dir="data/fusion/real", root=None, workers=8):
@@ -228,11 +252,11 @@ def real_available(root=None):
     return (Path(root or DEFAULT_ROOT) / "manifest.parquet").exists()
 
 
-def build_train_set(specs, modalities, size=96, crop=84, aug=None, sim_weight=0.5, **kw):
+def build_train_set(specs, modalities, size=96, crop=84, aug=None, sim_weight=0.5, sup_seethrough=False, **kw):
     """ConcatDataset over every source plus per-sample sampling weights."""
     parts, domain = [], []
     for spec in expand_sources(specs):
-        parts.append(SegArrays(load_source(spec, size, **kw), source_name(spec), crop, True, aug, modalities))
+        parts.append(SegArrays(load_source(spec, size, **kw), source_name(spec), crop, True, aug, modalities, sup_seethrough))
         domain.append(spec.split(":", 1)[0])
     n_sim, n_real = domain.count("sim"), domain.count("real")
     share = {"sim": sim_weight if n_real else 1.0, "real": (1 - sim_weight) if n_sim else 1.0}

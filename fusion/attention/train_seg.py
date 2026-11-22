@@ -1,7 +1,7 @@
 """
-Train the reliability-aware RGB-D-T glass segmentation network (fusion/model.py) on sim and / or real data.
+Train the reliability-aware RGB-D-T glass segmentation network (fusion/attention/model.py) on sim and / or real data.
 
-  python -m fusion.train_seg --name mix --modalities rgb depth thermal \
+  python -m fusion.attention.train_seg --name mix --modalities rgb depth thermal \
       --train "sim:data/fusion/sim/*_train.npz" real:rgbt_glass:train real:mju_glass:train \
       --val "sim:data/fusion/sim/*_val.npz" real:rgbt_glass:val \
       --eval "sim:data/fusion/sim/*_test_*.npz" real:rgbt_glass:test --iters 20000
@@ -21,9 +21,9 @@ import torch
 from PIL import Image
 from torch.utils.data import DataLoader, WeightedRandomSampler
 
-from fusion.data import build_train_set, collate, real_available
-from fusion.evaluate import CORRUPTIONS, eval_sets, evaluate
-from fusion.model import DEFAULT_CFG, build_model, gate_reliability_loss, load_encoder_weights, seg_loss
+from fusion.attention.data import build_train_set, collate, real_available
+from fusion.attention.evaluate import CORRUPTIONS, eval_sets, evaluate
+from fusion.attention.model import DEFAULT_CFG, build_model, gate_reliability_loss, load_encoder_weights, seg_loss
 
 
 def parse():
@@ -59,6 +59,11 @@ def parse():
                    help="minmax: per-frame min-max of the raw counts, same as the real loader; env: as the policy sees it")
     p.add_argument("--real_root", default=None)
     p.add_argument("--no_aug", action="store_true", help="no sensor corruptions")
+    p.add_argument("--aug", nargs="*", default=[], metavar="NAME=P", help="probabilities of single corruptions (fusion/attention/data.py Augment), e.g. depth_holes=0 "
++                        "depth_seethrough=0.3")
+    p.add_argument("--sup_seethrough", action="store_true",
+                   help="gate loss: depth is unreliable on the glass in see-through frames (sim flag or the "
++                        "depth_seethrough corruption)")
     # optimization
     p.add_argument("--iters", type=int, default=20000)
     p.add_argument("--batch_size", type=int, default=64)
@@ -142,8 +147,11 @@ def main():
           f"modalities {a.modalities}, gates {a.gate_mode}/{a.gate_norm}, cues {not a.no_cues}, amp {amp}", flush=True)
 
     # ---------------------------------------------------------------- data
-    aug = dict(thermal_crossover=0, depth_holes=0, depth_wrong=0, rgb_lowlight=0, blank=0, blank_rgb=0, drop=0) if a.no_aug else None
-    train_ds, weights = build_train_set(a.train, a.modalities, a.size, a.crop, aug, a.sim_weight, **load_kw)
+    aug = dict(thermal_crossover=0, depth_holes=0, depth_wrong=0, rgb_lowlight=0, blank=0, blank_rgb=0, drop=0) if a.no_aug else {}
+    for kv in a.aug:
+        k, v = kv.split("=")
+        aug[k] = float(v)
+    train_ds, weights = build_train_set(a.train, a.modalities, a.size, a.crop, aug or None, a.sim_weight, sup_seethrough=a.sup_seethrough, **load_kw)
     sampler = WeightedRandomSampler(weights, a.iters * a.batch_size, replacement=True)
     loader = DataLoader(train_ds, a.batch_size, sampler=sampler, num_workers=a.workers, collate_fn=collate,
                         pin_memory=device.type == "cuda", drop_last=True, persistent_workers=a.workers > 0)
@@ -166,7 +174,7 @@ def main():
                  [x.float() for x in v] if isinstance(v, list) else v) for k, v in o.items()}
         loss = seg_loss(o, b["mask"].to(device), b["valid"].to(device))
         if a.gate_sup > 0 and a.gate_mode == "learned":
-            loss = loss + a.gate_sup * gate_reliability_loss(o, b["unreliable"].to(device), b["labelled"].to(device))
+            loss = loss + a.gate_sup * gate_reliability_loss(o, b["unreliable"].to(device), b["labelled"].to(device), b["glass_region"].to(device), b["mask"].to(device))
         opt.zero_grad(set_to_none=True)
         scaler.scale(loss).backward()
         scaler.unscale_(opt)
