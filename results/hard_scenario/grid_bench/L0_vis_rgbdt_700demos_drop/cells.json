@@ -1,0 +1,62 @@
+{
+ "runs": [
+  "results/hard_scenario/grid_bench/L0_vis_rgbdt_700demos_drop"
+ ],
+ "test_sets": [
+  "j_cells11",
+  "k_cells11_heldout"
+ ],
+ "macro": 0.24696969696969698,
+ "macro_ci": [
+  0.225,
+  0.2681818181818182
+ ],
+ "cells": {
+  "0": {
+   "success": 50,
+   "n": 120
+  },
+  "1": {
+   "success": 50,
+   "n": 120
+  },
+  "2": {
+   "success": 7,
+   "n": 120
+  },
+  "3": {
+   "success": 52,
+   "n": 120
+  },
+  "4": {
+   "success": 3,
+   "n": 120
+  },
+  "5": {
+   "success": 53,
+   "n": 120
+  },
+  "6": {
+   "success": 14,
+   "n": 120
+  },
+  "7": {
+   "success": 7,
+   "n": 120
+  },
+  "8": {
+   "success": 43,
+   "n": 120
+  },
+  "9": {
+   "success": 5,
+   "n": 120
+  },
+  "10": {
+   "success": 42,
+   "n": 120
+  }
+ },
+ "success": 326,
+ "n": 1320
+}

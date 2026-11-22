@@ -1,0 +1,62 @@
+{
+ "runs": [
+  "results/hard_scenario/grid_bench/L0_vis_thermal_500demos_cell4"
+ ],
+ "test_sets": [
+  "j_cells11",
+  "k_cells11_heldout"
+ ],
+ "macro": 0.1871212121212121,
+ "macro_ci": [
+  0.16893939393939392,
+  0.2053030303030303
+ ],
+ "cells": {
+  "0": {
+   "success": 53,
+   "n": 120
+  },
+  "1": {
+   "success": 45,
+   "n": 120
+  },
+  "2": {
+   "success": 49,
+   "n": 120
+  },
+  "3": {
+   "success": 2,
+   "n": 120
+  },
+  "4": {
+   "success": 50,
+   "n": 120
+  },
+  "5": {
+   "success": 1,
+   "n": 120
+  },
+  "6": {
+   "success": 1,
+   "n": 120
+  },
+  "7": {
+   "success": 1,
+   "n": 120
+  },
+  "8": {
+   "success": 2,
+   "n": 120
+  },
+  "9": {
+   "success": 23,
+   "n": 120
+  },
+  "10": {
+   "success": 20,
+   "n": 120
+  }
+ },
+ "success": 247,
+ "n": 1320
+}

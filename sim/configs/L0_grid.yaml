@@ -1,0 +1,27 @@
+# Visibility-cell benchmark level (results/hard_scenario/grid_bench/): L0_bench with every combination of "which of
+# the three sensors show the glass" except none. Each episode gets one cell (sim/config.py cells):
+#   rgb blind      the room light at 2% of normal (dark_light) with the sensor noise of L4 (rgb_noise 6.0) on the image:
+#                  L4's low-light lever taken to the point where the colour image shows nothing;
+#   depth blind    a see-through episode of L0_bench (the depth of the surface behind the glass, no holes);
+#   thermal blind  the apparent temperature of the glass within 0.1 degC of the table behind it (thermal.blind_contrast,
+#                  about the camera noise; policy/sweep_thermal_contrast.py is the measurement behind the number).
+# A sensor that is not blind in a cell shows the glass as in L0_bench's normal episodes: normal light and alpha 0.3,
+# dot holes on the glass, the glass 5-35 degC from the room temperature. Scene otherwise as L0_bench: plain table,
+# normal light, 1-3 distractors (held-out pool in the held-out test set).
+# Training weights 14 : 7 : 7 : 7 : 5 : 5 : 5 of 50 consecutive seeds; test sets h / i use equal weights
+# (sim/configs/manifest.json). meta/ep_level id 31.
+base: L0_bench.yaml
+name: L0_grid
+level: 31
+cells:                # [weight, rgb blind, depth blind, thermal blind]
+  - [14, 0, 0, 0]     # 0 all three show the glass
+  - [7, 1, 0, 0]      # 1 rgb blind
+  - [7, 0, 1, 0]      # 2 depth blind
+  - [7, 0, 0, 1]      # 3 thermal blind
+  - [5, 1, 1, 0]      # 4 only thermal shows it
+  - [5, 1, 0, 1]      # 5 only depth shows it
+  - [5, 0, 1, 1]      # 6 only rgb shows it
+dark_light: 0.02
+dark_rgb_noise: 6.0
+thermal:
+  blind_contrast: 0.1

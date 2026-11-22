@@ -24,7 +24,7 @@ from diffusion_policy.common.sampler import SequenceSampler, downsample_mask, ge
 from diffusion_policy.dataset.base_dataset import BaseImageDataset
 from diffusion_policy.model.common.normalizer import LinearNormalizer, SingleFieldLinearNormalizer
 
-from policy.obs_util import compute_cues, cue_opts, cue_roi, to_policy_obs
+from policy.obs_util import compute_cues, cue_opts, cue_roi, glass_location, to_policy_obs
 
 META_KEYS = ("ep_thermal_gap", "ep_is_crossover", "ep_t_env", "ep_obj_temp", "ep_level", "ep_liquid_fill",
              "ep_glass_seethrough")
@@ -46,10 +46,13 @@ class Corruption:
              8-bit image and to thermal_raw alike, so the contrast cue drops with the image.
     depth:   connected blobs of missing readings covering a fraction ~ U(depth_hole_frac) of the frame (blurred noise
              thresholded), with probability depth_hole_p. The validity channel and cue follow since both read depth > 0.
+    sensor dropout (off by default): each image (rgb / depth / thermal) is blank with probability sensor_dropout_p,
+             independently, and at least one stays.
     """
 
     def __init__(self, thermal_contrast_p=0.5, thermal_contrast=(0.0, 0.6), depth_hole_p=0.5,
-                 depth_hole_frac=(0.1, 0.6), depth_blob_cells=(6, 16)):
+                 depth_hole_frac=(0.1, 0.6), depth_blob_cells=(6, 16), sensor_dropout_p=0.0):
+        self.sensor_dropout_p = sensor_dropout_p
         self.thermal_contrast_p, self.thermal_contrast = thermal_contrast_p, tuple(thermal_contrast)
         self.depth_hole_p, self.depth_hole_frac = depth_hole_p, tuple(depth_hole_frac)
         self.depth_blob_cells = tuple(depth_blob_cells)
@@ -76,6 +79,13 @@ class Corruption:
             d = d.copy()
             d[:, hole] = 0
             out["depth"] = d
+        if self.sensor_dropout_p > 0:
+            keys = [k for k in ("rgb", "depth", "thermal") if k in out]
+            drop = [k for k in keys if rng.random() < self.sensor_dropout_p]
+            if len(drop) == len(keys):
+                drop.pop(int(rng.integers(len(drop))))
+            for k in drop:
+                out[k] = np.zeros_like(out[k])
         return out
 
 
@@ -90,17 +100,32 @@ def _box_blur(x, r):
 class GlassImageDataset(BaseImageDataset):
     def __init__(self, zarr_path, shape_meta, horizon=1, pad_before=0, pad_after=0,
                  n_obs_steps=None, seed=42, val_ratio=0.0, max_train_episodes=None,
-                 augment=None, with_meta=True, n_cue_fit_frames=2000):
+                 augment=None, with_meta=True, n_cue_fit_frames=2000, gate_split=0):
         super().__init__()
         self.obs_meta = dict(shape_meta["obs"])
         self.has_cue = "cue" in self.obs_meta
         self.roi = cue_roi(self.obs_meta)
         self.cue_opts = cue_opts(self.obs_meta)
-        data_keys = [k for k in self.obs_meta if k != "cue"]
+        data_keys = [k for k in self.obs_meta if k not in ("cue", "glass_loc")]
         available = zarr_data_keys(zarr_path)
         if self.has_cue and "thermal" in self.obs_meta and "thermal_raw" in available:
             data_keys.append("thermal_raw")
         self.replay_buffer = ReplayBuffer.copy_from_path(zarr_path, keys=data_keys + ["action"])
+        cue_attr = self.obs_meta.get("cue")
+        mask_path = cue_attr.get("glass_mask") if self.has_cue and hasattr(cue_attr, "get") else None
+        if mask_path is not None:      # glass masks of every frame (policy/make_glass_masks.py), for the visibility cues
+            masks = np.load(mask_path)
+            assert len(masks) == self.replay_buffer.n_steps, (mask_path, len(masks), self.replay_buffer.n_steps)
+            self.replay_buffer.root["data"]["glass_mask"] = masks
+            data_keys.append("glass_mask")
+        loc_attr = self.obs_meta.get("glass_loc")
+        if loc_attr is not None:       # where the glass mask is, per frame, as a low_dim observation (glass_location)
+            loc_path = loc_attr.get("glass_mask") or mask_path
+            assert loc_path is not None, "glass_loc needs glass_mask on its key or on the cue key"
+            loc_masks = masks if loc_path == mask_path else np.load(loc_path)
+            assert len(loc_masks) == self.replay_buffer.n_steps, (loc_path, len(loc_masks), self.replay_buffer.n_steps)
+            self.replay_buffer.root["data"]["glass_loc"] = glass_location(loc_masks)
+            data_keys.append("glass_loc")
 
         val_mask = get_val_mask(n_episodes=self.replay_buffer.n_episodes, val_ratio=val_ratio, seed=seed)
         train_mask = downsample_mask(mask=~val_mask, max_n=max_train_episodes, seed=seed)
@@ -118,6 +143,11 @@ class GlassImageDataset(BaseImageDataset):
 
         meta = self.replay_buffer.meta
         self.ep_meta = {k: np.asarray(meta[k][:], dtype=np.float32) for k in META_KEYS if with_meta and k in meta}
+        if gate_split:      # every gate_split-th episode is marked: GatedDiffusionPolicy gate_train=heldout keeps these
+            # out of the policy's loss and trains the routing gate on them
+            assert with_meta, "gate_split marks episodes in the batch meta"
+            self.ep_meta["ep_gate_split"] = (np.arange(self.replay_buffer.n_episodes) % int(gate_split) == 0) \
+                .astype(np.float32)
         self.augment = Corruption(**augment) if augment else None
         self.seed = seed
         self.n_cue_fit_frames = n_cue_fit_frames
@@ -146,8 +176,12 @@ class GlassImageDataset(BaseImageDataset):
         if self.has_cue:
             # z-scores rather than limits: cues of corrupted / crossover frames must stay in range, and the fit
             # sample includes corrupted copies of the frames so the training distribution is covered
-            normalizer["cue"] = SingleFieldLinearNormalizer.create_fit(self._cue_sample(), last_n_dims=1,
-                                                                        mode="gaussian")
+            cue_norm = SingleFieldLinearNormalizer.create_fit(self._cue_sample(), last_n_dims=1, mode="gaussian")
+            if self.cue_opts.get("vis"):   # the two visibility flags stay 0 / 1: the encoder routes on them
+                n_id = 4 if self.cue_opts["vis"].get("raw") else 2   # vis_raw: the two measurements stay raw too
+                cue_norm.params_dict["scale"].data[-n_id:] = 1.0
+                cue_norm.params_dict["offset"].data[-n_id:] = 0.0
+            normalizer["cue"] = cue_norm
         return normalizer
 
     def _cue_sample(self):
@@ -155,7 +189,7 @@ class GlassImageDataset(BaseImageDataset):
         n = self.replay_buffer.n_steps
         rng = np.random.default_rng(self.seed)
         idx = np.sort(rng.choice(n, size=min(n, self.n_cue_fit_frames), replace=False))
-        raw = {k: self.replay_buffer[k][idx] for k in ("rgb", "depth", "thermal", "thermal_raw")
+        raw = {k: self.replay_buffer[k][idx] for k in ("rgb", "depth", "thermal", "thermal_raw", "glass_mask")
                if k in self.replay_buffer.keys()}
         cues = [compute_cues(raw, self.roi, **self.cue_opts)]
         if self.augment is not None:

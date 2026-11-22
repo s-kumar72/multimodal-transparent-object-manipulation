@@ -1,0 +1,21 @@
+== first frames, training seeds 0..249
+| cell | rgb blind | episodes | glass pixels in the colour frame (median; max) | largest grey-level difference | mean brightness | depth = L0_grid | thermal = L0_grid | rgb = L0_grid (within 1 level) |
+|---|---|---|---|---|---|---|---|---|
+| 0 | no | 70 | 222; 293 | 109 | 197 | 70/70 | 70/70 | 70/70 |
+| 1 | yes | 35 | 0; 0 | 0 | 197 | 35/35 | 35/35 | 0/35 |
+| 2 | no | 35 | 229; 296 | 109 | 197 | 35/35 | 35/35 | 35/35 |
+| 3 | no | 35 | 227; 294 | 109 | 197 | 35/35 | 35/35 | 35/35 |
+| 4 | yes | 25 | 0; 0 | 0 | 197 | 25/25 | 25/25 | 0/25 |
+| 5 | yes | 25 | 0; 0 | 0 | 197 | 25/25 | 25/25 | 0/25 |
+| 6 | no | 25 | 222; 274 | 174 | 197 | 25/25 | 25/25 | 25/25 |
+
+== teacher episodes, 3 per cell
+| cell | rgb blind | episodes | teacher success | frames | glass pixels in the colour frame (max over frames) | largest grey-level difference | whole episode = L0_grid (rgb within 1 level) |
+|---|---|---|---|---|---|---|---|
+| 0 | no | 3 | 3/3 | 200 | 225 | 129 | 3/3 |
+| 1 | yes | 3 | 3/3 | 193 | 0 | 0 | (dark in L0_grid) |
+| 2 | no | 3 | 3/3 | 190 | 334 | 193 | 3/3 |
+| 3 | no | 3 | 3/3 | 183 | 333 | 167 | 3/3 |
+| 4 | yes | 3 | 3/3 | 195 | 0 | 0 | (dark in L0_grid) |
+| 5 | yes | 3 | 3/3 | 189 | 0 | 0 | (dark in L0_grid) |
+| 6 | no | 3 | 3/3 | 192 | 308 | 165 | 3/3 |

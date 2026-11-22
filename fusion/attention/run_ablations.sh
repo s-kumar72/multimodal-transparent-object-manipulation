@@ -13,6 +13,12 @@
 # SEEDS ("42 43"), SEG_CKPT (segmentation checkpoint the encoder starts from; data/fusion/runs/mix_ws/best.pt),
 # SEG_CKPT_STX (for P11; data/fusion_v2/runs/mix_ws_stx_supst/best.pt), N200 (1: the 200-episode re-evaluation),
 # DRY (1: only print the run_experiment.sh command of every run, into the queue logs).
+# Another level than L0_bench (fusion/attention/run_l0_vis.sh uses these): LEVEL (L0_bench), NDEMOS (500), GROUP (results
+# folder, fusion_ablations), P0_SEEDS (seeds of the full model, "44": seeds 42 and 43 exist on L0_bench), ONLY_VARIANT
+# (with ONLY: keep only this variant, e.g. rgbdt, since the tag `fusion` is both P0 and P10), BASE_EXTRA (hydra overrides
+# added to every run), EGL_OF (EGL device of each GPU index, e.g. "3 2 0 1", where EGL numbers the GPUs differently from
+# CUDA), TABLE (1: write the L0_bench results table at the end; default 1 on L0_bench, 0 elsewhere; N200 likewise). The settings of
+# scripts/run_experiment.sh (TEST_SETS, NTEST, NEVAL, TOPK, ...) are passed on from the environment.
 # Rerunning resumes unfinished runs and skips finished ones. Logs: data/runs/abl_queue_<gpu>_<slot>.log.
 set -u
 TIER=${TIER:-1}
@@ -21,8 +27,14 @@ PER_GPU=${PER_GPU:-1}
 SEEDS=(${SEEDS:-42 43})
 SEG_CKPT=${SEG_CKPT:-data/fusion/runs/mix_ws/best.pt}
 SEG_CKPT_STX=${SEG_CKPT_STX:-data/fusion_v2/runs/mix_ws_stx_supst/best.pt}
-N200=${N200:-1}
-export GROUP=fusion_ablations TRAIN=scripts/train_fusion_policy.sh EVAL_EXTRA=--save_w
+LEVEL=${LEVEL:-L0_bench}
+NDEMOS=${NDEMOS:-500}
+N200=${N200:-$([ "$LEVEL" = L0_bench ] && echo 1 || echo 0)}     # the 200-episode re-evaluation is L0_bench's
+P0_SEEDS=(${P0_SEEDS:-44})
+BASE_EXTRA=${BASE_EXTRA:-}
+EGL_OF=(${EGL_OF:-})
+TABLE=${TABLE:-$([ "$LEVEL" = L0_bench ] && echo 1 || echo 0)}
+export GROUP=${GROUP:-fusion_ablations} TRAIN=scripts/train_fusion_policy.sh EVAL_EXTRA=--save_w
 mkdir -p data/runs
 
 PRE="policy.obs_encoder.pretrained=$SEG_CKPT"
@@ -47,8 +59,9 @@ for e in "${EXPERIMENTS[@]}"; do
   IFS="|" read -r tag variant tier extra <<< "$e"
   [ "$TIER" = all ] || [ "$TIER" = "$tier" ] || [ -n "${ONLY:-}" ] || continue
   [ -z "${ONLY:-}" ] || [[ " $ONLY " == *" $tag "* ]] || continue
+  [ -z "${ONLY_VARIANT:-}" ] || [ "$variant" = "$ONLY_VARIANT" ] || continue
   if [ "$tag" = fusion ] && [ "$variant" = rgbdt ]; then
-    jobs+=("$tag|$variant|44|$extra")     
+    for seed in "${P0_SEEDS[@]}"; do jobs+=("$tag|$variant|$seed|$extra"); done
     continue
   fi
   for seed in "${SEEDS[@]}"; do jobs+=("$tag|$variant|$seed|$extra"); done
@@ -59,12 +72,14 @@ for f in "$SEG_CKPT"; do [ -f "$f" ] || echo "WARNING: $f not found (set SEG_CKP
 run_one() {  
   local gpu=$1 tag=$2 variant=$3 seed=$4 extra=$5
   local t=$tag; [ "$seed" = 42 ] || t=${tag}_seed$seed
-  local name=L0_bench_${variant}_500demos_$t
+  local name=${LEVEL}_${variant}_${NDEMOS}demos_$t
+  [ -z "$BASE_EXTRA" ] || extra="$BASE_EXTRA $extra"
+  [ ${#EGL_OF[@]} = 0 ] || export MUJOCO_EGL_DEVICE_ID=${EGL_OF[$gpu]}
   if [ "${DRY:-0}" = 1 ]; then
-    echo "GPU=$gpu TAG=$t EXTRA=\"training.seed=$seed $extra\" GROUP=$GROUP TRAIN=$TRAIN EVAL_EXTRA=$EVAL_EXTRA bash scripts/run_experiment.sh L0_bench $variant 500"
+    echo "GPU=$gpu ${MUJOCO_EGL_DEVICE_ID:+MUJOCO_EGL_DEVICE_ID=$MUJOCO_EGL_DEVICE_ID }TAG=$t EXTRA=\"training.seed=$seed $extra\" GROUP=$GROUP TRAIN=$TRAIN EVAL_EXTRA=$EVAL_EXTRA bash scripts/run_experiment.sh $LEVEL $variant $NDEMOS"
     return
   fi
-  GPU=$gpu TAG=$t EXTRA="training.seed=$seed $extra" bash scripts/run_experiment.sh L0_bench $variant 500 \
+  GPU=$gpu TAG=$t EXTRA="training.seed=$seed $extra" bash scripts/run_experiment.sh $LEVEL $variant $NDEMOS \
     || { echo "!!! FAILED: $name"; return; }
   local out=results/hard_scenario/fusion_ablations/n200/$name
   if [ "$N200" = 1 ] && [ ! -f "$out/g_heldout_all/eval_log.json" ]; then
@@ -92,4 +107,5 @@ wait
 [ "${DRY:-0}" = 1 ] && { cat data/runs/abl_queue_*.log; exit 0; }
 echo "$(date): all queues done"
 grep -h "FAILED" data/runs/abl_queue_*.log || echo "no failed runs"
+[ "$TABLE" = 1 ] || exit 0
 python -m fusion.attention.ablation_table --spec fusion/attention/ablations.yaml --out results/hard_scenario/fusion_ablations/table

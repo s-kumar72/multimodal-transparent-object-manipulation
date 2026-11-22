@@ -1,0 +1,62 @@
+{
+ "runs": [
+  "results/hard_scenario/grid_bench/L0_vis_depth_330demos_full_imagenet"
+ ],
+ "test_sets": [
+  "j_cells11",
+  "k_cells11_heldout"
+ ],
+ "macro": 0.4022727272727273,
+ "macro_ci": [
+  0.38636363636363635,
+  0.4181818181818182
+ ],
+ "cells": {
+  "0": {
+   "success": 104,
+   "n": 120
+  },
+  "1": {
+   "success": 103,
+   "n": 120
+  },
+  "2": {
+   "success": 0,
+   "n": 120
+  },
+  "3": {
+   "success": 104,
+   "n": 120
+  },
+  "4": {
+   "success": 0,
+   "n": 120
+  },
+  "5": {
+   "success": 103,
+   "n": 120
+  },
+  "6": {
+   "success": 0,
+   "n": 120
+  },
+  "7": {
+   "success": 0,
+   "n": 120
+  },
+  "8": {
+   "success": 56,
+   "n": 120
+  },
+  "9": {
+   "success": 2,
+   "n": 120
+  },
+  "10": {
+   "success": 59,
+   "n": 120
+  }
+ },
+ "success": 531,
+ "n": 1320
+}

@@ -1,0 +1,10 @@
+# Visibility-cell level with another rgb-blind case (results/hard_scenario/grid_bench/, repair round): L0_grid, except
+# that an rgb-blind episode is not dark. The room light is normal and the glass is clear to the colour camera (alpha
+# 0.001, below one grey level): the colour image shows the table, the arm and the distractors but not the glass. Rgb
+# blind then hides only the glass, as depth blind and thermal blind do. Depth and thermal are those of L0_grid, and so
+# is every episode of a cell where rgb shows the glass. meta/ep_level id 32.
+base: L0_grid.yaml
+name: L0_grid_clear
+level: 32
+rgb_blind: clear
+clear_alpha: 0.001

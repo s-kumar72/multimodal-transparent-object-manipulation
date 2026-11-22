@@ -8,8 +8,8 @@ import numpy as np
 from PIL import Image
 
 from common.thermal import normalize_thermal_raw
-from config import SceneConfig, factor_rng, load_config
-from sensors import Sensors
+from config import SceneConfig, cell_pattern, factor_rng, load_config
+from sensors import Sensors, apparent_contrast, matching_temp
 
 SCENE = "sim/assets/gen3_lite/transparent_scene.xml"
 SCENE_DISTRACTORS = "sim/assets/gen3_lite/distractor_scene.xml" # SCENE + parked distractors (only when used)
@@ -50,6 +50,7 @@ LIGHTING = {
     "backlight": dict(head=(0.25, 0.12), main=0.25, extra=["backlight"]),  # window behind the table
     "spot": dict(head=(0.25, 0.12), main=0.2, extra=["spot"]),     # one lamp over part of the table
     "dusk": dict(head=(0.18, 0.1), main=0.15, extra=[], colour=(1.0, 0.8, 0.6)),
+    "dark": dict(head=(0.6, 0.3), main=0.7, extra=[]),   # "normal" times cfg.dark_light (visibility cells, rgb blind)
 }
 LIGHTING_NAMES = list(LIGHTING)
 # Objects that can hold liquid, with the height of the part the liquid fills (m)
@@ -113,9 +114,11 @@ class GlassPickEnv:
         # Model fields the factors change; restored on every reset
         self._fields = ["geom_rgba", "geom_matid", "geom_size", "geom_pos", "geom_contype", "geom_conaffinity",
                         "body_contype", "body_conaffinity", "body_gravcomp", "light_active", "light_diffuse",
-                        "light_dir", "light_pos"]
+                        "light_dir", "light_pos", "light_specular"]
         self._defaults = {f: getattr(m, f).copy() for f in self._fields}
         self._head = (m.vis.headlight.diffuse.copy(), m.vis.headlight.ambient.copy())
+        self._head_spec = m.vis.headlight.specular.copy()
+        self.dark = False
 
     def reset(self, seed=None, obj=None):
         """obj: object name to put on the table; None picks one at random."""
@@ -124,12 +127,16 @@ class GlassPickEnv:
         for f, v in self._defaults.items():
             getattr(m, f)[:] = v
         m.vis.headlight.diffuse[:], m.vis.headlight.ambient[:] = self._head
+        m.vis.headlight.specular[:] = self._head_spec
         mujoco.mj_resetData(m, d)
         d.qpos[:6] = READY
         d.ctrl[:6] = READY
 
         # One object upright on the table, the others parked out of view (legacy RNG, main's order)
+        cell = self._cell(seed)              # None, or (index, rgb blind, depth blind, thermal blind, object index)
         self.obj = obj if obj is not None else OBJECT_NAMES[r.integers(len(OBJECT_NAMES))]
+        if obj is None and cell is not None:
+            self.obj = OBJECT_NAMES[cell[4]] # with cells the object is dealt with the cell (seed % 5), not drawn
         for name, park in zip(OBJECT_NAMES, PARK):
             q = self.obj_q[name]
             pos = [r.uniform(*SPAWN_X), r.uniform(*SPAWN_Y), REST_Z] if name == self.obj else park
@@ -138,10 +145,19 @@ class GlassPickEnv:
         # Thermal conditions (legacy RNG, main's order)
         self.t_env = r.uniform(*th.t_env)
         crossover = r.random() < th.crossover_p
+        if cell is not None:
+            crossover = cell[3] == 1
         gap = r.uniform(*th.crossover_gap) if crossover else r.choice([-1, 1]) * r.uniform(*th.gap)
         self.temps = {self.obj: self.t_env + gap, "table": self.t_env + r.uniform(*th.table_dt)}
         self.temps.update({n: self.t_env + r.uniform(*th.link_dt) for n in self.link_names})
         self.emis = {self.obj: r.uniform(*th.obj_emis), "table": r.uniform(*th.table_emis)}
+        if cell is not None and cell[3]:     # thermal blind: the glass looks as warm as the table behind it
+            rc = factor_rng(seed, "cell")
+            c = rc.uniform(-th.blind_contrast, th.blind_contrast) if cell[3] == 1 else \
+                rc.choice([-1.0, 1.0]) * rc.uniform(*th.faint_contrast)   # 2, faint: a small step against the table
+            self.temps[self.obj] = matching_temp(self.temps["table"], self.emis["table"], self.emis[self.obj],
+                                                 self.t_env, c)
+            gap = self.temps[self.obj] - self.t_env
 
         # New factors: each has its own RNG stream, so turning one on does not change the others
         rt = factor_rng(seed, "thermal")
@@ -154,15 +170,29 @@ class GlassPickEnv:
                     thermal_gap=gap, is_crossover=int(crossover), realistic=int(realistic),
                     obj_emis=self.emis[self.obj])
         info.update(self._transparent(seed))
+        assert cfg.rgb_blind in ("dark", "clear"), cfg.rgb_blind
+        if cell is not None and (cell[1] == 2 or cell[1] == 1 and cfg.rgb_blind == "clear"):
+            a = cfg.faint_alpha if cell[1] == 2 else cfg.clear_alpha   # faint glass / not in the colour image at all
+            for geoms in self.glass_geoms.values():
+                self.model.geom_rgba[geoms, 3] = a
+            info["alpha"] = a
         info.update(self._background(seed))
-        info.update(self._lighting(seed))
+        self.dark = cell is not None and cell[1] == 1 and cfg.rgb_blind == "dark"
+        info.update(self._lighting(seed, self.dark))
         liquid = self._liquid(seed, info)
         extras = self._extras(seed, info) if self.uses_extras else []
         narrow = cfg.camera == "front_cam_narrow"
         self.sensor_scene = self.sensors.episode(seed, self.obj, liquid, extras, d,
-                                                 (EXTRA_X_NARROW, EXTRA_Y_NARROW) if narrow else (EXTRA_X, EXTRA_Y))
+                                                 (EXTRA_X_NARROW, EXTRA_Y_NARROW) if narrow else (EXTRA_X, EXTRA_Y),
+                                                 force_seethrough=None if cell is None else cell[2] == 1,
+                                                 glass_holes=cfg.faint_holes if cell is not None and cell[2] == 2 else None)
         info["n_table_blobs"] = len(self.sensor_scene["blobs"])
         info["glass_seethrough"] = self.sensor_scene["seethrough"]   # 1 in a see-through episode (dots or blobs)
+        if cell is not None:
+            info.update(cell=cell[0], rgb_dark=int(self.dark), thermal_contrast=apparent_contrast(
+                self.temps[self.obj], self.emis[self.obj], self.temps["table"], self.emis["table"], self.t_env))
+            if any(2 in c[1:4] for c in cfg.cells):
+                info.update(rgb_faint=int(cell[1] == 2), depth_faint=int(cell[2] == 2), thermal_faint=int(cell[3] == 2))
         self.episode_info = info
 
         for _ in range(300):
@@ -194,12 +224,33 @@ class GlassPickEnv:
             m.geom_rgba[self.table_geom, :3] = np.clip(rgb * (1 + rng.uniform(-1, 1, 3) * cfg.background_jitter), 0, 1)
         return dict(background=BACKGROUNDS.index(name))
 
-    def _lighting(self, seed):
+    def _cell(self, seed):
+        """Visibility cell of the episode (cfg.cells): (index, rgb blind, depth blind, thermal blind, object index),
+        or None. The object index is the one the cell was dealt for (seed % number of objects)."""
+        cfg = self.cfg
+        if not cfg.cells:
+            return None
+        assert cfg.thermal.realistic_p == 0, "visibility cells set the glass temperature themselves"
+        pat = cell_pattern(cfg.cells, len(OBJECT_NAMES))
+        k = int(factor_rng(None, "cell").integers(len(pat))) if seed is None else seed % len(pat)
+        i = int(pat[k])
+        flags = tuple(int(x) for x in cfg.cells[i][1:4])   # per sensor: 0 shows, 1 blind, 2 faint
+        assert all(f in (0, 1, 2) for f in flags) and (flags[0] != 2 or cfg.faint_alpha is not None) and \
+            (flags[1] != 2 or cfg.faint_holes is not None) and (flags[2] != 2 or cfg.thermal.faint_contrast is not None), flags
+        return (i, *flags, k % len(OBJECT_NAMES))
+
+    def _lighting(self, seed, dark=False):
         cfg, m = self.cfg, self.model
         rng = factor_rng(seed, "lighting")
         name = rng.choice(cfg.pool("lighting"))
+        if dark:                             # rgb blind cell: the room light is almost off, whatever the pool says
+            name = "dark"
         p = LIGHTING[name]
         scale = 1 + rng.uniform(-1, 1) * cfg.light_jitter
+        if dark:
+            scale *= cfg.dark_light
+            m.vis.headlight.specular[:] = self._head_spec * cfg.dark_light
+            m.light_specular[0] = self._defaults["light_specular"][0] * cfg.dark_light
         colour = np.array(p.get("colour", (1.0, 1.0, 1.0)))
         if name != "normal" or cfg.light_jitter > 0:
             m.vis.headlight.diffuse[:] = p["head"][0] * scale * colour
@@ -309,8 +360,9 @@ class GlassPickEnv:
             params = {"range": tuple(th.norm_range)} if th.norm_range is not None else None
             thermal96 = (255 * normalize_thermal_raw(raw96, mode, params)).astype(np.uint8)
         rgb96 = _resize(rgb)
-        if self.cfg.rgb_noise > 0:
-            noise = self.sensor_scene["rng"].normal(0, self.cfg.rgb_noise, rgb96.shape)
+        sigma = self.cfg.dark_rgb_noise if self.dark else self.cfg.rgb_noise
+        if sigma > 0:
+            noise = self.sensor_scene["rng"].normal(0, sigma, rgb96.shape)
             rgb96 = np.clip(np.round(rgb96 + noise), 0, 255).astype(np.uint8)
         d = self.data
         joints = np.append(d.qpos[:6], d.joint("right_finger_bottom_joint").qpos[0]).astype(np.float32)

@@ -31,7 +31,12 @@
     "L0_distract_a03": "sim/configs/L0_distract_a03.yaml",
     "L0_distract_a04": "sim/configs/L0_distract_a04.yaml",
     "L0_distract_s50": "sim/configs/L0_distract_s50.yaml",
-    "L0_bench": "sim/configs/L0_bench.yaml"
+    "L0_bench": "sim/configs/L0_bench.yaml",
+    "L0_grid": "sim/configs/L0_grid.yaml",
+    "L0_grid_clear": "sim/configs/L0_grid_clear.yaml",
+    "L0_grid_clear_a04": "sim/configs/L0_grid_clear_a04.yaml",
+    "L0_grid_clear_a05": "sim/configs/L0_grid_clear_a05.yaml",
+    "L0_vis": "sim/configs/L0_vis.yaml"
   },
   "test_sets": {
     "a_in_distribution": {
@@ -95,6 +100,262 @@
         "lighting",
         "distractors"
       ]
+    },
+    "h_cells": {
+      "split": "test",
+      "heldout": [],
+      "overrides": {
+        "cells": [
+          [
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            1,
+            0,
+            0
+          ],
+          [
+            1,
+            0,
+            1,
+            0
+          ],
+          [
+            1,
+            0,
+            0,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            0
+          ],
+          [
+            1,
+            1,
+            0,
+            1
+          ],
+          [
+            1,
+            0,
+            1,
+            1
+          ]
+        ]
+      }
+    },
+    "i_cells_heldout": {
+      "split": "test",
+      "heldout": [
+        "background",
+        "lighting",
+        "distractors"
+      ],
+      "overrides": {
+        "cells": [
+          [
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            1,
+            0,
+            0
+          ],
+          [
+            1,
+            0,
+            1,
+            0
+          ],
+          [
+            1,
+            0,
+            0,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            0
+          ],
+          [
+            1,
+            1,
+            0,
+            1
+          ],
+          [
+            1,
+            0,
+            1,
+            1
+          ]
+        ]
+      }
+    },
+    "j_cells11": {
+      "split": "test",
+      "heldout": [],
+      "overrides": {
+        "cells": [
+          [
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            1,
+            0,
+            0
+          ],
+          [
+            1,
+            0,
+            1,
+            0
+          ],
+          [
+            1,
+            0,
+            0,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            0
+          ],
+          [
+            1,
+            1,
+            0,
+            1
+          ],
+          [
+            1,
+            0,
+            1,
+            1
+          ],
+          [
+            1,
+            2,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            2,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            2
+          ],
+          [
+            1,
+            2,
+            2,
+            2
+          ]
+        ]
+      }
+    },
+    "k_cells11_heldout": {
+      "split": "test",
+      "heldout": [
+        "background",
+        "lighting",
+        "distractors"
+      ],
+      "overrides": {
+        "cells": [
+          [
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            1,
+            0,
+            0
+          ],
+          [
+            1,
+            0,
+            1,
+            0
+          ],
+          [
+            1,
+            0,
+            0,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            0
+          ],
+          [
+            1,
+            1,
+            0,
+            1
+          ],
+          [
+            1,
+            0,
+            1,
+            1
+          ],
+          [
+            1,
+            2,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            2,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            2
+          ],
+          [
+            1,
+            2,
+            2,
+            2
+          ]
+        ]
+      }
     }
   }
 }

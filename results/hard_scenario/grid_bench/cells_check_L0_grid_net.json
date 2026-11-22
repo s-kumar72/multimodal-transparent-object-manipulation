@@ -1,0 +1,148 @@
+{
+ "level": "L0_grid",
+ "ckpt": "data/grid_bench/runs/mix_ws/best.pt",
+ "sets": [
+  "h_cells",
+  "i_cells_heldout"
+ ],
+ "rows": [
+  {
+   "cell": 0,
+   "shows": [
+    "rgb",
+    "depth",
+    "thermal"
+   ],
+   "n": 120,
+   "rgb": 0.9083333333333333,
+   "rgb_chance": 0.3631833333333333,
+   "depth": 0.9833333333333333,
+   "depth_chance": 0.3592,
+   "thermal": 0.7916666666666666,
+   "thermal_chance": 0.3440333333333333,
+   "visible": 0.975,
+   "visible_chance": 0.3581166666666667,
+   "all": 0.975,
+   "all_chance": 0.35645,
+   "rule_depth": 0.975,
+   "rule_thermal": 0.9916666666666667
+  },
+  {
+   "cell": 1,
+   "shows": [
+    "depth",
+    "thermal"
+   ],
+   "n": 120,
+   "rgb": 0.375,
+   "rgb_chance": 0.31561666666666666,
+   "depth": 0.975,
+   "depth_chance": 0.3344666666666667,
+   "thermal": 0.7666666666666667,
+   "thermal_chance": 0.31653333333333333,
+   "visible": 0.9666666666666667,
+   "visible_chance": 0.3404666666666667,
+   "all": 0.9666666666666667,
+   "all_chance": 0.3366833333333334,
+   "rule_depth": 0.9833333333333333,
+   "rule_thermal": 0.9916666666666667
+  },
+  {
+   "cell": 2,
+   "shows": [
+    "rgb",
+    "thermal"
+   ],
+   "n": 120,
+   "rgb": 0.9833333333333333,
+   "rgb_chance": 0.3618333333333334,
+   "depth": 0.35,
+   "depth_chance": 0.31245000000000006,
+   "thermal": 0.9083333333333333,
+   "thermal_chance": 0.35214999999999996,
+   "visible": 1.0,
+   "visible_chance": 0.3668666666666667,
+   "all": 1.0,
+   "all_chance": 0.36219999999999997,
+   "rule_depth": 0.0,
+   "rule_thermal": 1.0
+  },
+  {
+   "cell": 3,
+   "shows": [
+    "rgb",
+    "depth"
+   ],
+   "n": 120,
+   "rgb": 0.9416666666666667,
+   "rgb_chance": 0.35064999999999996,
+   "depth": 1.0,
+   "depth_chance": 0.3478833333333333,
+   "thermal": 0.14166666666666666,
+   "thermal_chance": 0.11134999999999999,
+   "visible": 1.0,
+   "visible_chance": 0.35175,
+   "all": 1.0,
+   "all_chance": 0.35296666666666665,
+   "rule_depth": 0.9916666666666667,
+   "rule_thermal": 0.0
+  },
+  {
+   "cell": 4,
+   "shows": [
+    "thermal"
+   ],
+   "n": 120,
+   "rgb": 0.38333333333333336,
+   "rgb_chance": 0.32181666666666664,
+   "depth": 0.2833333333333333,
+   "depth_chance": 0.2199666666666667,
+   "thermal": 0.9333333333333333,
+   "thermal_chance": 0.3211833333333333,
+   "visible": 0.9333333333333333,
+   "visible_chance": 0.32220000000000004,
+   "all": 0.9583333333333334,
+   "all_chance": 0.32691666666666663,
+   "rule_depth": 0.0,
+   "rule_thermal": 1.0
+  },
+  {
+   "cell": 5,
+   "shows": [
+    "depth"
+   ],
+   "n": 120,
+   "rgb": 0.2833333333333333,
+   "rgb_chance": 0.30693333333333334,
+   "depth": 0.9916666666666667,
+   "depth_chance": 0.29266666666666663,
+   "thermal": 0.15,
+   "thermal_chance": 0.15355,
+   "visible": 0.9916666666666667,
+   "visible_chance": 0.2934333333333333,
+   "all": 0.9916666666666667,
+   "all_chance": 0.2954166666666666,
+   "rule_depth": 0.9833333333333333,
+   "rule_thermal": 0.0
+  },
+  {
+   "cell": 6,
+   "shows": [
+    "rgb"
+   ],
+   "n": 120,
+   "rgb": 0.9333333333333333,
+   "rgb_chance": 0.32383333333333336,
+   "depth": 0.25,
+   "depth_chance": 0.2116,
+   "thermal": 0.15,
+   "thermal_chance": 0.10928333333333333,
+   "visible": 0.9333333333333333,
+   "visible_chance": 0.32206666666666667,
+   "all": 0.9333333333333333,
+   "all_chance": 0.3312833333333333,
+   "rule_depth": 0.0,
+   "rule_thermal": 0.0
+  }
+ ]
+}

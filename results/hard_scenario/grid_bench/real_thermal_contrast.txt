@@ -1,0 +1,5 @@
+rgbt_glass: 2290 glass regions in 751 frames of 33 groups; |contrast| in degC: p10 0.01, p25 0.05, median 0.14, p75 0.37, p90 0.88; signed median -0.01
+   share of regions below: 0.1 degC 0.418, 0.2 degC 0.601, 0.3 degC 0.699, 0.5 degC 0.813, 1 degC 0.912
+transpose: 1548 glass regions in 770 frames of 35 groups; |contrast| in counts: p10 9.00, p25 23.00, median 42.00, p75 60.00, p90 92.00; signed median -42.00
+   share of regions below: 1 counts 0.010, 2 counts 0.020, 3 counts 0.032, 5 counts 0.055, 10 counts 0.114
+   in units of the camera noise (0.89 counts): median 47.2, share below 1 noise std 0.010, below 3 0.032

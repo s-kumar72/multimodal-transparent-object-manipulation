@@ -1,0 +1,62 @@
+{
+ "runs": [
+  "results/hard_scenario/grid_bench/L0_vis_rgbdt_700demos_imagenet"
+ ],
+ "test_sets": [
+  "j_cells11",
+  "k_cells11_heldout"
+ ],
+ "macro": 0.41363636363636364,
+ "macro_ci": [
+  0.39166666666666666,
+  0.4363636363636363
+ ],
+ "cells": {
+  "0": {
+   "success": 93,
+   "n": 120
+  },
+  "1": {
+   "success": 90,
+   "n": 120
+  },
+  "2": {
+   "success": 27,
+   "n": 120
+  },
+  "3": {
+   "success": 78,
+   "n": 120
+  },
+  "4": {
+   "success": 23,
+   "n": 120
+  },
+  "5": {
+   "success": 78,
+   "n": 120
+  },
+  "6": {
+   "success": 19,
+   "n": 120
+  },
+  "7": {
+   "success": 11,
+   "n": 120
+  },
+  "8": {
+   "success": 63,
+   "n": 120
+  },
+  "9": {
+   "success": 6,
+   "n": 120
+  },
+  "10": {
+   "success": 58,
+   "n": 120
+  }
+ },
+ "success": 546,
+ "n": 1320
+}

@@ -1,0 +1,7 @@
+# L0_grid_clear with the glass at alpha 0.5 where rgb shows it (results/hard_scenario/grid_bench/, "rgb shows" level):
+# a candidate for a less faint glass, so that a policy with rgb alone reaches about what depth alone and thermal alone
+# give. Nothing else changes; an rgb-blind episode keeps the clear glass (clear_alpha). meta/ep_level id 34.
+base: L0_grid_clear.yaml
+name: L0_grid_clear_a05
+level: 34
+alpha: [0.5, 0.5]

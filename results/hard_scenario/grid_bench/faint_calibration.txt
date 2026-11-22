@@ -1,0 +1,27 @@
+Faint-level calibration: single-sensor reference policies in their single-sensor cell with the cue weakened;
+120 test episodes per value (seeds 100000+, no held-out factor), the same episodes for every value of a sensor.
+
+== depth: L0_grid_clear_rgbd_500demos; share of the glass pixels that are holes
+value | success
+0.10 | 6/120 = 0.050
+0.20 | 33/120 = 0.275
+0.30 | 58/120 = 0.483
+0.40 (full) | 72/120 = 0.600
+half of full strength: 0.300; closest: 0.20 (0.275)
+
+== thermal: L0_grid_rgbt_500demos_cell4; degC from the table (+-10%)
+value | success
+1 | 8/120 = 0.067
+2 | 28/120 = 0.233
+3 | 38/120 = 0.317
+5 | 51/120 = 0.425
+5-35 from the room (full) | 69/120 = 0.575
+half of full strength: 0.287; closest: 3 (0.317)
+
+== rgb: L0_grid_clear_a05_rgb_330demos_rgbshown; alpha of the glass
+value | success
+0.2 | 22/120 = 0.183
+0.3 | 40/120 = 0.333
+0.4 | 60/120 = 0.500
+0.5 (full) | 54/120 = 0.450
+half of full strength: 0.225; closest: 0.2 (0.183)

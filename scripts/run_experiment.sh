@@ -12,7 +12,10 @@
 # TAG (suffix of the run name for runs that differ only by EXTRA, e.g. TAG=imagenet), GPU (CUDA_VISIBLE_DEVICES, 0).
 # TRAIN (training command, called as `$TRAIN <variant> <zarr> <overrides>`; default policy/train.sh, e.g.
 # TRAIN="policy/train_gated.sh gate" or TRAIN=scripts/train_fusion_policy.sh), EVAL_EXTRA (more policy/eval.py options,
-# e.g. --save_w), TOPK (best checkpoints kept besides latest.ckpt, 1; 0 keeps only latest.ckpt, which is the one evaluated).
+# e.g. --save_w), TOPK (best checkpoints kept besides latest.ckpt, 1; 0 keeps only latest.ckpt, which is the one evaluated),
+# TEST_SETS (test sets of the final evaluation, "a_in_distribution g_heldout_all"), NEVAL (episodes per test set in the
+# final evaluation, default NTEST; NTEST stays the number of rollouts during training), ZARR (demo set to train on,
+# default results/data/sim_demos_<level>_<n_demos>.zarr; for a set made by hand, e.g. policy/subset_demos.py, with TAG).
 # Several runs can start at once on different GPUs: a lock makes the first one collect a missing demo set and the
 # others wait for it.
 set -e
@@ -21,10 +24,11 @@ LEVEL=$1; VARIANT=$2; NDEMOS=$3
 EPOCHS=${EPOCHS:-101}; NTEST=${NTEST:-50}; NENVS=${NENVS:-10}; WORKERS=${WORKERS:-4}
 GROUP=${GROUP:-diagnosis}; RUNS_DIR=${RUNS_DIR:-data/runs}; GPU=${GPU:-0}; TOPK=${TOPK:-1}
 DP_ROOT=${DP_ROOT:-../diffusion_policy}
+TEST_SETS=${TEST_SETS:-"a_in_distribution g_heldout_all"}; NEVAL=${NEVAL:-$NTEST}
 export PYTHONPATH=$PWD:$PWD/sim:$DP_ROOT:$PYTHONPATH MUJOCO_GL=${MUJOCO_GL:-egl} WANDB_MODE=${WANDB_MODE:-offline}
 
 NAME=${LEVEL}_${VARIANT}_${NDEMOS}demos${TAG:+_$TAG}
-ZARR=results/data/sim_demos_${LEVEL}_${NDEMOS}.zarr
+ZARR=${ZARR:-results/data/sim_demos_${LEVEL}_${NDEMOS}.zarr}
 RUN=$RUNS_DIR/$NAME
 OUT=results/hard_scenario/$GROUP/$NAME
 mkdir -p $RUNS_DIR $OUT
@@ -52,11 +56,11 @@ fi
 cp $RUN/logs.json.txt $OUT/train_logs.json.txt
 python policy/summarize_runs.py curve $OUT/train_logs.json.txt $OUT/curve.json
 
-# 3. Evaluation of the last checkpoint on test sets (a) and (g)
-if [ ! -f $OUT/g_heldout_all/eval_log.json ]; then
-    echo "[$(date +%H:%M)] $NAME: evaluating test sets (a) and (g) (log $RUN.eval.log)"
+# 3. Evaluation of the last checkpoint on TEST_SETS (default: test sets (a) and (g))
+if [ ! -f $OUT/${TEST_SETS##* }/eval_log.json ]; then
+    echo "[$(date +%H:%M)] $NAME: evaluating test sets $TEST_SETS, $NEVAL episodes each (log $RUN.eval.log)"
     CUDA_VISIBLE_DEVICES=$GPU python policy/eval.py -c $RUN/checkpoints/latest.ckpt -o $OUT --level $LEVEL \
-        --n_test $NTEST --n_envs $NENVS --n_vis 0 --test_set a_in_distribution --test_set g_heldout_all ${EVAL_EXTRA:-} \
+        --n_test $NEVAL --n_envs $NENVS --n_vis 0 $(for t in $TEST_SETS; do echo --test_set $t; done) ${EVAL_EXTRA:-} \
         > $RUN.eval.log 2>&1
 fi
 echo "[$(date +%H:%M)] $NAME: done -> $OUT"
