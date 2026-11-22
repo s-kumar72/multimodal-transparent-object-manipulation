@@ -106,7 +106,7 @@ class GlassImageDataset(BaseImageDataset):
         self.has_cue = "cue" in self.obs_meta
         self.roi = cue_roi(self.obs_meta)
         self.cue_opts = cue_opts(self.obs_meta)
-        data_keys = [k for k in self.obs_meta if k not in ("cue", "glass_loc")]
+        data_keys = [k for k in self.obs_meta if k not in ("cue", "glass_loc", "hcue")]
         available = zarr_data_keys(zarr_path)
         if self.has_cue and "thermal" in self.obs_meta and "thermal_raw" in available:
             data_keys.append("thermal_raw")
@@ -126,6 +126,13 @@ class GlassImageDataset(BaseImageDataset):
             assert len(loc_masks) == self.replay_buffer.n_steps, (loc_path, len(loc_masks), self.replay_buffer.n_steps)
             self.replay_buffer.root["data"]["glass_loc"] = glass_location(loc_masks)
             data_keys.append("glass_loc")
+        hcue_attr = self.obs_meta.get("hcue")
+        if hcue_attr is not None:      # hindsight cue of every episode (policy/hindsight_cue.py), the same in all its frames
+            cue_ep = np.load(hcue_attr["file"]).astype(np.float32)
+            ends = np.asarray(self.replay_buffer.episode_ends[:])
+            assert len(cue_ep) == len(ends), (hcue_attr["file"], len(cue_ep), len(ends))
+            self.replay_buffer.root["data"]["hcue"] = np.repeat(cue_ep, np.diff(np.r_[0, ends]), axis=0)
+            data_keys.append("hcue")
 
         val_mask = get_val_mask(n_episodes=self.replay_buffer.n_episodes, val_ratio=val_ratio, seed=seed)
         train_mask = downsample_mask(mask=~val_mask, max_n=max_train_episodes, seed=seed)
@@ -173,6 +180,9 @@ class GlassImageDataset(BaseImageDataset):
         for key, attr in self.obs_meta.items():
             if attr.get("type", "low_dim") == "rgb":
                 normalizer[key] = get_image_range_normalizer()
+        if "hcue" in self.obs_meta:    # the gate entries stay as they are: the encoder switches sensors on them
+            normalizer["hcue"].params_dict["scale"].data[-3:] = 1.0     # r_rgb, r_depth, r_thermal
+            normalizer["hcue"].params_dict["offset"].data[-3:] = 0.0
         if self.has_cue:
             # z-scores rather than limits: cues of corrupted / crossover frames must stay in range, and the fit
             # sample includes corrupted copies of the frames so the training distribution is covered

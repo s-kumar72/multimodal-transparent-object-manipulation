@@ -1,0 +1,17 @@
+# glass_pick plus the hindsight cue observation (policy/hindsight_cue.py): the grasp point the sensors' own maps agree
+# on and how far each sensor is trusted, learned from the demos alone.
+# hcue_dir: output folder of `python policy/hindsight_cue.py <the same demo set> --out <hcue_dir>`.
+defaults:
+  - glass_pick
+  - _self_
+
+name: glass_pick_hcue
+hcue_dir: data/hcue/L0_vis_700
+
+shape_meta:
+  obs:
+    hcue:
+      shape: [9]           # hindsight_cue.CUE_DIM: x, y, z, u, v, confidence, r_rgb, r_depth, r_thermal
+      type: low_dim
+      file: ${task.hcue_dir}/train_cue.npy   # training samples: the cue of every episode, out of fold
+      ckpt: ${task.hcue_dir}/cue.pt          # evaluation env: computed from the first frame of the episode
