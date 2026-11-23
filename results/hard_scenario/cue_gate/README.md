@@ -552,6 +552,34 @@ Against the same cue fitted on all 700 demos, on the same episodes of the cells 
 - In the cells of the training set the two do not differ (0.93 against 0.95); in cell 1 the one network is above.
 - These are cues, not policies. Step 2 of both parts says whether the success follows.
 
+### Results of step 2 of 3a so far: the runs of round 1 and the baseline on the 15 new combinations (11/23 23:05 KST)
+
+Full tables: [`readout_round3_new_cells.txt`](readout_round3_new_cells.txt) (`python policy/readout_round3.py
+policies-new`). Seed 42, the last checkpoints of the runs trained on the 700 demos, 1200 episodes per run (80 per
+cell). The four controls of round 2 are evaluated at the end of the queue; read-out items 1 and 2 wait for them.
+
+| cells | `hcg_cue` | `hcg_full` | `hcg_blind` | rgbdt ImageNet |
+|---|---|---|---|---|
+| all 15 new cells | 0.849 | 0.843 | 0.852 | 0.574 |
+| a sensor shows the glass fully (0 to 11) | 0.861 | 0.846 | 0.868 | 0.628 |
+| none does, two faint and one blind (12 to 14) | 0.800 | 0.833 | 0.787 | 0.358 |
+| for orientation: the 11 training cells | 0.795 | 0.789 | 0.783 | 0.414 |
+
+3. `hcg_full` against `hcg_cue`: 0.843 against 0.849 (only `full` succeeds 81, only `cue` 88, p = 0.64). Gating the
+   image features does not matter on new combinations either; `full` is below in two cells (10: 0.762 against 0.875,
+   p = 0.049; 11: 0.738 against 0.863, p = 0.013) and above in none.
+4. Against the rgbdt ImageNet baseline of seed 42: `hcg_cue` 0.849 against 0.574 (407 / 77, p = 3.1e-55), `hcg_full`
+   0.843 (401 / 78, p = 2.1e-53), `hcg_blind` 0.852 (409 / 76, p = 3.4e-56). In the three cells where no sensor shows
+   the glass fully: 0.800 / 0.833 / 0.787 against 0.358. No cell in which a policy with the cue is below the baseline
+   with p < 0.05; lower at all in two: `hcg_full` in cell 10 (0.762 against 0.775) and `hcg_blind` in cell 8 (0.762
+   against 0.800, p = 0.68).
+5. For orientation: every policy is higher on the 15 new cells than on the 11 training cells (the baseline too, 0.574
+   against 0.414): most new combinations have two sensors that show the glass at least faintly, so they are easier.
+   The gain of `hcg_cue` over the baseline is 0.275 here and 0.381 on the training cells.
+
+So the method's advantage over the plain policy holds on visibility combinations that were not in the training set.
+Whether the structure per sensor is what carries it there is items 1 and 2.
+
 ### Order of the queue (set 11/23 12:40 KST, before any run of rounds 2 and 3 has started)
 
 `hcg_cue_early`, `hcg_cue_nogate`, the evaluation of 3a for the runs that exist, the four runs of 3b,
