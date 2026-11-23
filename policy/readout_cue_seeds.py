@@ -9,8 +9,9 @@ The method's run of seed s is paired with the baseline's run of seed s on the sa
 seed); the pairs of the seeds are pooled and the two-sided sign test is on the episodes only one of the two solves.
 Printed: success per cell and seed; per cell against the best baseline of that cell (frozen table of Stage 6); over
 all episodes against each of the four baselines; and the two conditions of "better in nearly every case" (no cell
-below its best baseline with p < 0.05, macro average above every baseline). Seeds without a finished evaluation are
-left out and named.
+below its best baseline with p < 0.05, macro average above every baseline); and, next to it and not a criterion,
+the learned attention weighting P9 with the same seeds (extra supervision; --fusion_root, left out when its runs are
+not found). Seeds without a finished evaluation are left out and named.
 """
 from pathlib import Path
 
@@ -22,6 +23,10 @@ from readout_cue_gate import BEST, REF, SHOWS, WHICH, load, mark, ok, sign_p
 SEEDS = (42, 43, 44)
 BASELINES = ("rgbdt", "rgbd", "rgbt", "rgb")
 FROZEN = {"rgbdt": 0.428, "rgbd": 0.397, "rgbt": 0.194, "rgb": 0.153}   # macro averages, three seeds, Stage 6
+
+
+def fmt(p):
+    return "< 1e-300" if p < 1e-300 else f"{p:.2g}"
 
 
 def folder(name, seed):
@@ -47,7 +52,8 @@ def pooled(A, B, cells):
 @click.option("--arm", default="full")
 @click.option("--root", default="results/hard_scenario/cue_gate")
 @click.option("--base_root", default="results/hard_scenario/grid_bench")
-def main(arm, root, base_root):
+@click.option("--fusion_root", default="results/hard_scenario/fusion_vis")
+def main(arm, root, base_root, fusion_root):
     name = f"L0_vis_rgbdt_700demos_hcg_{arm}"
     runs = {s: load(Path(root) / folder(name, s)) for s in SEEDS}
     seeds = [s for s in SEEDS if runs[s] is not None]
@@ -70,7 +76,7 @@ def main(arm, root, base_root):
         if p < 0.05:
             (below if sa < sb else above).append(c)
         print(f"| {c} | {SHOWS[c]} | " + " | ".join(f"{rate([r], (c,)):.3f}" for r in meth)
-              + f" | {sa:.3f}{mark(p, sa - sb)} | {sb:.3f} ({WHICH[c]}) | {BEST[c]:.3f} | {a} / {b} | {p:.2g} | "
+              + f" | {sa:.3f}{mark(p, sa - sb)} | {sb:.3f} ({WHICH[c]}) | {BEST[c]:.3f} | {a} / {b} | {fmt(p)} | "
               f"{REF[c]:.3f} |")
     macros = [np.mean([rate([r], (c,)) for c in range(11)]) for r in meth]
     macro = float(np.mean([rate(meth, (c,)) for c in range(11)]))
@@ -88,7 +94,7 @@ def main(arm, root, base_root):
     for w in BASELINES:
         sa, sb, a, b, p = pooled(meth, base[w], range(11))
         over &= macro > FROZEN[w]
-        print(f"| {w} ImageNet | {sa:.3f} | {sb:.3f} | {FROZEN[w]:.3f} | {a} / {b} | {p:.2g} |")
+        print(f"| {w} ImageNet | {sa:.3f} | {sb:.3f} | {FROZEN[w]:.3f} | {a} / {b} | {fmt(p)} |")
 
     print("\n## The claim of Stage 6 (rule 5)\n")
     print(f"Cells below their best baseline with p < 0.05: {below or 'none'}; above: {above or 'none'}; neither: "
@@ -98,6 +104,17 @@ def main(arm, root, base_root):
     verdict = "holds" if not below and over else "does not hold"
     print(f"\"Better in nearly every case\" {verdict}" + ("." if len(seeds) == len(SEEDS) else
                                                          f" on the seeds finished so far ({seeds}); not final."))
+
+    p9 = [load(Path(fusion_root) / folder("L0_vis_rgbdt_700demos_fusion_kp", s)) for s in seeds]
+    if all(r is not None and set(r) == set(meth[0]) for r in p9):
+        print("\n## Next to it, not a criterion: the learned attention weighting P9 (extra supervision: segmentation "
+              "pre-training on simulator masks), same seeds, same episodes\n")
+        print("| cell | sensors that show the glass | the method | P9 | only the method succeeds / only P9 | p |")
+        print("|---|---|---|---|---|---|")
+        for c in [*range(11), None]:
+            sa, sb, a, b, p = pooled(meth, p9, range(11) if c is None else (c,))
+            print(f"| {'all episodes' if c is None else c} | {'' if c is None else SHOWS[c]} | {sa:.3f} | {sb:.3f} | "
+                  f"{a} / {b} | {fmt(p)} |")
 
 
 if __name__ == "__main__":
