@@ -305,6 +305,50 @@ GPU, three at once over both pages), in the order of the table, ahead of the run
 The seed runs of item 5 of round 1 are put ahead of the controls not yet started once round 1 has been read. A run
 that fails is not started again.
 
+### Results of round 2 as the controls finish
+
+Full tables: [`readout_round2.txt`](readout_round2.txt) (`python policy/readout_cue_controls.py`) and
+[`cue_in_episodes_round2.txt`](cue_in_episodes_round2.txt) (`python policy/analyze_cue.py`). Seed 42, 1320 episodes
+per run. The read-out of the whole round is written when all four controls have finished.
+
+**`hcg_cue_early`, one network on the five channels (11/23 17:20 KST).**
+
+| cell | sensors that show the glass | `hcg_cue` (the method's cue) | `hcg_cue_early` | rgbdt ImageNet, seed 42 |
+|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.950 | 0.883 | 0.775 |
+| 1 | depth+thermal | 0.858 | 0.825 | 0.750 |
+| 2 | rgb+thermal | 0.900 | 0.825 | 0.225 |
+| 3 | rgb+depth | 0.933 | 0.858 (below) | 0.650 |
+| 4 | thermal | 0.642 | 0.700 | 0.192 |
+| 5 | depth | 0.792 | 0.742 | 0.650 |
+| 6 | rgb | 0.883 | 0.742 (below) | 0.158 |
+| 7 | rgb (faint) | 0.842 | 0.708 (below) | 0.092 |
+| 8 | depth (faint) | 0.625 | 0.500 (below) | 0.525 |
+| 9 | thermal (faint) | 0.467 | 0.492 | 0.050 |
+| 10 | all faint | 0.858 | 0.750 (below) | 0.483 |
+| macro average | | 0.795 | 0.730 (below) | 0.414 |
+
+"(below)": below `hcg_cue` on the same episodes, p < 0.05.
+
+1. Against `hcg_cue`: 0.730 against 0.795 over all episodes (only `hcg_cue` succeeds 215, only the control 128,
+   p = 3.1e-06); below in five cells (3, 6, 7, 8, 10), above in none (cells 4 and 9, thermal alone, are 0.058 and
+   0.025 higher, p >= 0.05). By read-out 1: maps per sensor with the gate are better than one network on all sensors,
+   for the success of the policy and on the combinations of the training set.
+2. Against the baselines: above the rgbdt ImageNet baseline of seed 42 (0.414; 508 / 91, p = 3.6e-71); per cell above
+   the seed-42 run of the best baseline in eight cells (not 1, 5, 8), below in none. Most of the gain over the
+   baselines does not need the structure per sensor: the control keeps 0.32 of the method's 0.38.
+3. The cue inside the episodes: within 1.5 cm of the glass in 0.883 of the episodes (the method 0.907), median error
+   0.61 cm (0.47); success with a right cue 0.800 (0.855), with a wrong cue 0.195 (0.220). The control does not fail
+   mainly through more wrong cues: it succeeds less often with a cue that counts as right.
+
+Outside the fixed read-out, on the same files: success falls with the error of the cue inside the 1.5 cm too (the
+method's run: 0.93 below 0.5 cm, 0.80 between 0.5 and 1 cm, 0.57 between 1 and 1.5 cm), and the control's cue is less
+exact (errors below 0.5 cm: 517 episodes against 704). Giving the control the method's distribution of cue errors
+(seven bins) would put it at 0.761, so about half of the 0.065 is the less exact cue. The other half is there at the
+same error: on the 335 episodes in which both cues are within 0.5 cm, 0.967 against 0.910 (26 / 7, p = 0.0013). What
+differs there is that the method's cue tells the policy which sensors were trusted (the gate entries; 1 for the
+control) and the two training runs themselves (one seed each); the run cannot separate these two.
+
 ## Round 3: visibility combinations that are not in the training set (plan of 11/23 12:40 KST, before any of it is run; decision of the user)
 
 **Why.** The eleven cells of `L0_vis` are in the training demos and in both test sets; `k_cells11_heldout` holds out
@@ -443,6 +487,10 @@ Against the same cue fitted on all 700 demos, on the same episodes of the cells 
 [`../fusion_vis/README.md`](../fusion_vis/README.md) that have not started; the seed runs of item 5 of round 1 go to
 the front once round 1 has been read. This replaces the order given in round 2 (the control with one network first:
 it is the one the claim about the structure per sensor depends on most).
+
+Change of 11/23 17:10 KST (order only, no run has changed): the evaluation of 3a for the controls is the last line of
+the queue and waits until `hcg_cue_mapgate` and `dp_aux` have ended. The queue starts a line as soon as a GPU is free,
+so right behind `dp_aux` it would have started while these two were still training and skipped them.
 
 ## Files
 
