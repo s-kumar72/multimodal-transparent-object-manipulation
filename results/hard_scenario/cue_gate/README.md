@@ -243,6 +243,101 @@ GPU, three at once over both pages), in the order of the table, ahead of the run
 The seed runs of item 5 of round 1 are put ahead of the controls not yet started once round 1 has been read. A run
 that fails is not started again.
 
+## Round 3: visibility combinations that are not in the training set (plan of 11/23 12:40 KST, before any of it is run; decision of the user)
+
+**Why.** The eleven cells of `L0_vis` are in the training demos and in both test sets; `k_cells11_heldout` holds out
+backgrounds, lighting and distractors, not the cells. A model can therefore learn the eleven cases one by one, and the
+benchmark cannot tell that from judging every sensor on its own: on the cue alone, one network on all sensors is as
+accurate as the maps per sensor with the verified gate (round 2). What a gate per sensor should add is that it keeps
+working when the sensors fail in a combination that was not in the training set. Two experiments measure that. Both
+are additions: the level `L0_vis`, its training set, its test sets and the frozen numbers of
+[`../grid_bench/README.md`](../grid_bench/README.md) are not changed. One seed (42) each: a first reading.
+
+### 3a. New combinations at test, no new training
+
+Test sets `l_cells15_new` (in-distribution scene pools) and `m_cells15_new_heldout` (held-out backgrounds, lighting
+and distractors), added to `sim/configs/manifest.json`: level `L0_vis` with the cells replaced by the 15 combinations
+of shows (0) / blind (1) / faint (2) per sensor that are not among the eleven training cells and in which at least one
+sensor shows the glass at least faintly (27 combinations - 11 training cells - all blind). 600 episodes per test set
+(seeds 100000 to 100599), 40 per cell.
+
+| cell | rgb / depth / thermal | | cell | rgb / depth / thermal |
+|---|---|---|---|---|
+| 0 | faint / shows / shows | | 8 | blind / shows / faint |
+| 1 | shows / faint / shows | | 9 | faint / faint / shows |
+| 2 | shows / shows / faint | | 10 | faint / shows / faint |
+| 3 | faint / shows / blind | | 11 | shows / faint / faint |
+| 4 | faint / blind / shows | | 12 | faint / faint / blind |
+| 5 | shows / faint / blind | | 13 | faint / blind / faint |
+| 6 | blind / faint / shows | | 14 | blind / faint / faint |
+| 7 | shows / blind / faint | | | |
+
+Step 1, the cue alone (`python policy/check_cue_env.py <cue.pt> --test_set <set> -n 600 --save <file>`): the cue of
+the method (`data/hcue/L0_vis_700`), without a gate, with the gate on map numbers and from one network (the cue
+folders of round 2), all fitted on the 700 demos. Reported: the share of episodes with the cue within 1.5 cm of the
+glass, per cell and over the 1200 episodes; the method against each of the three on the same episodes (sign test on
+the episodes in which exactly one of the two cues is within 1.5 cm).
+
+Step 2, policies trained on the 700 demos, their last checkpoints evaluated on the two test sets
+(`bash policy/eval_new_cells.sh <group>/<run> ...`): `hcg_cue`, `hcg_full`, `hcg_blind`, the rgbdt ImageNet baseline
+of seed 42, and the four controls of round 2 once they have finished. It is run whatever step 1 shows. The runs of the
+learned attention weighting are not evaluated here.
+
+Read-out, fixed now (same episodes, sign test, p < 0.05, over the 1200 episodes and per cell):
+
+1. `hcg_cue` against `hcg_cue_early`, in both directions. If `hcg_cue` is above, the maps per sensor with the gate
+   carry over to new combinations better than one network on all sensors; if they do not differ, no advantage of the
+   structure per sensor is shown on new combinations either.
+2. `hcg_cue` against `hcg_cue_nogate` and `hcg_cue_mapgate`.
+3. `hcg_full` against `hcg_cue`: whether gating the image features matters on new combinations.
+4. Every policy against the rgbdt ImageNet baseline of seed 42.
+5. For orientation, not a test: the success of every policy on the 15 new cells next to its success on the 11
+   training cells.
+
+### 3b. Cells left out of the training set
+
+Training set `results/data/sim_demos_L0_vis_400_nosingle.zarr`: the demos of the 700 that are in cells 0, 1, 2, 3 and
+10 (`python policy/subset_demos.py ... --cells 0 --cells 1 --cells 2 --cells 3 --cells 10`; 140 + 3 x 70 + 50 = 400
+demos). In it at most one sensor is blind at a time, or all three are faint. Left out: cells 4 to 9, in which one
+sensor alone shows the glass, fully or faintly, and the other two are blind at once. Every sensor still has all three
+of its states in the training set (shows, blind, faint). Test sets: `j_cells11` and `k_cells11_heldout` as always
+(1320 episodes: 600 in the cells of the training set, 720 in the cells left out).
+
+Step 1, the cue alone, fitted on the 400 demos (`python policy/hindsight_cue.py <the 400 demos> --eval
+results/data/sim_demos_L0_vis_700_seed700.zarr --out data/hcue/L0_vis_400_nosingle[_nogate | _early]`, modes verify,
+nogate and early): reported per cell on the held-out demos of the 700-demo set's sibling (which has all eleven cells)
+and in the evaluation env on the two test sets (`policy/check_cue_env.py --save`), the method against the one network
+and against no gate on the same episodes, in the cells left out and in the cells of the training set.
+
+Step 2, policies on the 400 demos (protocol of the benchmark: 101 epochs, last checkpoint, ImageNet encoders, 55
+episodes of `j_cells11` during training, 660 episodes on each test set), run whatever step 1 shows:
+
+| run | what it is |
+|---|---|
+| `L0_vis_rgbdt_400demos_nosingle_hcg_cue` | arm `cue` with the cue of the method fitted on the 400 demos |
+| `L0_vis_rgbdt_400demos_nosingle_hcg_full` | arm `full` (cue and gated image features) with the same cue |
+| `L0_vis_rgbdt_400demos_nosingle_hcg_cue_early` | arm `cue` with the cue of one network on all sensors fitted on the 400 demos |
+| `L0_vis_rgbdt_400demos_nosingle_imagenet` | the plain rgbdt baseline (`policy/train.sh`, ImageNet encoders) on the 400 demos |
+
+Read-out, fixed now (same episodes, sign test, p < 0.05; separately over the 720 episodes of the cells left out and
+the 600 of the cells of the training set, and per cell):
+
+1. `nosingle_hcg_cue` against `nosingle_hcg_cue_early`, in both directions, read as in 3a.
+2. `nosingle_hcg_full` against `nosingle_hcg_cue`: whether gating the image features matters when two sensors are
+   blind at once for the first time.
+3. Each of the three against `nosingle_imagenet`.
+4. What leaving the cells out costs: each of the four against its counterpart trained on the 700 demos (`hcg_cue`,
+   `hcg_full`, `hcg_cue_early`, the rgbdt ImageNet baseline of seed 42), on the same episodes of cells 4 to 9.
+5. `python policy/analyze_cue.py <run>` for the three runs with a cue.
+
+### Order of the queue (set 11/23 12:40 KST, before any run of rounds 2 and 3 has started)
+
+`hcg_cue_early`, `hcg_cue_nogate`, the evaluation of 3a for the runs that exist, the four runs of 3b,
+`hcg_cue_mapgate`, `dp_aux`, the evaluation of 3a for the controls, then the runs of
+[`../fusion_vis/README.md`](../fusion_vis/README.md) that have not started; the seed runs of item 5 of round 1 go to
+the front once round 1 has been read. This replaces the order given in round 2 (the control with one network first:
+it is the one the claim about the structure per sensor depends on most).
+
 ## Files
 
 - `policy/hindsight_cue.py` (cue, verifier, fusion; fit and report), `policy/check_cue_env.py` (the cue in the env),
@@ -255,3 +350,5 @@ that fails is not started again.
   `policy/aux_grasp_policy.py`, `policy/config/train_glass_auxgrasp_unet_image.yaml`, `policy/train_auxgrasp.sh` (the
   control with the auxiliary loss), `policy/readout_cue_gate.py` (read-out of round 1, items 1, 2 and 4),
   `policy/readout_cue_controls.py` (read-out of round 2).
+- Round 3: `sim/configs/manifest.json` (test sets `l_cells15_new`, `m_cells15_new_heldout`),
+  `policy/eval_new_cells.sh` (the policies on them), `policy/check_cue_env.py --save` (the cue per episode).
