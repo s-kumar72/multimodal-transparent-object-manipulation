@@ -171,6 +171,78 @@ The plain rgbdt baseline (no cue, no gate) is the fourth corner and exists with 
 
 Results are reported as they come out, whatever they are.
 
+## Policy runs, round 2: what the cue is made of, and two controls (listed 11/23 12:20 KST, before any of them starts)
+
+Written with three of the four runs of round 1 finished and looked at (`blind` still running): `full` 0.789, `cue`
+0.795, `gate` 0.507, the rgbdt baseline of the same seed 0.414; `full` against `cue` p = 0.58. Gating the image
+features adds nothing once the cue is in the conditioning, so the part of the gate that can matter is the one inside
+the cue: the verifier decides which sensors' maps make the grasp point. That has been measured on the cue alone
+(table "Forms compared"), not on the success of a policy. Round 2 measures it there, and adds two controls that use the
+same hindsight label without the per-sensor maps and gate. Decision of the user (11/23).
+
+Protocol of round 1 (`L0_vis`, 700 demos, 101 epochs, last checkpoint, ImageNet encoders, 55 episodes of `j_cells11`
+during training, final evaluation on `j_cells11` and `k_cells11_heldout`, 660 episodes each), seed 42. The first
+three runs are the arm `cue` of `policy/train_cuegate.sh` (cue in the conditioning, image features not gated) with
+another cue folder (`task.hcue_dir`), so against `L0_vis_rgbdt_700demos_hcg_cue` only the cue differs.
+
+| run | cue | question |
+|---|---|---|
+| `L0_vis_rgbdt_700demos_hcg_cue_nogate` | `data/hcue/L0_vis_700_nogate`: the same per-sensor networks and maps; the three distributions are averaged with no reliability estimate, the gate entries of the cue are 1 | does the gate that chooses among the sensors matter for the policy? |
+| `L0_vis_rgbdt_700demos_hcg_cue_mapgate` | `data/hcue/L0_vis_700_v0`: the same maps; the gate is fitted on four numbers of every map and the peak distances (fusion mixture), it does not see the image | does the gate have to look at the image? |
+| `L0_vis_rgbdt_700demos_hcg_cue_early` | `data/hcue/L0_vis_700_early`: one network of the same form on the five channels of the three sensors, no gate, gate entries 1 | are maps per sensor needed, or does one network sort the sensors out by itself? |
+| `L0_vis_rgbdt_700demos_dp_aux` | none. The plain rgbdt policy; a head on the encoder's features predicts the hindsight grasp point of the episode and its error is added to the loss with weight 1 (`policy/train_auxgrasp.sh`, `policy/aux_grasp_policy.py`). At evaluation it sees what the plain baseline sees | is a cue in the conditioning needed, or is the supervision enough? |
+
+**The cues of the controls, before any policy** (training demos out of fold / held-out demos; made with
+`python policy/hindsight_cue.py <demos> --eval <held-out demos> --out <folder> --mode nogate | early | label`):
+
+| cue | within 1.5 px | within 1 cm | within 1.5 cm | record |
+|---|---|---|---|---|
+| the method (verified gate, consensus) | 0.964 / 0.966 | 0.827 / 0.881 | 0.916 / 0.943 | [`perception/verified_gate.txt`](perception/verified_gate.txt) |
+| no gate, mean of the three maps | 0.836 / 0.851 | 0.567 / 0.583 | 0.704 / 0.717 | [`perception/no_gate.txt`](perception/no_gate.txt) |
+| no gate, product of the three maps (not run) | 0.696 / 0.673 | 0.341 / 0.363 | 0.456 / 0.479 | same |
+| gate on map numbers, mixture | 0.900 / 0.903 | 0.730 / 0.786 | 0.830 / 0.856 | [`perception/gate_on_map_numbers.txt`](perception/gate_on_map_numbers.txt) |
+| one network on the five channels | 0.95 / 0.97 | 0.82 / 0.83 | 0.92 / 0.93 | [`perception/one_network.txt`](perception/one_network.txt) |
+
+Of the two forms without a gate the mean is run: it is the better one on the number the forms were chosen on (within
+1 cm, training demos out of fold). The gate on map numbers is the folder kept from 11/22 (mixture; product and pick are
+within 0.015 of it). The three sensors trained together (0.693 within 1.5 px) are below the form without a gate and
+are not run as a policy. On the cue alone the one network on the five channels is as accurate as the method (within
+1 cm 0.82 against 0.83 on the training demos out of fold): among the forms that combine maps per sensor the verified
+gate is what makes the cue right (0.83 against 0.57 without a gate and 0.73 with a gate on map numbers), but a single
+network on all sensors does not need it on these demos. This was seen before the policy runs and is why item 1 is
+read in both directions. In the evaluation env (`policy/check_cue_env.py`, `j_cells11` / `k_cells11_heldout`, within
+1.5 cm of the glass): the method 0.93 / 0.88, no gate 0.60 / 0.62, gate on map numbers 0.80 / 0.76, one network
+0.90 / 0.87 ([`perception/env_check_controls.txt`](perception/env_check_controls.txt)).
+
+**Read-out, fixed now.** "Same episodes" = the same test set and episode seed; sign test on the episodes in which
+exactly one of the two succeeds; over all 1320 episodes and per cell; p < 0.05
+(`python policy/readout_cue_controls.py`).
+
+1. Each control against `L0_vis_rgbdt_700demos_hcg_cue`. If `hcg_cue` is above `hcg_cue_nogate`, the gate that
+   chooses among the sensors contributes to the success of the policy; if it is above `hcg_cue_mapgate`, a gate that
+   looks at the image contributes beyond one on map numbers; if it is above `hcg_cue_early`, maps per sensor with the
+   gate are better than one network on all sensors, and if it is not, the structure per sensor is not shown to be
+   needed for the success on this benchmark; if it is above `dp_aux`, the cue in the conditioning is needed
+   beyond the supervision. A control that is not below `hcg_cue` with p < 0.05 means the corresponding part is not
+   shown to matter, and is reported as such.
+2. Each control against the rgbdt ImageNet baseline of seed 42 over all episodes, and per cell against the seed-42
+   run of the best baseline of the cell (as in round 1). For `dp_aux` this says whether the auxiliary target alone
+   helps the plain policy.
+3. For the three controls with a cue, `python policy/analyze_cue.py <run>`: the share of episodes with a cue within
+   1.5 cm of the glass and the success with a right and with a wrong cue. It separates a control that fails because
+   its cue is wrong more often from one that fails with the same cue.
+4. One seed each: a first reading. Seeds for the controls are decided after this round; the claim of Stage 6 is made
+   for the method only, with the three seeds of item 5 of round 1.
+
+The gate entries of the cue are 1 for `nogate` and `early`: the policy is not told how far a sensor is trusted, since
+these forms have no such estimate. The weight of the auxiliary loss (1) and the head (one hidden layer of 256) are set
+here and not tuned.
+
+Queue: `data/runs/fv_queue.sh` of the worktree of [`../fusion_vis/README.md`](../fusion_vis/README.md) (one run per
+GPU, three at once over both pages), in the order of the table, ahead of the runs of that page that have not started.
+The seed runs of item 5 of round 1 are put ahead of the controls not yet started once round 1 has been read. A run
+that fails is not started again.
+
 ## Files
 
 - `policy/hindsight_cue.py` (cue, verifier, fusion; fit and report), `policy/check_cue_env.py` (the cue in the env),
@@ -179,3 +251,7 @@ Results are reported as they come out, whatever they are.
 - `policy/glass_dataset.py`, `policy/glass_gym_env.py`: the `hcue` observation (the cue of the episode); nothing changes
   for a policy without that key.
 - `perception/`: the reports of this page. Not in git: `data/hcue/` (networks, maps, cue files).
+- Round 2: `policy/hindsight_cue.py --mode nogate | early | label` (the cues of the controls),
+  `policy/aux_grasp_policy.py`, `policy/config/train_glass_auxgrasp_unet_image.yaml`, `policy/train_auxgrasp.sh` (the
+  control with the auxiliary loss), `policy/readout_cue_gate.py` (read-out of round 1, items 1, 2 and 4),
+  `policy/readout_cue_controls.py` (read-out of round 2).

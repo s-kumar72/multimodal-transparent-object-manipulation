@@ -20,6 +20,10 @@ projected into the image with the camera calibration. No cell, visibility flag o
           prod_m p_m(u)^beta_m; pick: the sensor with the highest own reliability); evidence: the three sensors
           trained together on p(u) = softmax_u sum_m log(exp l_m(u) + 1 / N), the gate being a sensor's total
           evidence (one sensor ends up carrying the others, see the README).
+          Controls without a gate (--mode): nogate, the per-sensor maps averaged (or multiplied) with no reliability
+          estimate; early, one network on the five channels of the three sensors; label, no cue at all: the file of
+          training cues holds the hindsight grasp points themselves, as the target of an auxiliary loss
+          (policy/aux_grasp_policy.py), and at evaluation the vector is zero.
   output  the cue vector of an episode: [x, y, z of the grasp point (m, robot frame; the fused pixel on the plane of the
           predicted height), u / 96, v / 96, confidence (mass of the fused peak), r_rgb, r_depth, r_thermal].
 
@@ -342,6 +346,41 @@ def verified_cue(cam, lps, hms, r, device, rule="consensus"):
     return vec.astype(np.float32)
 
 
+# ---------------------------------------------------------------------------------------------------- controls without a gate
+UNGATED = ("mean", "product")
+C_ALL = sum(SENSORS.values())
+
+
+@torch.no_grad()
+def ungated_cue(cam, lps, hms, device, rule="mean"):
+    """lps, hms (N, M, P) -> cue vectors (N, CUE_DIM) from the three maps with no reliability estimate: the mean of the
+    three distributions or their product. Height: every sensor's map read at the fused peak, weighted by the sensor's
+    share of the probability there. The gate entries of the cue are 1."""
+    lps, hms = lps.to(device).float(), hms.to(device).float()
+    uv, mass, win = peak(F.log_softmax(torch.logsumexp(lps, 1) if rule == "mean" else lps.sum(1), 1))
+    w = torch.stack([read(lps[:, m].exp(), win) for m in range(M)], 1)
+    w = w / w.sum(1, keepdim=True).clamp_min(1e-12)
+    zn = (w * torch.stack([read(hms[:, m], win) for m in range(M)], 1)).sum(1)
+    uv, z = uv.cpu().numpy(), Z0 + ZS * zn.cpu().numpy()
+    vec = np.concatenate([backproject(cam, uv, z), uv / S, mass.cpu().numpy()[:, None], np.ones((len(uv), M))], 1)
+    return vec.astype(np.float32)
+
+
+@torch.no_grad()
+def single_cue(cam, lp, hm, device):
+    """One map lp, hm (N, P) (mode early) -> cue vectors (N, CUE_DIM) and the peak (N, 2). The gate entries are 1."""
+    uv, mass, win = peak(lp.to(device).float())
+    zn = read(hm.to(device).float(), win)
+    uv, z = uv.cpu().numpy(), Z0 + ZS * zn.cpu().numpy()
+    vec = np.concatenate([backproject(cam, uv, z), uv / S, mass.cpu().numpy()[:, None], np.ones((len(uv), M))], 1)
+    return vec.astype(np.float32), uv
+
+
+def stacked(x):
+    """The three sensors' frames as one image of five channels."""
+    return torch.cat([x[k] for k in SENSORS], 1)
+
+
 # ---------------------------------------------------------------------------------------------------- gate and fusion
 def gate_features(lps):
     """lps (N, M, P) -> (N, 4 M + M (M - 1) / 2): the four numbers of every map and the distances between the peaks."""
@@ -419,7 +458,13 @@ class HindsightCue:
     def __init__(self, path, device="cpu"):
         ck = torch.load(path, map_location="cpu", weights_only=False)
         self.cam, self.device, self.mode, self.rule = ck["cam"], device, ck["mode"], ck.get("rule", "consensus")
-        self.nets, self.ver, self.gate = {}, {}, None
+        self.nets, self.ver, self.gate, self.net = {}, {}, None, None
+        if self.mode == "label":             # no cue at evaluation
+            return
+        if self.mode == "early":
+            self.net = FCN(C_ALL).to(device).eval()
+            self.net.load_state_dict(ck["net"])
+            return
         for k, c in SENSORS.items():
             self.nets[k] = FCN(c).to(device).eval()
             self.nets[k].load_state_dict(ck["nets"][k])
@@ -435,9 +480,13 @@ class HindsightCue:
     def __call__(self, raw):
         """raw[k]: (H, W, C) or (N, H, W, C) uint8 -> (CUE_DIM,) or (N, CUE_DIM)."""
         single = raw["rgb"].ndim == 3
+        if self.mode == "label":
+            return np.zeros(CUE_DIM if single else (len(raw["rgb"]), CUE_DIM), np.float32)
         x = {k: torch.from_numpy(np.array(raw[k])) for k in SENSORS}
         x = {k: (v[None] if single else v).permute(0, 3, 1, 2) for k, v in x.items()}
-        if self.mode == "evidence":
+        if self.mode == "early":
+            v = single_cue(self.cam, *maps(self.net, stacked(x), self.device), self.device)[0]
+        elif self.mode == "evidence":
             v = evidence_cue(self.cam, *raw_maps(self.nets, x, self.device), self.device)[0]
         else:
             out = [maps(self.nets[k], x[k], self.device) for k in SENSORS]
@@ -447,6 +496,8 @@ class HindsightCue:
                 r = torch.stack([trust(self.ver[k], patches(x[k], lps[:, m], pk[:, m]), self.device)
                                  for m, k in enumerate(SENSORS)], 1)
                 v = verified_cue(self.cam, lps, hms, r, self.device, self.rule)
+            elif self.mode == "nogate":
+                v = ungated_cue(self.cam, lps, hms, self.device, self.rule)
             else:
                 v, _ = cue_vectors(self.cam, lps, hms, self.gate, self.device)
         return v[0] if single else v
@@ -461,7 +512,7 @@ def auroc(score, positive):
     return float((rank[p].sum() - p.sum() * (p.sum() + 1) / 2) / (p.sum() * (~p).sum()))
 
 
-def report(title, cam, vec, r, uv_m, goal, cells, out):
+def report(title, cam, vec, r, uv_m, goal, cells, out, per_sensor=True):
     """Per cell: the fused cue against the hindsight grasp point; per sensor: the gate against what the cell says."""
     uv_true = project(cam, goal)
     px = np.linalg.norm(vec[:, 3:5] * S - uv_true, axis=1)
@@ -485,7 +536,7 @@ def report(title, cam, vec, r, uv_m, goal, cells, out):
                      f"{row['cm']:.2f} | {row['cm1']:.2f} | {row['cm15']:.2f} | {row['cm1_z']:.2f} | {row['z_ok']:.2f} | "
                      + " / ".join(f"{g:.2f}" for g in row["gate"]) + " |")
     flags, sens = np.array(FLAGS)[cells], {}
-    for i, k in enumerate(SENSORS):
+    for i, k in enumerate(SENSORS if per_sensor else ()):
         fl, e = flags[:, i], np.linalg.norm(uv_m[:, i] - uv_true, axis=1)
         sens[k] = dict(hit=[float((e[fl == x] < 1.5).mean()) for x in (0, 2, 1)],
                        gate=[float(np.median(r[fl == x, i])) for x in (0, 2, 1)],
@@ -508,10 +559,13 @@ def main():
     ap.add_argument("--frames", type=int, default=4)
     ap.add_argument("--epochs", type=int, default=60)
     ap.add_argument("--folds", type=int, default=4)
-    ap.add_argument("--mode", default="verify", choices=("verify", "evidence") + MODES,
+    ap.add_argument("--mode", default="verify", choices=("verify", "evidence", "nogate", "early", "label") + MODES,
                     help="verify: the gate from the image patch at every sensor's own peak (default); mixture | product "
                          "| pick: a gate on numbers of the maps, all three reported and this one saved; evidence: the "
-                         "sensors trained together")
+                         "sensors trained together; controls without a gate: nogate (the per-sensor maps averaged or "
+                         "multiplied; both reported, --ungated saved), early (one network on the five channels), "
+                         "label (the hindsight grasp points themselves, for an auxiliary loss)")
+    ap.add_argument("--ungated", default="mean", choices=UNGATED, help="mode nogate: how the maps are combined")
     ap.add_argument("--rule", default="consensus", choices=RULES, help="mode verify: whose maps are multiplied; all "
                     "rules are reported and this one saved")
     ap.add_argument("-d", "--device", default="cuda:0")
@@ -527,6 +581,39 @@ def main():
     print(f"{n_ep} demos, {len(ep)} frames; grasp pixel u {uv_ep[:, 0].min():.0f}-{uv_ep[:, 0].max():.0f}, "
           f"v {uv_ep[:, 1].min():.0f}-{uv_ep[:, 1].max():.0f}; grasp height {100 * goal[:, 2].min():.1f}-"
           f"{100 * goal[:, 2].max():.1f} cm", flush=True)
+
+    args = dict(frames=a.frames, epochs=a.epochs, folds=a.folds, level=a.level)
+    ones = np.ones((n_ep, M), np.float32)
+    if a.mode == "label":
+        # no networks: the hindsight grasp point of every training demo, in the layout of a cue vector
+        np.save(out_dir / "train_cue.npy", np.concatenate([goal, uv_ep / S, np.ones((n_ep, 1 + M))], 1).astype(np.float32))
+        torch.save(dict(mode="label", cam=cam, args=args), out_dir / "cue.pt")
+        print(f"hindsight grasp points of {n_ep} demos written to {out_dir}/train_cue.npy", flush=True)
+        return
+
+    if a.mode == "early":
+        # one network on the five channels; the map of every training demo from a network that did not see it
+        res, txt, xc = {}, [], stacked(x)
+        vec, pk = np.zeros((n_ep, CUE_DIM), np.float32), np.zeros((n_ep, 2), np.float32)
+        for f in range(a.folds):
+            tr, te = torch.from_numpy(fold[ep] != f), torch.from_numpy(first[fold == f])
+            net = fit_net(xc[tr], uv[tr.numpy()], zn[tr.numpy()], C_ALL, a.epochs, a.device, f)
+            vec[fold == f], pk[fold == f] = single_cue(cam, *maps(net, xc[te], a.device), a.device)
+            print(f"fold {f} trained", flush=True)
+        np.save(out_dir / "train_cue.npy", vec)
+        txt.append(report("training demos, out of fold, one network on the five channels", cam, vec, ones,
+                          np.repeat(pk[:, None], M, 1), goal, cells, res, per_sensor=False))
+        net = fit_net(xc, uv, zn, C_ALL, a.epochs, a.device, a.folds)
+        torch.save(dict(net={n: v.cpu() for n, v in net.state_dict().items()}, mode="early", cam=cam, args=args),
+                   out_dir / "cue.pt")
+        if a.eval:
+            xe, ge, _, ce = load(a.eval, 1)
+            vec, pk = single_cue(cam, *maps(net, stacked(xe), a.device), a.device)
+            txt.append(report("held-out demos, one network on the five channels", cam, vec, np.ones((len(ge), M), np.float32),
+                              np.repeat(pk[:, None], M, 1), ge, ce, res, per_sensor=False))
+        (out_dir / "report.txt").write_text("\n".join(txt) + "\n")
+        json.dump(res, open(out_dir / "report.json", "w"), indent=1)
+        return
 
     if a.mode == "evidence":
         # maps of every training demo from networks that did not see it, and the networks of all demos
@@ -581,6 +668,27 @@ def main():
             le, he = le.half(), he.half()
         torch.save(dict(lps=lps, hms=hms, nets=nets_sd, le=le, he=he, ge=ge, ce=ce,
                         args=dict(train=a.train, eval=a.eval, frames=a.frames, epochs=a.epochs, folds=a.folds)), cache)
+
+    if a.mode == "nogate":
+        # 2. no gate: the out-of-fold maps of the training demos combined as they are
+        res, txt = {}, []
+        i0 = torch.from_numpy(first)
+        pk = own_peaks(lps[i0]).numpy()
+        for rule in UNGATED:
+            vec = ungated_cue(cam, lps[i0], hms[i0], a.device, rule)
+            if rule == a.ungated:
+                np.save(out_dir / "train_cue.npy", vec)
+            txt.append(report(f"training demos, out of fold, no gate, {rule} of the maps", cam, vec, ones, pk, goal,
+                              cells, res, per_sensor=False))
+        torch.save(dict(nets=nets_sd, mode="nogate", rule=a.ungated, cam=cam, args=args), out_dir / "cue.pt")
+        if a.eval:
+            pke = own_peaks(le).numpy()
+            for rule in UNGATED:
+                txt.append(report(f"held-out demos, no gate, {rule} of the maps", cam, ungated_cue(cam, le, he, a.device, rule),
+                                  np.ones((len(ge), M), np.float32), pke, ge, ce, res, per_sensor=False))
+        (out_dir / "report.txt").write_text("\n".join(txt) + "\n")
+        json.dump(res, open(out_dir / "report.json", "w"), indent=1)
+        return
 
     if a.mode == "verify":
         # 2. verifiers: is a sensor's own peak right? Labels from the out-of-fold maps; for the training demos the
