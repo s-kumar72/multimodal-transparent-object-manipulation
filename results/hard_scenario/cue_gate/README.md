@@ -346,7 +346,8 @@ that fails is not started again.
 
 Full tables: [`readout_round2.txt`](readout_round2.txt) (`python policy/readout_cue_controls.py`) and
 [`cue_in_episodes_round2.txt`](cue_in_episodes_round2.txt) (`python policy/analyze_cue.py`). Seed 42, 1320 episodes
-per run. The read-out of the whole round is written when all four controls have finished.
+per run. All four controls have finished (the last one 11/24 05:36 KST); the read-out of the whole round is at the
+end of this section.
 
 **`hcg_cue_early`, one network on the five channels (11/23 17:20 KST).**
 
@@ -416,10 +417,93 @@ control) and the two training runs themselves (one seed each); the run cannot se
    (0.855), with a wrong cue 0.239 (0.220). This control fails mostly because its cue is wrong more often; a policy
    trained on such a cue also uses a right one less (0.667 against 0.855), as it cannot know when to rely on it.
 
-The two controls so far, together: of the method's 0.38 over the rgbdt baseline, averaging the maps per sensor with no
-gate keeps 0.09, one network on all sensors keeps 0.32. The gate is what makes maps per sensor usable at all; against
-a single network that sees all sensors the structure per sensor with the gate adds 0.065 on the combinations of the
-training set (round 3 asks about the others).
+**`hcg_cue_mapgate`, the same maps, the gate fitted on numbers of the maps instead of on the image (11/24 03:57 KST).**
+
+| cell | sensors that show the glass | `hcg_cue` | `hcg_cue_mapgate` | cue within 1.5 cm of the glass, `hcg_cue` / `hcg_cue_mapgate` | rgbdt ImageNet, seed 42 |
+|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.950 | 0.950 | 0.99 / 0.99 | 0.775 |
+| 1 | depth+thermal | 0.858 | 0.808 | 0.93 / 0.88 | 0.750 |
+| 2 | rgb+thermal | 0.900 | 0.825 | 0.96 / 0.96 | 0.225 |
+| 3 | rgb+depth | 0.933 | 0.892 | 0.98 / 0.97 | 0.650 |
+| 4 | thermal | 0.642 | 0.442 (below) | 0.88 / 0.53 | 0.192 |
+| 5 | depth | 0.792 | 0.642 (below) | 0.90 / 0.72 | 0.650 |
+| 6 | rgb | 0.883 | 0.683 (below) | 0.97 / 0.83 | 0.158 |
+| 7 | rgb (faint) | 0.842 | 0.675 (below) | 0.94 / 0.73 | 0.092 |
+| 8 | depth (faint) | 0.625 | 0.533 | 0.80 / 0.61 | 0.525 |
+| 9 | thermal (faint) | 0.467 | 0.383 | 0.68 / 0.42 | 0.050 |
+| 10 | all faint | 0.858 | 0.808 | 0.93 / 0.94 | 0.483 |
+| macro average | | 0.795 | 0.695 (below) | 0.91 / 0.78 | 0.414 |
+
+1. Against `hcg_cue`: 0.695 against 0.795 over all episodes (only `hcg_cue` succeeds 230, only the control 97,
+   p = 1.3e-13); below in four cells (4, 5, 6, 7), above in none. By read-out 1: a gate that looks at the image
+   contributes beyond one on numbers of the maps. The difference is in the cells in which one sensor alone shows the
+   glass (cells 4 to 9: 0.560 against 0.708); where two or three do, the two are close (0.857 against 0.900).
+2. Against the baselines: above the rgbdt ImageNet baseline of seed 42 (0.414; 475 / 104, p = 1.4e-57); per cell above
+   the seed-42 run of the best baseline in eight cells (not 1, 5, 8), below in none. It keeps 0.28 of the method's
+   0.38 over the baseline.
+3. The cue inside the episodes: within 1.5 cm of the glass in 0.78 of the episodes (the method 0.91), median error
+   0.55 cm (0.47); success with a right cue 0.837 (0.855), with a wrong cue 0.187 (0.220). Like the control without a
+   gate it fails through more wrong cues, not with the same cue. This gate turns on one sensor in every episode (1.00
+   on average; the method 1.74).
+
+**`dp_aux`, the plain rgbdt policy with the hindsight grasp point as an auxiliary target, no cue (11/24 05:36 KST).**
+
+| cell | sensors that show the glass | `hcg_cue` | `dp_aux` | rgbdt ImageNet, seed 42 |
+|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.950 | 0.433 (below) | 0.775 |
+| 1 | depth+thermal | 0.858 | 0.292 (below) | 0.750 |
+| 2 | rgb+thermal | 0.900 | 0.400 (below) | 0.225 |
+| 3 | rgb+depth | 0.933 | 0.375 (below) | 0.650 |
+| 4 | thermal | 0.642 | 0.092 (below) | 0.192 |
+| 5 | depth | 0.792 | 0.208 (below) | 0.650 |
+| 6 | rgb | 0.883 | 0.175 (below) | 0.158 |
+| 7 | rgb (faint) | 0.842 | 0.117 (below) | 0.092 |
+| 8 | depth (faint) | 0.625 | 0.150 (below) | 0.525 |
+| 9 | thermal (faint) | 0.467 | 0.075 (below) | 0.050 |
+| 10 | all faint | 0.858 | 0.167 (below) | 0.483 |
+| macro average | | 0.795 | 0.226 (below) | 0.414 |
+
+1. Against `hcg_cue`: 0.226 against 0.795 (only `hcg_cue` succeeds 776, only the control 24, p = 1.7e-195), below in
+   all eleven cells. By read-out 1: the cue in the conditioning is needed beyond the supervision.
+2. Against the baselines: below the rgbdt ImageNet baseline of seed 42 (0.226 against 0.414; only the control succeeds
+   120, only the baseline 368, p = 2.5e-30); below it in seven cells (0, 1, 3, 4, 5, 8, 10), above in one (2: 0.400
+   against 0.225); per cell below the seed-42 run of the best baseline in six cells, above in none. The auxiliary
+   target alone does not help the plain policy: as set here it makes it worse.
+3. No cue, so no read-out 3. From the training log: the rollouts during training stay at 0.24 to 0.29 from epoch 25
+   on (the baseline: 0.36, 0.47, 0.47, 0.49); the loss on the held-out demos, which includes the auxiliary term, is
+   0.10 to 0.16 (the baseline: 0.01 to 0.02), while on the training demos it ends as low as the baseline's (0.0008).
+   The head fits the grasp points of the 700 training demos and not those of other demos, and the encoder it shares
+   with the policy is worse for it: the gripper closes within 1.5 cm of the glass in 0.20 of the episodes (the
+   baseline 0.36). The weight of the auxiliary loss (1) and the head were set before the run and not tuned; a smaller
+   weight was not tried.
+
+### Round 2 as a whole (11/24 05:50 KST; one seed each)
+
+| run | what differs from the method's cue | success | kept of the method's 0.38 over the rgbdt baseline | cue within 1.5 cm | against `hcg_cue` |
+|---|---|---|---|---|---|
+| `hcg_cue` | (the method's cue) | 0.795 | 0.38 | 0.91 | |
+| `hcg_cue_early` | one network on all sensors, no gate | 0.730 | 0.32 | 0.88 | below, p = 3.1e-06 |
+| `hcg_cue_mapgate` | gate on numbers of the maps | 0.695 | 0.28 | 0.78 | below, p = 1.3e-13 |
+| `hcg_cue_nogate` | maps averaged, no gate | 0.502 | 0.09 | 0.61 | below, p = 3.4e-75 |
+| `dp_aux` | no cue; the same label as an auxiliary loss | 0.226 | -0.19 | | below, p = 1.7e-195 |
+| rgbdt ImageNet, seed 42 | no cue, no label | 0.414 | 0 | | |
+
+1. Every control is below the method's cue. By the read-out fixed before the runs, each of the four parts is shown to
+   matter on this benchmark: the gate among the sensors, that it looks at the image, the maps per sensor against one
+   network, and the grasp point in the conditioning against the same label as an auxiliary loss.
+2. The size differs a lot. Without any gate the maps per sensor are hardly usable (0.09 of the gain is left); a gate
+   on numbers of the maps brings most of it back (0.28) and one network on all sensors more (0.32). The structure per
+   sensor with the verified gate adds 0.065 over one network on the combinations of the training set; on combinations
+   that are not in the training set it adds 0.13 (round 3b).
+3. The success follows how often the cue is right (0.91, 0.88, 0.78, 0.61 against 0.795, 0.730, 0.695, 0.502): the
+   controls with a cue differ in finding the glass, not in what the policy does with a right cue (0.80 to 0.86,
+   except without a gate, 0.67).
+4. The three controls with a cue are above the rgbdt baseline; with one network or the gate on map numbers no cell is
+   below its best baseline, without a gate two are (5 and 8).
+5. The hindsight label as an auxiliary loss on the plain policy does not help; with the weight set here it is below
+   the baseline. Not tuned, so it does not show that no auxiliary loss can help.
+6. One seed each. Seeds for the controls: later, when needed (decision of the user, 11/24). The claim of Stage 6 is
+   made for the method only, with three seeds (above).
 
 ## Round 3: visibility combinations that are not in the training set (plan of 11/23 12:40 KST, before any of it is run; decision of the user)
 
