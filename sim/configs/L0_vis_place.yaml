@@ -1,0 +1,8 @@
+# Pick-and-place on the visibility benchmark (results/hard_scenario/place_bench/): the scenes of L0_vis, seed for seed
+# (glass, visibility cell, table, light, distractors), plus a coaster at a random free spot. The task is to pick the
+# glass, carry it to the coaster and put it down upright on it, then let go (sim/config.py, `task`). The coaster is
+# opaque and thin: the colour camera shows it in every cell, depth and thermal hardly do. meta/ep_level id 36.
+base: L0_vis.yaml
+name: L0_vis_place
+level: 36
+task: place

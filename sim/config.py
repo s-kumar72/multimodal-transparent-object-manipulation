@@ -18,7 +18,7 @@ import yaml
 CONFIG_DIR = Path(__file__).parent / "configs"
 # Fixed ids of the per-factor RNG streams (np.random.default_rng([seed, id])); never renumber
 FACTORS = {"background": 1, "lighting": 2, "transparent": 3, "liquid": 4, "distractors": 5,
-           "thermal": 6, "sensor": 7, "cell": 8}
+           "thermal": 6, "sensor": 7, "cell": 8, "place": 9}
 HELDOUT_ALL = ["background", "lighting", "distractors"]
 # Thermal config names stored as ids in meta/ep_thermal_config (append only)
 THERMAL_NAMES = ["v0", "calibrated_v1", "calibrated_v1_narrow", "calibrated_v1_fixed"]
@@ -128,6 +128,15 @@ class SceneConfig:
     # then also has rgb_faint, depth_faint and thermal_faint (only in levels that have such a cell).
     faint_alpha: float = None
     faint_holes: float = None
+    # Task. "pick": lift the glass 10 cm (every level before L0_vis_place; nothing below is drawn or loaded).
+    # "place": pick the glass, carry it to the coaster and put it down upright on it, then let go. The coaster is an
+    # opaque disc of this radius (m), 6 mm thick, fixed to the table at a random free spot within the arm's reach.
+    # It always looks the same (dark with a light centre) and its temperature is within 1 degC of the room, so of the
+    # three sensors it is the colour camera that shows it (sim/env.py, GlassPickEnv._place_target). Episode info
+    # then has place_x, place_y, place_dist (glass to coaster at the start, m), place_clear (1: no distractor under
+    # the straight path), place_temp and place_emis.
+    task: str = "pick"
+    place_radius: float = 0.06
 
     def pool(self, factor):
         """Value pool of a factor for this config's split."""

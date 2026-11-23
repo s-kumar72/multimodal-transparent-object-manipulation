@@ -12,6 +12,8 @@ ARM = "sim/assets/gen3_lite/gen3_lite.xml"
 DOWN = np.array([[0, 1, 0], [1, 0, 0], [0, 0, -1]], float)
 OPEN, CLOSED = 0.0, 0.85
 LIFT = 0.16 # pre-grasp / lift height above the grasp
+CARRY_STEP = 0.01 # pick-and-place: the glass is carried about this far (m) per control step
+PLACE_DROP = 0.003 # pick-and-place: the gripper opens with the base of the glass this far (m) above the coaster
 PRE_Z_MAX = 0.30 # the top-down IK cannot reach higher at the far edge of the spawn region, so tall objects lift less
 
 class ScriptedTeacher:
@@ -41,6 +43,15 @@ class ScriptedTeacher:
         segment(pre, grasp, int(rng.integers(12, 18)), OPEN)
         segment(grasp, grasp, 8, CLOSED)
         segment(grasp, pre, 15, CLOSED)
+        if getattr(env, "place", False):   # pick-and-place: carry to the coaster, put down, let go, back up
+            top = env.place_position()
+            put = np.array([top[0], top[1], grasp[2] + (top[2] - obj[2]) + PLACE_DROP])
+            over = np.array([top[0], top[1], pre[2]])
+            n = int(np.ceil(np.linalg.norm(over - pre) / CARRY_STEP)) + int(rng.integers(0, 6))
+            segment(pre, over, n, CLOSED)
+            segment(over, put, int(rng.integers(12, 18)), CLOSED)
+            segment(put, put, 6, OPEN)
+            segment(put, over, 12, OPEN)
         self.plan, self.t = plan, 0
 
     def done(self):

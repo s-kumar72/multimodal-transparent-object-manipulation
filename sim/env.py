@@ -13,6 +13,7 @@ from sensors import Sensors, apparent_contrast, matching_temp
 
 SCENE = "sim/assets/gen3_lite/transparent_scene.xml"
 SCENE_DISTRACTORS = "sim/assets/gen3_lite/distractor_scene.xml" # SCENE + parked distractors (only when used)
+SCENE_PLACE = "sim/assets/gen3_lite/place_scene.xml" # SCENE_DISTRACTORS + the coaster (only for cfg.task "place")
 
 # This position is arm above table, gripper down
 READY = np.array([-0.118, -0.575, 0.968, 1.571, 1.599, -1.689])
@@ -70,6 +71,18 @@ PALETTE = np.array([[0.85, 0.2, 0.15], [0.15, 0.45, 0.8], [0.2, 0.65, 0.3], [0.9
 EXTRA_X, EXTRA_Y = (0.24, 0.56), (-0.24, 0.24) # where distractors go (on the table, in view)
 EXTRA_X_NARROW, EXTRA_Y_NARROW = (0.28, 0.50), (-0.13, 0.13) # inside the narrow camera's view
 GAP_TARGET, GAP_EXTRA = 0.09, 0.02 # minimum edge-to-edge distance to the target / between distractors
+# Pick-and-place (cfg.task "place"). The coaster goes on the near part of the table, around the region the glass spawns
+# in: entirely on the table (which spans x 0.20-0.70, y +-0.35) and no further from the arm's base than the far
+# corners of the spawn region (PLACE_REACH), where the top-down IK still reaches the carry height.
+TABLE_TOP = 0.02
+COASTER_H = 0.006           # thickness of the coaster (place_scene.xml)
+PLACE_X, PLACE_Y = (0.27, 0.42), (-0.28, 0.28)
+PLACE_REACH = float(np.hypot(SPAWN_X[1], SPAWN_Y[1]))
+PLACE_CLEAR = 0.015         # minimum edge-to-edge distance between the carried glass and a distractor under its path
+PLACE_UPRIGHT = 0.985       # cos 10 deg: the placed glass leans less than this
+PLACE_Z_TOL = 0.005         # the placed glass rests this close (m) to the height of the coaster's top
+PLACE_RELEASE = 0.05        # the gripper has let go when the tool is this far (m) above the glass's grasp point
+PLACE_STILL = 0.05          # ... and the glass moves slower than this (m/s)
 
 def _resize(img):
     return np.asarray(Image.fromarray(img).resize((IMG, IMG), Image.BILINEAR))
@@ -78,6 +91,12 @@ def _resize_raw(raw):
     """Raw counts (float) -> 96x96 uint16, bilinear like the 8-bit images."""
     small = np.asarray(Image.fromarray(raw.astype(np.float32), mode="F").resize((IMG, IMG), Image.BILINEAR))
     return np.clip(np.round(small), 0, 16383).astype(np.uint16)
+
+def _seg_dist(p, a, b):
+    """Distance from point p to the segment a-b (2-D)."""
+    ab = b - a
+    t = np.clip(np.dot(p - a, ab) / max(np.dot(ab, ab), 1e-12), 0, 1)
+    return float(np.linalg.norm(p - (a + t * ab)))
 
 def _footprint(model, body):
     """Radius (m) of a circle around the body's origin that covers its geoms seen from above."""
@@ -96,7 +115,10 @@ class GlassPickEnv:
             cfg.split = split
         self.cfg = cfg
         self.uses_extras = max(cfg.n_distractors) > 0 or cfg.lookalike_p > 0 or max(cfg.n_absorbers) > 0
-        self.model = mujoco.MjModel.from_xml_path(SCENE_DISTRACTORS if self.uses_extras else SCENE)
+        assert cfg.task in ("pick", "place"), cfg.task
+        self.place = cfg.task == "place"     # pick-and-place: the scene has a coaster and success is placed()
+        scene = SCENE_PLACE if self.place else SCENE_DISTRACTORS if self.uses_extras else SCENE
+        self.model = mujoco.MjModel.from_xml_path(scene)
         self.data = mujoco.MjData(self.model)
         self.sensors = Sensors(self.model, camera=cfg.camera, config=cfg)
         self.n_sub = int(round(CTRL_DT / self.model.opt.timestep))
@@ -115,6 +137,11 @@ class GlassPickEnv:
         self._fields = ["geom_rgba", "geom_matid", "geom_size", "geom_pos", "geom_contype", "geom_conaffinity",
                         "body_contype", "body_conaffinity", "body_gravcomp", "light_active", "light_diffuse",
                         "light_dir", "light_pos", "light_specular"]
+        if self.place:
+            self.coaster = m.body("coaster").id
+            self.coaster_geoms = [m.geom("coaster").id, m.geom("coaster_top").id]   # the disc and its light centre
+            self.obj_dof = {n: m.jnt_dofadr[m.body(n).jntadr[0]] for n in OBJECT_NAMES}
+            self._fields.append("body_pos")
         self._defaults = {f: getattr(m, f).copy() for f in self._fields}
         self._head = (m.vis.headlight.diffuse.copy(), m.vis.headlight.ambient.copy())
         self._head_spec = m.vis.headlight.specular.copy()
@@ -181,6 +208,8 @@ class GlassPickEnv:
         info.update(self._lighting(seed, self.dark))
         liquid = self._liquid(seed, info)
         extras = self._extras(seed, info) if self.uses_extras else []
+        if self.place:
+            info.update(self._place_target(seed, extras))
         narrow = cfg.camera == "front_cam_narrow"
         self.sensor_scene = self.sensors.episode(seed, self.obj, liquid, extras, d,
                                                  (EXTRA_X_NARROW, EXTRA_Y_NARROW) if narrow else (EXTRA_X, EXTRA_Y),
@@ -328,6 +357,42 @@ class GlassPickEnv:
                     extra_temps=pad([self.temps[n] for n in out]), extra_emis=pad([self.emis[n] for n in out]))
         return out
 
+    def _place_target(self, seed, extras):
+        """Pick-and-place: puts the coaster on the table. It does not touch the glass or a distractor, and among such
+        spots the first of 500 draws is taken that the glass can be carried to in a straight line without passing over
+        a distractor (place_clear 1); if none is, the first free spot (place_clear 0); if there is no free spot, the
+        draw furthest from everything, overlapping (place_clear -1; about one seed in 3000, none in the test sets).
+        Own RNG stream, drawn after everything else, so the rest of the scene is that of the same seed without a
+        place target."""
+        cfg, m, d = self.cfg, self.model, self.data
+        rng = factor_rng(seed, "place")
+        self.temps["coaster"] = self.t_env + rng.uniform(-1, 1)
+        self.emis["coaster"] = rng.uniform(0.88, 0.95)
+        R, r_obj = cfg.place_radius, self.obj_r[self.obj]
+        m.geom_size[self.coaster_geoms, 0] = [R, 0.75 * R]
+        glass = d.qpos[self.obj_q[self.obj]:self.obj_q[self.obj] + 2].copy()
+        others = [(d.qpos[self.extra_q[n]:self.extra_q[n] + 2].copy(), self.extra_r[n]) for n in extras]
+        free, best = None, (-np.inf, None)
+        for _ in range(500):
+            xy = np.array([rng.uniform(*PLACE_X), rng.uniform(*PLACE_Y)])
+            if np.hypot(*xy) > PLACE_REACH:
+                continue
+            room = min([np.linalg.norm(xy - glass) - R - r_obj] + [np.linalg.norm(xy - p) - R - r for p, r in others])
+            if room > best[0]:
+                best = (room, xy)
+            if room < GAP_EXTRA:
+                continue
+            clear = all(_seg_dist(p, glass, xy) >= r_obj + r + PLACE_CLEAR for p, r in others)
+            if clear or free is None:
+                free = (xy, int(clear))
+            if clear:
+                break
+        xy, clear = free if free is not None else (best[1], -1)
+        m.body_pos[self.coaster] = [*xy, TABLE_TOP]
+        self.place_xy = xy
+        return dict(place_x=float(xy[0]), place_y=float(xy[1]), place_dist=float(np.linalg.norm(xy - glass)),
+                    place_clear=clear, place_temp=self.temps["coaster"], place_emis=self.emis["coaster"])
+
     def step(self, action):
         self.data.ctrl[:7] = action
         for _ in range(self.n_sub):
@@ -337,7 +402,24 @@ class GlassPickEnv:
         return self.get_obs(), done
 
     def success(self):
+        if self.place:
+            return self.placed()
         return self.data.body(self.obj).xpos[2] - self.obj_z0 > 0.10   # lifted 10 cm
+
+    def place_offset(self):
+        """Horizontal distance (m) between the glass and the centre of the coaster."""
+        return float(np.linalg.norm(self.data.body(self.obj).xpos[:2] - self.place_xy))
+
+    def placed(self):
+        """Pick-and-place success: the glass stands upright on the coaster with its footprint inside it, at rest, and
+        the gripper has let go of it (the tool is PLACE_RELEASE above the glass's grasp point)."""
+        d, b = self.data, self.data.body(self.obj)
+        dof = self.obj_dof[self.obj]
+        return bool(self.place_offset() <= self.cfg.place_radius - self.obj_r[self.obj]
+                    and abs(b.xpos[2] - (self.obj_z0 + COASTER_H)) < PLACE_Z_TOL
+                    and b.xmat[8] > PLACE_UPRIGHT
+                    and np.linalg.norm(d.qvel[dof:dof + 3]) < PLACE_STILL
+                    and d.body("tool_frame").xpos[2] > b.xpos[2] + OBJECTS[self.obj] + PLACE_RELEASE)
 
     def lifted_extras(self, height=0.05):
         """Distractors lifted more than `height` (for the failure breakdown)."""
@@ -384,3 +466,7 @@ class GlassPickEnv:
 
     def tool_position(self):
         return self.data.body("tool_frame").xpos.copy()
+
+    def place_position(self):
+        """Centre of the coaster's top (pick-and-place levels)."""
+        return np.array([*self.place_xy, TABLE_TOP + COASTER_H])
