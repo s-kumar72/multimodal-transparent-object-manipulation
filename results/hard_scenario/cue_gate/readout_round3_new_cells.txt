@@ -1,0 +1,55 @@
+Not there yet, left out: early, nogate, mapgate, dp_aux
+
+## 3a, step 2: success of the policies trained on the 700 demos, test sets l_cells15_new and m_cells15_new_heldout (80 episodes per cell; seed 42)
+
+| cell | rgb / depth / thermal | cue | full | blind | rgbdt ImageNet |
+|---|---|---|---|---|---|
+| 0 | faint / shows / shows | 0.850 | 0.912 | 0.912 | 0.750 |
+| 1 | shows / faint / shows | 0.912 | 0.925 | 0.887 | 0.750 (below) |
+| 2 | shows / shows / faint | 0.887 | 0.838 | 0.950 | 0.700 (below) |
+| 3 | faint / shows / blind | 0.912 | 0.863 | 0.887 | 0.713 (below) |
+| 4 | faint / blind / shows | 0.912 | 0.925 | 0.938 | 0.300 (below) |
+| 5 | shows / faint / blind | 0.850 | 0.863 | 0.875 | 0.688 (below) |
+| 6 | blind / faint / shows | 0.700 | 0.713 | 0.688 | 0.588 |
+| 7 | shows / blind / faint | 0.787 | 0.838 | 0.850 | 0.138 (below) |
+| 8 | blind / shows / faint | 0.850 | 0.863 | 0.762 | 0.800 |
+| 9 | faint / faint / shows | 0.938 | 0.912 | 0.912 | 0.725 (below) |
+| 10 | faint / shows / faint | 0.875 | 0.762 (below) | 0.850 | 0.775 |
+| 11 | shows / faint / faint | 0.863 | 0.738 (below) | 0.900 | 0.613 (below) |
+| 12 | faint / faint / blind | 0.850 | 0.838 | 0.762 | 0.463 (below) |
+| 13 | faint / blind / faint | 0.800 | 0.850 | 0.863 | 0.100 (below) |
+| 14 | blind / faint / faint | 0.750 | 0.812 | 0.738 | 0.512 (below) |
+| all 15 cells |  | 0.849 | 0.843 | 0.852 | 0.574 (below) |
+| a sensor shows the glass fully (0-11) |  | 0.861 | 0.846 | 0.868 | 0.628 (below) |
+| none does (12-14) |  | 0.800 | 0.833 | 0.787 | 0.358 (below) |
+
+Marks: against cue on the same episodes, p < 0.05 (success).
+
+cue against early: not run yet
+cue against nogate: not run yet
+cue against mapgate: not run yet
+full against cue, all 15 cells: 0.843 against 0.849, only full succeeds in 81, only cue 88, p = 0.64
+full against cue, a sensor shows the glass fully (0-11): 0.846 against 0.861, only full succeeds in 57, only cue 72, p = 0.22
+full against cue, none does (12-14): 0.833 against 0.800, only full succeeds in 24, only cue 16, p = 0.27
+  cells that differ with p < 0.05: cell 10 0.762 against 0.875 (p = 0.049); cell 11 0.738 against 0.863 (p = 0.013)
+cue against rgbdt ImageNet, all 15 cells: 0.849 against 0.574, only cue succeeds in 407, only rgbdt ImageNet 77, p = 3.1e-55 (above)
+cue against rgbdt ImageNet, a sensor shows the glass fully (0-11): 0.861 against 0.628, only cue succeeds in 289, only rgbdt ImageNet 65, p = 7.8e-35 (above)
+cue against rgbdt ImageNet, none does (12-14): 0.800 against 0.358, only cue succeeds in 118, only rgbdt ImageNet 12, p = 4.7e-23 (above)
+  cells that differ with p < 0.05: cell 1 0.912 against 0.750 (p = 0.011); cell 2 0.887 against 0.700 (p = 0.00073); cell 3 0.912 against 0.713 (p = 0.0025); cell 4 0.912 against 0.300 (p = 4.6e-14); cell 5 0.850 against 0.688 (p = 0.019); cell 7 0.787 against 0.138 (p = 2.3e-13); cell 9 0.938 against 0.725 (p = 0.00091); cell 11 0.863 against 0.613 (p = 0.00082); cell 12 0.850 against 0.463 (p = 7.8e-07); cell 13 0.800 against 0.100 (p = 2.8e-17); cell 14 0.750 against 0.512 (p = 0.0013)
+full against rgbdt ImageNet, all 15 cells: 0.843 against 0.574, only full succeeds in 401, only rgbdt ImageNet 78, p = 2.1e-53 (above)
+full against rgbdt ImageNet, a sensor shows the glass fully (0-11): 0.846 against 0.628, only full succeeds in 278, only rgbdt ImageNet 69, p = 7.3e-31 (above)
+full against rgbdt ImageNet, none does (12-14): 0.833 against 0.358, only full succeeds in 123, only rgbdt ImageNet 9, p = 1e-26 (above)
+  cells that differ with p < 0.05: cell 0 0.912 against 0.750 (p = 0.00098); cell 1 0.925 against 0.750 (p = 0.0013); cell 2 0.838 against 0.700 (p = 0.027); cell 3 0.863 against 0.713 (p = 0.036); cell 4 0.925 against 0.300 (p = 1.8e-15); cell 5 0.863 against 0.688 (p = 0.0094); cell 7 0.838 against 0.138 (p = 4.1e-16); cell 9 0.912 against 0.725 (p = 0.0059); cell 12 0.838 against 0.463 (p = 6e-07); cell 13 0.850 against 0.100 (p = 1.7e-18); cell 14 0.812 against 0.512 (p = 3.9e-05)
+blind against rgbdt ImageNet, all 15 cells: 0.852 against 0.574, only blind succeeds in 409, only rgbdt ImageNet 76, p = 3.4e-56 (above)
+blind against rgbdt ImageNet, a sensor shows the glass fully (0-11): 0.868 against 0.628, only blind succeeds in 290, only rgbdt ImageNet 60, p = 2.7e-37 (above)
+blind against rgbdt ImageNet, none does (12-14): 0.787 against 0.358, only blind succeeds in 119, only rgbdt ImageNet 16, p = 1.2e-20 (above)
+  cells that differ with p < 0.05: cell 0 0.912 against 0.750 (p = 0.0044); cell 1 0.887 against 0.750 (p = 0.027); cell 2 0.950 against 0.700 (p = 1.1e-05); cell 3 0.887 against 0.713 (p = 0.0094); cell 4 0.938 against 0.300 (p = 8.9e-16); cell 5 0.875 against 0.688 (p = 0.0059); cell 7 0.850 against 0.138 (p = 1.6e-15); cell 9 0.912 against 0.725 (p = 0.0026); cell 11 0.900 against 0.613 (p = 1.5e-05); cell 12 0.762 against 0.463 (p = 7e-05); cell 13 0.863 against 0.100 (p = 8.7e-19); cell 14 0.738 against 0.512 (p = 0.0051)
+
+For orientation, not a test: success on the 15 new cells next to the 11 training cells (j_cells11 and k_cells11_heldout)
+
+| policy | 15 new cells | 11 training cells |
+|---|---|---|
+| cue | 0.849 | 0.795 |
+| full | 0.843 | 0.789 |
+| blind | 0.852 | 0.783 |
+| rgbdt ImageNet | 0.574 | 0.414 |
