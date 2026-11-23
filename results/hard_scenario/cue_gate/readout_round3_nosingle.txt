@@ -1,0 +1,46 @@
+## 3b, step 2: success of the policies trained on the 400 demos without cells 4 to 9, test sets j_cells11 and k_cells11_heldout (120 episodes per cell; seed 42)
+
+| cell | rgb / depth / thermal | cue | full | early | rgbdt ImageNet |
+|---|---|---|---|---|---|
+| 0 | shows / shows / shows | 0.967 | 0.917 | 0.917 | 0.758 (below) |
+| 1 | blind / shows / shows | 0.825 | 0.825 | 0.858 | 0.725 |
+| 2 | shows / blind / shows | 0.875 | 0.875 | 0.867 | 0.367 (below) |
+| 3 | shows / shows / blind | 0.917 | 0.925 | 0.900 | 0.700 (below) |
+| 4 | blind / blind / shows | 0.600 | 0.500 (below) | 0.825 (above) | 0.150 (below) |
+| 5 | blind / shows / blind | 0.767 | 0.750 | 0.650 (below) | 0.642 (below) |
+| 6 | shows / blind / blind | 0.850 | 0.742 (below) | 0.592 (below) | 0.075 (below) |
+| 7 | faint / blind / blind | 0.833 | 0.700 (below) | 0.567 (below) | 0.075 (below) |
+| 8 | blind / faint / blind | 0.650 | 0.583 | 0.342 (below) | 0.492 (below) |
+| 9 | blind / blind / faint | 0.367 | 0.300 | 0.325 | 0.067 (below) |
+| 10 | faint / faint / faint | 0.833 | 0.808 | 0.833 | 0.600 (below) |
+| cells left out (4-9) |  | 0.678 | 0.596 (below) | 0.550 (below) | 0.250 (below) |
+| cells of the training set (0-3, 10) |  | 0.883 | 0.870 | 0.875 | 0.630 (below) |
+
+Marks: against cue on the same episodes, p < 0.05 (success).
+
+cue against early, cells left out (4-9): 0.678 against 0.550, only cue succeeds in 179, only early 87, p = 1.8e-08 (above)
+cue against early, cells of the training set (0-3, 10): 0.883 against 0.875, only cue succeeds in 47, only early 42, p = 0.67
+  cells that differ with p < 0.05: cell 4 0.600 against 0.825 (p = 4.2e-05); cell 5 0.767 against 0.650 (p = 0.049); cell 6 0.850 against 0.592 (p = 1.6e-06); cell 7 0.833 against 0.567 (p = 1.8e-06); cell 8 0.650 against 0.342 (p = 4.3e-07)
+full against cue, cells left out (4-9): 0.596 against 0.678, only full succeeds in 39, only cue 98, p = 4.9e-07 (below)
+full against cue, cells of the training set (0-3, 10): 0.870 against 0.883, only full succeeds in 21, only cue 29, p = 0.32
+  cells that differ with p < 0.05: cell 4 0.500 against 0.600 (p = 0.012); cell 6 0.742 against 0.850 (p = 0.015); cell 7 0.700 against 0.833 (p = 0.0052)
+cue against rgbdt ImageNet, cells left out (4-9): 0.678 against 0.250, only cue succeeds in 359, only rgbdt ImageNet 51, p = 3.9e-58 (above)
+cue against rgbdt ImageNet, cells of the training set (0-3, 10): 0.883 against 0.630, only cue succeeds in 184, only rgbdt ImageNet 32, p = 3.9e-27 (above)
+  cells that differ with p < 0.05: cell 0 0.967 against 0.758 (p = 1.6e-06); cell 2 0.875 against 0.367 (p = 1.2e-16); cell 3 0.917 against 0.700 (p = 6.9e-05); cell 4 0.600 against 0.150 (p = 4.2e-11); cell 5 0.767 against 0.642 (p = 0.032); cell 6 0.850 against 0.075 (p = 4.8e-27); cell 7 0.833 against 0.075 (p = 1.9e-26); cell 8 0.650 against 0.492 (p = 0.016); cell 9 0.367 against 0.067 (p = 2.1e-07); cell 10 0.833 against 0.600 (p = 1.5e-05)
+full against rgbdt ImageNet, cells left out (4-9): 0.596 against 0.250, only full succeeds in 308, only rgbdt ImageNet 59, p = 8.8e-42 (above)
+full against rgbdt ImageNet, cells of the training set (0-3, 10): 0.870 against 0.630, only full succeeds in 174, only rgbdt ImageNet 30, p = 7.3e-26 (above)
+  cells that differ with p < 0.05: cell 0 0.917 against 0.758 (p = 0.00031); cell 2 0.875 against 0.367 (p = 8.7e-19); cell 3 0.925 against 0.700 (p = 1.4e-06); cell 4 0.500 against 0.150 (p = 1e-07); cell 6 0.742 against 0.075 (p = 2.7e-21); cell 7 0.700 against 0.075 (p = 5.3e-23); cell 9 0.300 against 0.067 (p = 4.3e-06); cell 10 0.808 against 0.600 (p = 0.00017)
+early against rgbdt ImageNet, cells left out (4-9): 0.550 against 0.250, only early succeeds in 291, only rgbdt ImageNet 75, p = 3.8e-31 (above)
+early against rgbdt ImageNet, cells of the training set (0-3, 10): 0.875 against 0.630, only early succeeds in 183, only rgbdt ImageNet 36, p = 6.8e-25 (above)
+  cells that differ with p < 0.05: cell 0 0.917 against 0.758 (p = 0.00088); cell 1 0.858 against 0.725 (p = 0.011); cell 2 0.867 against 0.367 (p = 1.3e-15); cell 3 0.900 against 0.700 (p = 0.00039); cell 4 0.825 against 0.150 (p = 1.9e-22); cell 6 0.592 against 0.075 (p = 1.7e-15); cell 7 0.567 against 0.075 (p = 1.1e-14); cell 8 0.342 against 0.492 (p = 0.025); cell 9 0.325 against 0.067 (p = 1.6e-06); cell 10 0.833 against 0.600 (p = 1.5e-05)
+
+Against the counterparts trained on all 700 demos, same episodes (what leaving the cells out costs):
+
+cue, cells left out (4-9): 0.678 without the cells against 0.708 with them, only without 88, only with 110, p = 0.14
+cue, cells of the training set (0-3, 10): 0.883 without the cells against 0.900 with them, only without 34, only with 44, p = 0.31
+full, cells left out (4-9): 0.596 without the cells against 0.704 with them, only without 77, only with 155, p = 3.4e-07
+full, cells of the training set (0-3, 10): 0.870 without the cells against 0.890 with them, only without 37, only with 49, p = 0.24
+early, cells left out (4-9): 0.550 without the cells against 0.647 with them, only without 100, only with 170, p = 2.4e-05
+early, cells of the training set (0-3, 10): 0.875 without the cells against 0.828 with them, only without 67, only with 39, p = 0.0084
+rgbdt ImageNet, cells left out (4-9): 0.250 without the cells against 0.278 with them, only without 77, only with 97, p = 0.15
+rgbdt ImageNet, cells of the training set (0-3, 10): 0.630 without the cells against 0.577 with them, only without 103, only with 71, p = 0.019

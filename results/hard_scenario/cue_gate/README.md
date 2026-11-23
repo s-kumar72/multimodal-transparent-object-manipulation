@@ -580,6 +580,86 @@ cell). The four controls of round 2 are evaluated at the end of the queue; read-
 So the method's advantage over the plain policy holds on visibility combinations that were not in the training set.
 Whether the structure per sensor is what carries it there is items 1 and 2.
 
+### Results of step 2 of 3b: policies trained without cells 4 to 9 (11/24 02:30 KST)
+
+Full tables: [`readout_round3_nosingle.txt`](readout_round3_nosingle.txt) (`python policy/readout_round3.py
+policies-nosingle`); the cue in the episodes of the three runs with a cue:
+[`cue_in_episodes_round3_nosingle.txt`](cue_in_episodes_round3_nosingle.txt) (`python policy/analyze_cue.py`). Seed
+42, 400 demos, last checkpoints, 1320 episodes per run (120 per cell); all four runs finished and were evaluated.
+"(below)", "(above)": against `nosingle_hcg_cue` on the same episodes, p < 0.05. The run names are without the prefix
+`L0_vis_rgbdt_400demos_`.
+
+| cell | rgb / depth / thermal | `nosingle_hcg_cue` | `nosingle_hcg_full` | `nosingle_hcg_cue_early` | `nosingle_imagenet` |
+|---|---|---|---|---|---|
+| 0 | shows / shows / shows | 0.967 | 0.917 | 0.917 | 0.758 (below) |
+| 1 | blind / shows / shows | 0.825 | 0.825 | 0.858 | 0.725 |
+| 2 | shows / blind / shows | 0.875 | 0.875 | 0.867 | 0.367 (below) |
+| 3 | shows / shows / blind | 0.917 | 0.925 | 0.900 | 0.700 (below) |
+| 4, left out | blind / blind / shows | 0.600 | 0.500 (below) | 0.825 (above) | 0.150 (below) |
+| 5, left out | blind / shows / blind | 0.767 | 0.750 | 0.650 (below) | 0.642 (below) |
+| 6, left out | shows / blind / blind | 0.850 | 0.742 (below) | 0.592 (below) | 0.075 (below) |
+| 7, left out | faint / blind / blind | 0.833 | 0.700 (below) | 0.567 (below) | 0.075 (below) |
+| 8, left out | blind / faint / blind | 0.650 | 0.583 | 0.342 (below) | 0.492 (below) |
+| 9, left out | blind / blind / faint | 0.367 | 0.300 | 0.325 | 0.067 (below) |
+| 10 | faint / faint / faint | 0.833 | 0.808 | 0.833 | 0.600 (below) |
+| cells left out (4 to 9) | | 0.678 | 0.596 (below) | 0.550 (below) | 0.250 (below) |
+| cells of the training set (0 to 3, 10) | | 0.883 | 0.870 | 0.875 | 0.630 (below) |
+| all episodes | | 0.771 | 0.720 | 0.698 | 0.423 |
+
+1. `nosingle_hcg_cue` against `nosingle_hcg_cue_early`. In the cells left out: 0.678 against 0.550 (only the method's
+   cue succeeds 179, only the one network 87, p = 1.8e-08). In the cells of the training set: 0.883 against 0.875
+   (47 / 42, p = 0.67). Per cell the method is above in cells 5, 6, 7 and 8 (by 0.12, 0.26, 0.27 and 0.31), below in
+   cell 4 (thermal alone: 0.600 against 0.825, p = 4.2e-05) and not different in cell 9 (0.367 against 0.325) and in
+   the five cells of the training set. Read as fixed in 3a: over the combinations that were not in the training set,
+   the maps per sensor with the gate carry over better than one network on all sensors; in one of the six cells it is
+   the other way round.
+2. `nosingle_hcg_full` against `nosingle_hcg_cue` (the same cue; the difference is the gate on the image features). In
+   the cells left out: 0.596 against 0.678 (only `full` succeeds 39, only `cue` 98, p = 4.9e-07); below in cells 4
+   (p = 0.012), 6 (p = 0.015) and 7 (p = 0.0052), above in none. In the cells of the training set: 0.870 against 0.883
+   (21 / 29, p = 0.32). Gating the image features matters when two sensors are blind at once for the first time, and
+   it lowers the success.
+3. Against `nosingle_imagenet`, cells left out / cells of the training set: `nosingle_hcg_cue` 0.678 against 0.250
+   (359 / 51, p = 3.9e-58) / 0.883 against 0.630 (184 / 32, p = 3.9e-27); `nosingle_hcg_full` 0.596 (308 / 59,
+   p = 8.8e-42) / 0.870 (174 / 30, p = 7.3e-26); `nosingle_hcg_cue_early` 0.550 (291 / 75, p = 3.8e-31) / 0.875
+   (183 / 36, p = 6.8e-25). Per cell: `cue` is above the baseline in ten cells and not different in cell 1; `full` is
+   above in eight and not different in cells 1, 5 and 8; `early` is above in nine, not different in cell 5 and below
+   in cell 8 (0.342 against 0.492, p = 0.025).
+4. What leaving the cells out costs, against the counterpart trained on the 700 demos, on the same episodes:
+
+   | | cells left out, without / with them in the training set | p | cells of the training set, without / with | p |
+   |---|---|---|---|---|
+   | `cue` | 0.678 / 0.708 | 0.14 | 0.883 / 0.900 | 0.31 |
+   | `full` | 0.596 / 0.704 | 3.4e-07 | 0.870 / 0.890 | 0.24 |
+   | `cue` of one network | 0.550 / 0.647 | 2.4e-05 | 0.875 / 0.828 | 0.0084 |
+   | rgbdt ImageNet | 0.250 / 0.278 | 0.15 | 0.630 / 0.577 | 0.019 |
+
+   The method's `cue` loses 0.03 in the cells left out, not significant; `full` and the one network lose 0.11 and
+   0.10. The baseline hardly changes there: it is low in cells 4, 6, 7 and 9 with them (0.05 to 0.19) and without
+   them (0.07 to 0.15). The one network and the baseline are higher in the cells of the training set when trained
+   without the other cells.
+5. The cue in the episodes. Within 1.5 cm of the glass: the method's cue in 0.84 of the 1320 episodes (cells 4 to 9:
+   0.71, 0.84, 0.97, 0.93, 0.63, 0.53), the one network's in 0.78 (0.96, 0.70, 0.72, 0.67, 0.41, 0.38). Success with
+   a right / a wrong cue: `cue` 0.874 / 0.217, `full` 0.818 / 0.198, one network 0.847 / 0.163. In the cells left out
+   the verifier says "blind" less firmly for depth and thermal than for rgb (median gate of a blind sensor: rgb 0.13
+   to 0.19, depth 0.38 to 0.42, thermal 0.28 to 0.35), and on average 1.5 to 1.7 sensors pass the gate where one
+   should.
+
+What 3b shows, and what it does not:
+
+- The success of the policy follows the cue, cell by cell: where step 1 found the method's cue right more often than
+  the one network's (cells 5 to 9), the policy with it succeeds more often (significant in cells 5 to 8), and in cell
+  4, where the one network's cue was right more often (0.96 against 0.71), its policy is above (0.825 against 0.600).
+  Over the six cells the structure per sensor with the gate is worth 0.13 in success on combinations that were not in
+  the training set, and nothing on the combinations that were (0.883 against 0.875). On the benchmark itself, where
+  all cells are in the training set, the same comparison gave 0.795 against 0.730 (round 2).
+- The exception is cell 4 (thermal alone), as in step 1: the verifier of the blind depth image is unsure there. Not
+  examined further.
+- Gating the image features (`full`) is not supported by any of the rounds: no difference to `cue` on the benchmark
+  (round 1) and on the 15 new combinations (3a, below in two cells), and 0.08 lower here in the cells left out. The
+  arm `cue`, with the gate only inside the cue, is the form these results support. The seeds of item 5 of round 1
+  were run for `full`, as fixed there; seeds 43 and 44 of `cue` have not been run.
+- One seed. Cell 9 (thermal alone, faint) stays the weakest: 0.37, with the cue right in half of the episodes.
+
 ### Order of the queue (set 11/23 12:40 KST, before any run of rounds 2 and 3 has started)
 
 `hcg_cue_early`, `hcg_cue_nogate`, the evaluation of 3a for the runs that exist, the four runs of 3b,
