@@ -74,7 +74,7 @@ guarantees.
 3. The coaster is fixed to the table and thin; a thicker one would also show in depth.
 4. The straight path to the coaster is kept clear, so no obstacle has to be avoided.
 
-## Runs, steps 1 and 2: demos and baselines (approved by the user 11/24 04:33 KST; listed 04:45 KST, before any of them starts)
+## Runs, steps 1 and 2: demos and baselines (approved by the user 11/24 04:33 KST; listed 04:38 KST, before any of them starts)
 
 **Step 1, training demos.** 700 demos of the scripted teacher from seed 0 (`python sim/collect_demos.py --n 700
 --config sim/configs/L0_vis_place.yaml --out results/data/sim_demos_L0_vis_place_700.zarr`); failed teacher episodes
@@ -100,6 +100,15 @@ EXTRA="training.seed=42 task.env_runner.test_set=j_cells11 task.env_runner.max_s
 policy.obs_encoder.rgb_model.weights=IMAGENET1K_V1" bash scripts/run_experiment.sh L0_vis_place <inputs> 700`.
 A run is expected to take about twice a pick run (7 to 8 hours). A run that fails or is stopped is reported as such
 and not started again (a resumed run would train past epoch 100).
+
+**Step 1, done (11/24 04:43 KST).** `results/data/sim_demos_L0_vis_place_700.zarr` (not in git): 700 demos from seeds
+0 to 699, no teacher failure, 140 per object, the cells in the weights of `L0_vis` (140, 3 x 70, 7 x 50). 80538
+frames, 100 to 139 steps per demo (median 114): 1.85 times the 43489 frames of the pick set.
+
+**Step 2, queued (11/24 05:00 KST)** after a short end-to-end test (two debug epochs with rollouts of 240 steps and
+the final evaluation, deleted afterwards): it ran through, and with ten envs it took about 15 to 20 GB of RAM (a pick
+run: 14 to 16 GB). An epoch is 1124 batches (the pick: 574), so a run is expected to take about 8 hours. The four
+runs are the last lines of the queue; the first is expected to start about 09:30 KST.
 
 **Read-out, fixed now** (per run, from `episodes.json` of the two final evaluations, 1320 episodes):
 
