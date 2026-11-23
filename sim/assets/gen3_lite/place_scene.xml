@@ -1,0 +1,20 @@
+<!--Scene of the pick-and-place levels: distractor_scene.xml plus the place target, a coaster that env.py puts on the
+    table. A separate file, like distractor_scene.xml, so that the levels without a place target load the same model
+    as before. The coaster is fixed to the world (it cannot be pushed away); env.py sets its position
+    (model.body_pos), size and temperature on every reset. 12 cm wide, 6 mm thick, opaque, always the same look: a
+    dark disc with a light centre (the second geom, visual only), so that it stands out on any table.
+    Contacts: elliptic friction cones with impratio 10. With the default (pyramidal, impratio 1) a held glass creeps
+    down between the fingers, about 3 cm while it is carried (the tumbler, a smooth cylinder, the most), which the
+    10 cm lift of the pick levels never showed; with these it stays within 2 mm.-->
+<mujoco model="gen3_lite transparent scene with distractors and a place target">
+    <include file="distractor_scene.xml"/>
+
+    <option cone="elliptic" impratio="10"/>
+
+    <worldbody>
+        <body name="coaster" pos="1.6 -3.0 0.02">
+            <geom name="coaster" type="cylinder" size="0.06 0.003" pos="0 0 0.003" rgba="0.12 0.12 0.14 1"/>
+            <geom name="coaster_top" type="cylinder" size="0.045 0.0002" pos="0 0 0.0061" rgba="0.93 0.93 0.9 1" contype="0" conaffinity="0"/>
+        </body>
+    </worldbody>
+</mujoco>

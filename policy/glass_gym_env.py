@@ -1,6 +1,7 @@
 """
 gym 0.21 wrapper around sim/env.py GlassPickEnv, so Diffusion Policy's MultiStepWrapper / AsyncVectorEnv can run it.
-reward = 1 once the glass is lifted 10 cm (episode ends there).
+reward = 1 once the glass is lifted 10 cm (episode ends there); in a pick-and-place level (sim/config.py, task "place")
+once the glass stands on the coaster and the gripper has let go (GlassPickEnv.placed).
 The scene is main's unless a level (sim/configs/manifest.json) is given; test episodes use one of its test sets.
 Each episode also gets a failure label for the breakdown in results (see `outcome`).
 """
@@ -9,7 +10,7 @@ import numpy as np
 from gym import spaces
 
 from config import load_config
-from env import GlassPickEnv, OBJECT_NAMES, OBJECTS
+from env import COASTER_H, PLACE_UPRIGHT, PLACE_Z_TOL, GlassPickEnv, OBJECT_NAMES, OBJECTS
 from policy.obs_util import to_policy_obs
 from testsets import manifest, test_set
 
@@ -18,6 +19,7 @@ CTRL_LOW = np.append(-CTRL_HIGH[:6], 0.0).astype(np.float32)
 CLOSED = 0.4        # gripper command above this counts as closing
 NEAR = 0.04         # horizontal distance (m) at which a closing gripper is "at" an object
 HEIGHT_TOL = 0.025  # |closing height - grasp height| (m) beyond which a grasp at the target is at the wrong height
+PICKED = 0.10       # pick-and-place: the glass counts as picked once it has been this far (m) above the table
 
 class GlassPickGymEnv(gym.Env):
     metadata = {"render.modes": ["rgb_array"], "video.frames_per_second": 10}
@@ -108,12 +110,27 @@ class GlassPickGymEnv(gym.Env):
         dropped       closed at the right height, lifted the target > 3 cm, lost it
         missed_grasp  closed near the target (< 8 cm) without lifting it
         timeout       never closed the gripper
-        other         closed away from every object"""
+        other         closed away from every object
+        Pick-and-place levels: the labels above when the glass was never lifted 10 cm; once it was, from where the
+        glass is at the end:
+        place_fell    it does not stand upright
+        place_held    it is still in the air (not let go, or the episode ran out on the way)
+        place_off     it stands upright, but not with its footprint inside the coaster
+        place_other   it stands on the coaster, but the gripper has not let go of it or it still moves"""
         e, log = self._env, self._log
         if e is None or log is None:
             return None
         if e.success():
             return "success"
+        if e.place and log["max_lift"] >= PICKED:
+            b = e.data.body(e.obj)
+            if b.xmat[8] <= PLACE_UPRIGHT:
+                return "place_fell"
+            if b.xpos[2] - log["z0"] > COASTER_H + PLACE_Z_TOL:
+                return "place_held"
+            if e.place_offset() > e.cfg.place_radius - e.obj_r[e.obj]:
+                return "place_off"
+            return "place_other"
         if e.lifted_extras(0.03):
             return "wrong_object"
         if not log["closes"]:
@@ -136,6 +153,9 @@ class GlassPickGymEnv(gym.Env):
                 for k, v in self._env.episode_info.items()}
         rec = dict(info, outcome=self.outcome, obj_name=self._env.obj, max_lift=self._log["max_lift"],
                    closes=self._log["closes"])
+        if self._env.place:             # pick-and-place: was the glass picked, and how far from the coaster it ended
+            rec.update(picked=bool(self._log["max_lift"] >= PICKED), place_offset=self._env.place_offset(),
+                       coaster_xy=[float(v) for v in self._env.place_xy])
         if self._hcue is not None:      # the cue the policy was given, and where the glass really was (for the analysis)
             rec.update(hcue=[float(v) for v in self._hcue], target_xyz=[float(v) for v in self._log["target0"]])
         return rec
