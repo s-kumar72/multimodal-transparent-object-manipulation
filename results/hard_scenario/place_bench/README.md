@@ -1,8 +1,7 @@
 # Pick-and-place on the visibility benchmark: level `L0_vis_place`
 
 Started 11/24 (decision of the user: a harder task than the pick). This file defines the level and records how it was
-checked. No demos have been collected and no policy has been trained on it yet; the runs are listed at the end and
-wait for a decision.
+checked, and lists the runs on it.
 
 ## Why
 
@@ -75,19 +74,48 @@ guarantees.
 3. The coaster is fixed to the table and thin; a thicker one would also show in depth.
 4. The straight path to the coaster is kept clear, so no obstacle has to be avoided.
 
-## Runs: not started, waiting for a decision
+## Runs, steps 1 and 2: demos and baselines (approved by the user 11/24 04:33 KST; listed 04:45 KST, before any of them starts)
 
-Order as for `L0_vis` (benchmark and baselines before any method):
+**Step 1, training demos.** 700 demos of the scripted teacher from seed 0 (`python sim/collect_demos.py --n 700
+--config sim/configs/L0_vis_place.yaml --out results/data/sim_demos_L0_vis_place_700.zarr`); failed teacher episodes
+are skipped, as always. About 1.8 times the frames of the pick set.
 
-1. Training demos: 700 from seed 0, as for `L0_vis` (`python sim/collect_demos.py --n 700 --config
-   sim/configs/L0_vis_place.yaml --out results/data/sim_demos_L0_vis_place_700.zarr`). About 1.8 times the frames of
-   the pick set.
-2. Baselines with the protocol of Stage 6 of [`../grid_bench/README.md`](../grid_bench/README.md) (ImageNet encoders,
-   101 epochs, last checkpoint, `j_cells11` and `k_cells11_heldout`): rgbdt, rgbd, rgbt, rgb. A run is expected to
-   take about twice a pick run (about 7 to 8 hours); one seed each first (4 runs), seeds 43 and 44 after that.
-3. The method (hindsight cue gating) on this level is specified after the baselines: the cue of the pick as it is, and
-   whether the place gets a cue of its own (the pixel where the gripper opens in the demos) is the open design
-   question.
+**Step 2, baselines.** The protocol of the frozen baselines of `L0_vis` (Stage 6 of
+[`../grid_bench/README.md`](../grid_bench/README.md)): plain Diffusion Policy (`policy/train.sh`), ImageNet encoders,
+101 epochs, last checkpoint, rollouts during training on `j_cells11` (55 episodes), final evaluation on `j_cells11`
+and `k_cells11_heldout` (660 episodes each, 120 per cell over both), seed 42. The only difference: episodes of at
+most 240 steps (`task.env_runner.max_steps=240`).
+
+| run | inputs |
+|---|---|
+| `L0_vis_place_rgbdt_700demos_imagenet` | colour, depth, thermal, joints |
+| `L0_vis_place_rgbd_700demos_imagenet` | colour, depth, joints |
+| `L0_vis_place_rgbt_700demos_imagenet` | colour, thermal, joints |
+| `L0_vis_place_rgb_700demos_imagenet` | colour, joints |
+
+Command of a run (queue `data/runs/fv_queue.sh` of the fusion-vis worktree, behind the lines it already has; results
+in `results/hard_scenario/place_bench/<run>/`):
+`GROUP=place_bench TOPK=0 NTEST=55 NEVAL=660 TEST_SETS="j_cells11 k_cells11_heldout" TAG=imagenet
+EXTRA="training.seed=42 task.env_runner.test_set=j_cells11 task.env_runner.max_steps=240
+policy.obs_encoder.rgb_model.weights=IMAGENET1K_V1" bash scripts/run_experiment.sh L0_vis_place <inputs> 700`.
+A run is expected to take about twice a pick run (7 to 8 hours). A run that fails or is stopped is reported as such
+and not started again (a resumed run would train past epoch 100).
+
+**Read-out, fixed now** (per run, from `episodes.json` of the two final evaluations, 1320 episodes):
+
+1. Success (the glass placed) over all episodes, per test set and per cell, with the macro average over the cells.
+2. The pick and the place apart: the share of episodes in which the glass was picked (lifted 10 cm at some point),
+   and the success among those.
+3. The failure labels.
+4. Next to it, not a test: the success of the same inputs on the pick level `L0_vis` (the frozen run of seed 42, the
+   same scenes and seeds), per cell, against "picked" here. It shows whether learning the place costs the pick.
+5. The best baseline of each cell, as in Stage 6. One seed is a first reading; seeds 43 and 44 are not approved yet.
+
+Not in this step: single-sensor references that are told the cell, sensor dropout, and any method. Results are
+reported as they come out, whatever they are.
+
+**Later, not specified yet.** The method (hindsight cue gating) on this level: the cue of the pick as it is, and
+whether the place gets a cue of its own (the pixel where the gripper opens in the demos) is the open design question.
 
 ## Files
 
