@@ -233,6 +233,43 @@ Outside the read-out, where the gripper closes (last close): within 1.5 cm of th
 - So the gate of the method can only matter inside the cue, in deciding which sensors' maps make the grasp point.
   Rounds 2 and 3 measure that.
 
+## Results of the seeds: `full` with seeds 42, 43 and 44 against the rules of Stage 6 (11/23 21:35 KST)
+
+Item 5 of round 1. Full tables: [`readout_seeds.txt`](readout_seeds.txt) (`python policy/readout_cue_seeds.py`). The
+method's run of a seed is paired with the baseline's run of the same seed on the same episodes; the three pairs are
+pooled (360 episodes per cell, 3960 in all), sign test on the episodes only one of the two solves.
+
+| cell | sensors that show the glass | seed 42 | seed 43 | seed 44 | the three seeds | best baseline of the cell (frozen) | only the method succeeds / only the baseline | p | reference |
+|---|---|---|---|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.942 | 0.925 | 0.950 | 0.939 (above) | 0.781 (rgbdt) | 66 / 9 | 7.7e-12 | 0.900 |
+| 1 | depth+thermal | 0.883 | 0.917 | 0.925 | 0.908 (above) | 0.758 (rgbdt) | 73 / 19 | 1.2e-08 | 0.875 |
+| 2 | rgb+thermal | 0.883 | 0.900 | 0.917 | 0.900 (above) | 0.397 (rgbt) | 188 / 7 | 7.9e-47 | 0.642 |
+| 3 | rgb+depth | 0.925 | 0.925 | 0.908 | 0.919 (above) | 0.700 (rgbd) | 92 / 13 | 8e-16 | 0.867 |
+| 4 | thermal | 0.617 | 0.675 | 0.692 | 0.661 (above) | 0.189 (rgbt) | 184 / 14 | 5.5e-39 | 0.608 |
+| 5 | depth | 0.733 | 0.750 | 0.725 | 0.736 | 0.697 (rgbd) | 67 / 53 | 0.24 | 0.858 |
+| 6 | rgb | 0.900 | 0.908 | 0.892 | 0.900 (above) | 0.256 (rgb) | 236 / 4 | 1.6e-64 | 0.492 |
+| 7 | rgb (faint) | 0.892 | 0.833 | 0.867 | 0.864 (above) | 0.181 (rgb) | 250 / 4 | 1.2e-68 | 0.333 |
+| 8 | depth (faint) | 0.558 | 0.517 | 0.567 | 0.547 | 0.486 (rgbdt) | 81 / 59 | 0.076 | 0.742 |
+| 9 | thermal (faint) | 0.525 | 0.533 | 0.483 | 0.514 (above) | 0.094 (rgbt) | 156 / 5 | 6e-40 | 0.383 |
+| 10 | all faint | 0.817 | 0.833 | 0.833 | 0.828 (above) | 0.503 (rgbdt) | 137 / 20 | 1.2e-22 | 0.717 |
+| macro average | | 0.789 | 0.792 | 0.796 | 0.792 | 0.458 | | | 0.674 |
+
+- **Rule 5, first condition** (no cell below its best baseline with p < 0.05): met. Above in nine cells; in the two
+  cells where depth alone shows the glass (5, and 8 where it is faint) the method is 0.04 and 0.06 above and that is
+  not significant (p = 0.24 and 0.076).
+- **Rule 5, second condition** (macro average above every baseline): met. 0.792 against rgbdt 0.428 (only the method
+  succeeds 1656, only the baseline 214, p = 5.9e-276), rgbd 0.397, rgbt 0.194, rgb 0.153.
+- So "better in nearly every case" holds for `full` under the rules as frozen on 11/22. The three seeds are 0.789,
+  0.792 and 0.796 (standard deviation 0.004; the three seeds of the rgbdt baseline: 0.414, 0.440, 0.431).
+- Not criteria: the method is above the reference (single-sensor policies that are told the cell, one seed) in nine
+  cells and below it in 5 (0.736 against 0.858) and 8 (0.547 against 0.742), the same two cells. Against the learned
+  attention weighting P9 with the same three seeds (extra supervision, [`../fusion_vis/README.md`](../fusion_vis/README.md)):
+  0.792 against 0.526 (1348 / 292, p = 5.7e-162), above in ten cells, cell 8 not significant (0.547 against 0.492,
+  p = 0.11).
+
+What this does not show: which part of the method the result needs (rounds 2 and 3; `cue` and `blind` of round 1 are
+as high with one seed), and anything outside the eleven cells of the training set (round 3).
+
 ## Policy runs, round 2: what the cue is made of, and two controls (listed 11/23 12:20 KST, before any of them starts)
 
 Written with three of the four runs of round 1 finished and looked at (`blind` still running): `full` 0.789, `cue`
@@ -348,6 +385,41 @@ exact (errors below 0.5 cm: 517 episodes against 704). Giving the control the me
 same error: on the 335 episodes in which both cues are within 0.5 cm, 0.967 against 0.910 (26 / 7, p = 0.0013). What
 differs there is that the method's cue tells the policy which sensors were trusted (the gate entries; 1 for the
 control) and the two training runs themselves (one seed each); the run cannot separate these two.
+
+**`hcg_cue_nogate`, the same maps per sensor averaged with no gate (11/23 21:31 KST).**
+
+| cell | sensors that show the glass | `hcg_cue` | `hcg_cue_nogate` | cue within 1.5 cm of the glass, `hcg_cue` / `hcg_cue_nogate` | rgbdt ImageNet, seed 42 |
+|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.950 | 0.858 (below) | 0.99 / 0.99 | 0.775 |
+| 1 | depth+thermal | 0.858 | 0.733 (below) | 0.93 / 0.83 | 0.750 |
+| 2 | rgb+thermal | 0.900 | 0.583 (below) | 0.96 / 0.92 | 0.225 |
+| 3 | rgb+depth | 0.933 | 0.800 (below) | 0.98 / 0.93 | 0.650 |
+| 4 | thermal | 0.642 | 0.267 (below) | 0.88 / 0.34 | 0.192 |
+| 5 | depth | 0.792 | 0.467 (below) | 0.90 / 0.38 | 0.650 |
+| 6 | rgb | 0.883 | 0.267 (below) | 0.97 / 0.47 | 0.158 |
+| 7 | rgb (faint) | 0.842 | 0.292 (below) | 0.94 / 0.42 | 0.092 |
+| 8 | depth (faint) | 0.625 | 0.308 (below) | 0.80 / 0.28 | 0.525 |
+| 9 | thermal (faint) | 0.467 | 0.233 (below) | 0.68 / 0.29 | 0.050 |
+| 10 | all faint | 0.858 | 0.708 (below) | 0.93 / 0.90 | 0.483 |
+| macro average | | 0.795 | 0.502 (below) | 0.91 / 0.61 | 0.414 |
+
+1. Against `hcg_cue`: 0.502 against 0.795 over all episodes (only `hcg_cue` succeeds 446, only the control 58,
+   p = 3.4e-75), below in all eleven cells. By read-out 1: the gate that chooses among the sensors contributes to the
+   success of the policy. The loss is largest where one sensor alone shows the glass (cells 4 to 9: 0.306 against
+   0.708) and is there, smaller, where two or three do (cells 0 to 3 and 10: 0.737 against 0.900).
+2. Against the baselines: above the rgbdt ImageNet baseline of seed 42 over all episodes (0.502 against 0.414,
+   286 / 170, p = 6.2e-08), but per cell below the seed-42 run of the best baseline in cells 5 and 8 (depth alone:
+   0.467 against 0.633 and 0.308 against 0.525) and above it in four (2, 7, 9, 10). A cue without the gate is not
+   "better in nearly every case" even with one seed.
+3. The cue inside the episodes: within 1.5 cm of the glass in 0.61 of the episodes (the method 0.91), median error
+   1.03 cm (0.47); in the cells where one sensor alone shows the glass 0.28 to 0.47. Success with a right cue 0.667
+   (0.855), with a wrong cue 0.239 (0.220). This control fails mostly because its cue is wrong more often; a policy
+   trained on such a cue also uses a right one less (0.667 against 0.855), as it cannot know when to rely on it.
+
+The two controls so far, together: of the method's 0.38 over the rgbdt baseline, averaging the maps per sensor with no
+gate keeps 0.09, one network on all sensors keeps 0.32. The gate is what makes maps per sensor usable at all; against
+a single network that sees all sensors the structure per sensor with the gate adds 0.065 on the combinations of the
+training set (round 3 asks about the others).
 
 ## Round 3: visibility combinations that are not in the training set (plan of 11/23 12:40 KST, before any of it is run; decision of the user)
 

@@ -1,0 +1,50 @@
+## Success per cell of `hcg_full` (120 episodes per cell and seed; seeds [42, 43, 44]). Marks: against the best baseline of the cell, runs paired by seed on the same episodes and pooled, sign test, p < 0.05
+
+| cell | sensors that show the glass | seed 42 | seed 43 | seed 44 | pooled | best baseline of the cell, same seeds | the same, frozen | only the method succeeds / only the baseline | p | reference |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.942 | 0.925 | 0.950 | 0.939 (above) | 0.781 (rgbdt) | 0.781 | 66 / 9 | 7.7e-12 | 0.900 |
+| 1 | depth+thermal | 0.883 | 0.917 | 0.925 | 0.908 (above) | 0.758 (rgbdt) | 0.758 | 73 / 19 | 1.2e-08 | 0.875 |
+| 2 | rgb+thermal | 0.883 | 0.900 | 0.917 | 0.900 (above) | 0.397 (rgbt) | 0.397 | 188 / 7 | 7.9e-47 | 0.642 |
+| 3 | rgb+depth | 0.925 | 0.925 | 0.908 | 0.919 (above) | 0.700 (rgbd) | 0.700 | 92 / 13 | 8e-16 | 0.867 |
+| 4 | thermal | 0.617 | 0.675 | 0.692 | 0.661 (above) | 0.189 (rgbt) | 0.189 | 184 / 14 | 5.5e-39 | 0.608 |
+| 5 | depth | 0.733 | 0.750 | 0.725 | 0.736 | 0.697 (rgbd) | 0.697 | 67 / 53 | 0.24 | 0.858 |
+| 6 | rgb | 0.900 | 0.908 | 0.892 | 0.900 (above) | 0.256 (rgb) | 0.256 | 236 / 4 | 1.6e-64 | 0.492 |
+| 7 | rgb (faint) | 0.892 | 0.833 | 0.867 | 0.864 (above) | 0.181 (rgb) | 0.181 | 250 / 4 | 1.2e-68 | 0.333 |
+| 8 | depth (faint) | 0.558 | 0.517 | 0.567 | 0.547 | 0.486 (rgbdt) | 0.486 | 81 / 59 | 0.076 | 0.742 |
+| 9 | thermal (faint) | 0.525 | 0.533 | 0.483 | 0.514 (above) | 0.094 (rgbt) | 0.094 | 156 / 5 | 6e-40 | 0.383 |
+| 10 | all faint | 0.817 | 0.833 | 0.833 | 0.828 (above) | 0.503 (rgbdt) | 0.503 | 137 / 20 | 1.2e-22 | 0.717 |
+| macro average | | 0.789 | 0.792 | 0.796 | 0.792 | 0.458 | 0.458 | | | 0.674 |
+
+Macro average over the seeds: mean 0.792, lowest 0.789, highest 0.796, standard deviation 0.004
+
+## Over all episodes against each baseline (runs paired by seed, pooled)
+
+| baseline | the method | the baseline, same seeds | frozen macro | only the method succeeds / only the baseline | p |
+|---|---|---|---|---|---|
+| rgbdt ImageNet | 0.792 | 0.428 | 0.428 | 1656 / 214 | 5.9e-276 |
+| rgbd ImageNet | 0.792 | 0.397 | 0.397 | 1769 / 203 | < 1e-300 |
+| rgbt ImageNet | 0.792 | 0.194 | 0.194 | 2424 / 56 | < 1e-300 |
+| rgb ImageNet | 0.792 | 0.153 | 0.153 | 2575 / 42 | < 1e-300 |
+
+## The claim of Stage 6 (rule 5)
+
+Cells below their best baseline with p < 0.05: none; above: [0, 1, 2, 3, 4, 6, 7, 9, 10]; neither: [5, 8].
+Macro average 0.792 against the highest baseline 0.428: above every baseline.
+"Better in nearly every case" holds.
+
+## Next to it, not a criterion: the learned attention weighting P9 (extra supervision: segmentation pre-training on simulator masks), same seeds, same episodes
+
+| cell | sensors that show the glass | the method | P9 | only the method succeeds / only P9 | p |
+|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.939 | 0.708 | 91 / 8 | 5.9e-19 |
+| 1 | depth+thermal | 0.908 | 0.583 | 131 / 14 | 5.5e-25 |
+| 2 | rgb+thermal | 0.900 | 0.519 | 149 / 12 | 3.1e-31 |
+| 3 | rgb+depth | 0.919 | 0.636 | 109 / 7 | 1.2e-24 |
+| 4 | thermal | 0.661 | 0.494 | 114 / 54 | 4.3e-06 |
+| 5 | depth | 0.736 | 0.589 | 99 / 46 | 1.3e-05 |
+| 6 | rgb | 0.900 | 0.456 | 167 / 7 | 7.4e-41 |
+| 7 | rgb (faint) | 0.864 | 0.378 | 190 / 15 | 9.1e-40 |
+| 8 | depth (faint) | 0.547 | 0.492 | 79 / 59 | 0.11 |
+| 9 | thermal (faint) | 0.514 | 0.336 | 103 / 39 | 7.6e-08 |
+| 10 | all faint | 0.828 | 0.592 | 116 / 31 | 9.4e-13 |
+| all episodes |  | 0.792 | 0.526 | 1348 / 292 | 5.7e-162 |
