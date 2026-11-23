@@ -1,0 +1,35 @@
+## 3b, step 1: share of episodes with the cue within 1.5 cm of the glass, cues fitted on the 400 demos without cells 4 to 9, test sets j_cells11 and k_cells11_heldout (120 episodes per cell)
+
+| cell | rgb / depth / thermal | method | one network | no gate |
+|---|---|---|---|---|
+| 0 | shows / shows / shows | 0.983 | 0.975 | 0.992 |
+| 1 | blind / shows / shows | 0.858 | 0.925 (above) | 0.808 |
+| 2 | shows / blind / shows | 0.958 | 0.983 | 0.875 (below) |
+| 3 | shows / shows / blind | 0.958 | 0.975 | 0.933 |
+| 4 | blind / blind / shows | 0.708 | 0.958 (above) | 0.283 (below) |
+| 5 | blind / shows / blind | 0.842 | 0.700 (below) | 0.500 (below) |
+| 6 | shows / blind / blind | 0.967 | 0.725 (below) | 0.458 (below) |
+| 7 | faint / blind / blind | 0.925 | 0.667 (below) | 0.483 (below) |
+| 8 | blind / faint / blind | 0.633 | 0.408 (below) | 0.317 (below) |
+| 9 | blind / blind / faint | 0.533 | 0.383 (below) | 0.192 (below) |
+| 10 | faint / faint / faint | 0.908 | 0.900 | 0.900 |
+| cells left out (4-9) |  | 0.768 | 0.640 (below) | 0.372 (below) |
+| cells of the training set (0-3, 10) |  | 0.933 | 0.952 | 0.902 (below) |
+
+Marks: against method on the same episodes, p < 0.05 (cue right).
+
+method against one network, cells left out (4-9): 0.768 against 0.640, only method is right in 174, only one network 82, p = 9e-09 (above)
+method against one network, cells of the training set (0-3, 10): 0.933 against 0.952, only method is right in 13, only one network 24, p = 0.099
+  cells that differ with p < 0.05: cell 1 0.858 against 0.925 (p = 0.039); cell 4 0.708 against 0.958 (p = 6.9e-08); cell 5 0.842 against 0.700 (p = 0.014); cell 6 0.967 against 0.725 (p = 3e-08); cell 7 0.925 against 0.667 (p = 3.4e-07); cell 8 0.633 against 0.408 (p = 0.00036); cell 9 0.533 against 0.383 (p = 0.02)
+method against no gate, cells left out (4-9): 0.768 against 0.372, only method is right in 303, only no gate 18, p = 6.3e-68 (above)
+method against no gate, cells of the training set (0-3, 10): 0.933 against 0.902, only method is right in 33, only no gate 14, p = 0.0079 (above)
+  cells that differ with p < 0.05: cell 2 0.958 against 0.875 (p = 0.0063); cell 4 0.708 against 0.283 (p = 8.6e-14); cell 5 0.842 against 0.500 (p = 8.2e-10); cell 6 0.967 against 0.458 (p = 8.7e-19); cell 7 0.925 against 0.483 (p = 3.1e-15); cell 8 0.633 against 0.317 (p = 7e-08); cell 9 0.533 against 0.192 (p = 8.2e-10)
+
+The same cues fitted on all 700 demos, same episodes (what leaving the cells out costs):
+
+method, cells left out (4-9): 0.768 without the cells against 0.863 with them, p = 6.5e-10
+method, cells of the training set (0-3, 10): 0.933 without the cells against 0.960 with them, p = 0.014
+one network, cells left out (4-9): 0.640 without the cells against 0.839 with them, p = 1.3e-22
+one network, cells of the training set (0-3, 10): 0.952 without the cells against 0.937 with them, p = 0.15
+no gate, cells left out (4-9): 0.372 without the cells against 0.364 with them, p = 0.76
+no gate, cells of the training set (0-3, 10): 0.902 without the cells against 0.913 with them, p = 0.42

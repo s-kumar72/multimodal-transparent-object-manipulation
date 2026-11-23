@@ -1,0 +1,96 @@
+## 1. Success per cell (120 episodes per cell and run; seed 42). Marks: against the seed-42 run of the best baseline of the cell on the same episodes, sign test, p < 0.05; in the last row against L0_vis_rgbdt_700demos_imagenet over all episodes
+
+| cell | sensors that show the glass | full | cue | gate | blind | best baseline of the cell, its seed-42 run | the same, 3 seeds (frozen) | rgbdt ImageNet, seed 42 | reference |
+|---|---|---|---|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.942 (above) | 0.950 (above) | 0.767 | 0.942 (above) | 0.775 (rgbdt) | 0.781 | 0.775 | 0.900 |
+| 1 | depth+thermal | 0.883 (above) | 0.858 (above) | 0.725 | 0.867 (above) | 0.750 (rgbdt) | 0.758 | 0.750 | 0.875 |
+| 2 | rgb+thermal | 0.883 (above) | 0.900 (above) | 0.508 | 0.900 (above) | 0.408 (rgbt) | 0.397 | 0.225 | 0.642 |
+| 3 | rgb+depth | 0.925 (above) | 0.933 (above) | 0.733 | 0.917 (above) | 0.700 (rgbd) | 0.700 | 0.650 | 0.867 |
+| 4 | thermal | 0.617 (above) | 0.642 (above) | 0.283 (above) | 0.617 (above) | 0.167 (rgbt) | 0.189 | 0.192 | 0.608 |
+| 5 | depth | 0.733 | 0.792 (above) | 0.683 | 0.692 | 0.633 (rgbd) | 0.697 | 0.650 | 0.858 |
+| 6 | rgb | 0.900 (above) | 0.883 (above) | 0.325 | 0.900 (above) | 0.275 (rgb) | 0.256 | 0.158 | 0.492 |
+| 7 | rgb (faint) | 0.892 (above) | 0.842 (above) | 0.217 | 0.875 (above) | 0.167 (rgb) | 0.181 | 0.092 | 0.333 |
+| 8 | depth (faint) | 0.558 | 0.625 | 0.617 | 0.533 | 0.525 (rgbdt) | 0.486 | 0.525 | 0.742 |
+| 9 | thermal (faint) | 0.525 (above) | 0.467 (above) | 0.175 | 0.508 (above) | 0.108 (rgbt) | 0.094 | 0.050 | 0.383 |
+| 10 | all faint | 0.817 (above) | 0.858 (above) | 0.542 | 0.858 (above) | 0.483 (rgbdt) | 0.503 | 0.483 | 0.717 |
+| macro average | | 0.789 (above) | 0.795 (above) | 0.507 (above) | 0.783 (above) | 0.454 | 0.458 | 0.414 | 0.674 |
+
+full against L0_vis_rgbdt_700demos_imagenet, all episodes: 0.789 against 0.414, only the arm succeeds 567, only the baseline 72, p = 2.5e-96; cells below their best baseline with p < 0.05: none
+cue against L0_vis_rgbdt_700demos_imagenet, all episodes: 0.795 against 0.414, only the arm succeeds 568, only the baseline 64, p = 6.5e-102; cells below their best baseline with p < 0.05: none
+gate against L0_vis_rgbdt_700demos_imagenet, all episodes: 0.507 against 0.414, only the arm succeeds 258, only the baseline 135, p = 5.5e-10; cells below their best baseline with p < 0.05: none
+blind against L0_vis_rgbdt_700demos_imagenet, all episodes: 0.783 against 0.414, only the arm succeeds 564, only the baseline 77, p = 2e-92; cells below their best baseline with p < 0.05: none
+
+Per cell against the seed-42 run of the best baseline of the cell (only the arm succeeds / only the baseline, p):
+
+| cell | best baseline | full | cue | gate | blind |
+|---|---|---|---|---|---|
+| 0 | rgbdt | 23 / 3, p = 8.8e-05 | 23 / 2, p = 1.9e-05 | 14 / 15, p = 1 | 26 / 6, p = 0.00054 |
+| 1 | rgbdt | 23 / 7, p = 0.0052 | 23 / 10, p = 0.035 | 15 / 18, p = 0.73 | 23 / 9, p = 0.02 |
+| 2 | rgbt | 59 / 2, p = 1.6e-15 | 59 / 0, p = 3.5e-18 | 23 / 11, p = 0.058 | 60 / 1, p = 5.4e-17 |
+| 3 | rgbd | 31 / 4, p = 3.5e-06 | 32 / 4, p = 1.9e-06 | 13 / 9, p = 0.52 | 31 / 5, p = 1.3e-05 |
+| 4 | rgbt | 58 / 4, p = 2.6e-13 | 60 / 3, p = 9e-15 | 27 / 13, p = 0.038 | 58 / 4, p = 2.6e-13 |
+| 5 | rgbd | 26 / 14, p = 0.081 | 34 / 15, p = 0.0094 | 24 / 18, p = 0.44 | 25 / 18, p = 0.36 |
+| 6 | rgb | 77 / 2, p = 1e-20 | 75 / 2, p = 4e-20 | 23 / 17, p = 0.43 | 76 / 1, p = 1e-21 |
+| 7 | rgb | 89 / 2, p = 3.4e-24 | 83 / 2, p = 1.9e-22 | 16 / 10, p = 0.33 | 87 / 2, p = 1.3e-23 |
+| 8 | rgbdt | 24 / 20, p = 0.65 | 32 / 20, p = 0.13 | 28 / 17, p = 0.14 | 29 / 28, p = 1 |
+| 9 | rgbt | 51 / 1, p = 2.4e-14 | 48 / 5, p = 7.1e-10 | 16 / 8, p = 0.15 | 49 / 1, p = 9.1e-14 |
+| 10 | rgbdt | 49 / 9, p = 9e-08 | 49 / 4, p = 7.1e-11 | 23 / 16, p = 0.34 | 46 / 1, p = 6.8e-13 |
+
+## 2. The arms against each other, same episodes
+
+full against cue, all episodes: 0.789 against 0.795, only full succeeds 98, only cue 107, p = 0.58
+  cells that differ with p < 0.05: none
+full against gate, all episodes: 0.789 against 0.507, only full succeeds 458, only gate 86, p = 2.7e-62
+  cells that differ with p < 0.05: cell 0 0.942 against 0.767 (p = 1.9e-05); cell 1 0.883 against 0.725 (p = 0.0019); cell 2 0.883 against 0.508 (p = 2.1e-10); cell 3 0.925 against 0.733 (p = 3.4e-05); cell 4 0.617 against 0.283 (p = 4.7e-08); cell 6 0.900 against 0.325 (p = 1.9e-17); cell 7 0.892 against 0.217 (p = 1.9e-22); cell 9 0.525 against 0.175 (p = 4.5e-10); cell 10 0.817 against 0.542 (p = 3.4e-06)
+cue against blind, all episodes: 0.795 against 0.783, only cue succeeds 112, only blind 95, p = 0.27
+  cells that differ with p < 0.05: cell 5 0.792 against 0.692 (p = 0.017)
+
+## 4. Next to them, not criteria: the references and the learned attention weighting (extra supervision: segmentation pre-training on simulator masks), seed 42, same episodes
+
+| cell | sensors that show the glass | full | cue | gate | blind | P0 fusion | P9 fusion_kp | P5 fusion_static | reference |
+|---|---|---|---|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.942 | 0.950 | 0.767 | 0.942 | 0.500 | 0.692 | 0.283 | 0.900 |
+| 1 | depth+thermal | 0.883 | 0.858 | 0.725 | 0.867 | 0.333 | 0.625 | 0.225 | 0.875 |
+| 2 | rgb+thermal | 0.883 | 0.900 | 0.508 | 0.900 | 0.058 | 0.550 | 0.092 | 0.642 |
+| 3 | rgb+depth | 0.925 | 0.933 | 0.733 | 0.917 | 0.433 | 0.667 | 0.225 | 0.867 |
+| 4 | thermal | 0.617 | 0.642 | 0.283 | 0.617 | 0.033 | 0.492 | 0.000 | 0.608 |
+| 5 | depth | 0.733 | 0.792 | 0.683 | 0.692 | 0.392 | 0.583 | 0.225 | 0.858 |
+| 6 | rgb | 0.900 | 0.883 | 0.325 | 0.900 | 0.058 | 0.492 | 0.058 | 0.492 |
+| 7 | rgb (faint) | 0.892 | 0.842 | 0.217 | 0.875 | 0.058 | 0.367 | 0.033 | 0.333 |
+| 8 | depth (faint) | 0.558 | 0.625 | 0.617 | 0.533 | 0.342 | 0.458 | 0.225 | 0.742 |
+| 9 | thermal (faint) | 0.525 | 0.467 | 0.175 | 0.508 | 0.050 | 0.342 | 0.092 | 0.383 |
+| 10 | all faint | 0.817 | 0.858 | 0.542 | 0.858 | 0.400 | 0.583 | 0.250 | 0.717 |
+| macro average |  | 0.789 | 0.795 | 0.507 | 0.783 | 0.242 | 0.532 | 0.155 | 0.674 |
+
+full against P0 fusion, all episodes: 0.789 against 0.242, only full succeeds 760, only P0 fusion 38, p = 1.9e-175
+full against P9 fusion_kp, all episodes: 0.789 against 0.532, only full succeeds 437, only P9 fusion_kp 98, p = 4.4e-52
+full against P5 fusion_static, all episodes: 0.789 against 0.155, only full succeeds 851, only P5 fusion_static 15, p = 3.2e-229
+cue against P0 fusion, all episodes: 0.795 against 0.242, only cue succeeds 767, only P0 fusion 36, p = 1.8e-179
+cue against P9 fusion_kp, all episodes: 0.795 against 0.532, only cue succeeds 439, only P9 fusion_kp 91, p = 1.2e-55
+cue against P5 fusion_static, all episodes: 0.795 against 0.155, only cue succeeds 865, only P5 fusion_static 20, p = 2.3e-226
+gate against P0 fusion, all episodes: 0.507 against 0.242, only gate succeeds 427, only P0 fusion 77, p = 8.6e-60
+gate against P9 fusion_kp, all episodes: 0.507 against 0.532, only gate succeeds 220, only P9 fusion_kp 253, p = 0.14
+gate against P5 fusion_static, all episodes: 0.507 against 0.155, only gate succeeds 511, only P5 fusion_static 47, p = 1.5e-99
+blind against P0 fusion, all episodes: 0.783 against 0.242, only blind succeeds 757, only P0 fusion 43, p = 1.1e-169
+blind against P9 fusion_kp, all episodes: 0.783 against 0.532, only blind succeeds 440, only P9 fusion_kp 109, p = 4.1e-48
+blind against P5 fusion_static, all episodes: 0.783 against 0.155, only blind succeeds 858, only P5 fusion_static 30, p = 6.5e-212
+
+## Outside the fixed read-out: where the gripper closes (last close of the episode; no close counts as not there)
+
+| cells | policy | success | closes within 4 cm of the glass | within 1.5 cm | success when within 1.5 cm | median distance, cm |
+|---|---|---|---|---|---|---|
+| all cells | full | 0.789 | 0.949 | 0.861 | 0.893 | 0.56 |
+| all cells | cue | 0.795 | 0.950 | 0.871 | 0.897 | 0.56 |
+| all cells | gate | 0.507 | 0.841 | 0.570 | 0.779 | 1.28 |
+| all cells | blind | 0.783 | 0.950 | 0.858 | 0.889 | 0.59 |
+| all cells | rgbdt ImageNet, seed 42 | 0.414 | 0.575 | 0.364 | 0.940 | 2.98 |
+| depth shows (0, 1, 3, 5, 8, 10) | full | 0.810 | 0.961 | 0.869 | 0.909 | 0.53 |
+| depth shows (0, 1, 3, 5, 8, 10) | cue | 0.836 | 0.958 | 0.897 | 0.916 | 0.52 |
+| depth shows (0, 1, 3, 5, 8, 10) | gate | 0.678 | 0.944 | 0.767 | 0.830 | 0.80 |
+| depth shows (0, 1, 3, 5, 8, 10) | blind | 0.801 | 0.956 | 0.874 | 0.898 | 0.56 |
+| depth shows (0, 1, 3, 5, 8, 10) | rgbdt ImageNet, seed 42 | 0.639 | 0.814 | 0.599 | 0.961 | 1.03 |
+| depth blind (2, 4, 6, 7, 9) | full | 0.763 | 0.935 | 0.850 | 0.873 | 0.57 |
+| depth blind (2, 4, 6, 7, 9) | cue | 0.747 | 0.940 | 0.840 | 0.871 | 0.62 |
+| depth blind (2, 4, 6, 7, 9) | gate | 0.302 | 0.717 | 0.333 | 0.640 | 2.26 |
+| depth blind (2, 4, 6, 7, 9) | blind | 0.760 | 0.943 | 0.840 | 0.877 | 0.64 |
+| depth blind (2, 4, 6, 7, 9) | rgbdt ImageNet, seed 42 | 0.143 | 0.288 | 0.082 | 0.755 | 6.90 |

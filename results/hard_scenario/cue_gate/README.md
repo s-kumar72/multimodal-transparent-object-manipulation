@@ -171,6 +171,68 @@ The plain rgbdt baseline (no cue, no gate) is the fourth corner and exists with 
 
 Results are reported as they come out, whatever they are.
 
+## Results of round 1 (11/23 13:35 KST; seed 42, 1320 test episodes per run, 120 per cell)
+
+`python policy/readout_cue_gate.py` ([`readout.txt`](readout.txt)) and `python policy/analyze_cue.py <run>`
+([`cue_in_episodes.txt`](cue_in_episodes.txt)); all four runs finished and were evaluated. "(above)": above the seed-42
+run of the best baseline of the cell on the same episodes with p < 0.05; in the last row against the rgbdt ImageNet
+baseline of seed 42 over all episodes. No arm is below the best baseline of a cell with p < 0.05.
+
+| cell | sensors that show the glass | `full` | `cue` | `gate` | `blind` | best baseline of the cell, its seed-42 run | the same, 3 seeds (frozen) | reference |
+|---|---|---|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.942 (above) | 0.950 (above) | 0.767 | 0.942 (above) | 0.775 (rgbdt) | 0.781 | 0.900 |
+| 1 | depth+thermal | 0.883 (above) | 0.858 (above) | 0.725 | 0.867 (above) | 0.750 (rgbdt) | 0.758 | 0.875 |
+| 2 | rgb+thermal | 0.883 (above) | 0.900 (above) | 0.508 | 0.900 (above) | 0.408 (rgbt) | 0.397 | 0.642 |
+| 3 | rgb+depth | 0.925 (above) | 0.933 (above) | 0.733 | 0.917 (above) | 0.700 (rgbd) | 0.700 | 0.867 |
+| 4 | thermal | 0.617 (above) | 0.642 (above) | 0.283 (above) | 0.617 (above) | 0.167 (rgbt) | 0.189 | 0.608 |
+| 5 | depth | 0.733 | 0.792 (above) | 0.683 | 0.692 | 0.633 (rgbd) | 0.697 | 0.858 |
+| 6 | rgb | 0.900 (above) | 0.883 (above) | 0.325 | 0.900 (above) | 0.275 (rgb) | 0.256 | 0.492 |
+| 7 | rgb (faint) | 0.892 (above) | 0.842 (above) | 0.217 | 0.875 (above) | 0.167 (rgb) | 0.181 | 0.333 |
+| 8 | depth (faint) | 0.558 | 0.625 | 0.617 | 0.533 | 0.525 (rgbdt) | 0.486 | 0.742 |
+| 9 | thermal (faint) | 0.525 (above) | 0.467 (above) | 0.175 | 0.508 (above) | 0.108 (rgbt) | 0.094 | 0.383 |
+| 10 | all faint | 0.817 (above) | 0.858 (above) | 0.542 | 0.858 (above) | 0.483 (rgbdt) | 0.503 | 0.717 |
+| macro average | | 0.789 (above) | 0.795 (above) | 0.507 (above) | 0.783 (above) | 0.454 | 0.458 | 0.674 |
+
+**1. Against the baselines.** Against the rgbdt ImageNet baseline of seed 42 (0.414) over all episodes: `full` 0.789
+(only the arm succeeds in 567 episodes, only the baseline in 72, p = 2.5e-96), `cue` 0.795 (568 / 64, p = 6.5e-102),
+`blind` 0.783 (564 / 77, p = 2e-92), `gate` 0.507 (258 / 135, p = 5.5e-10). Per cell against the seed-42 run of the
+best baseline: `full` is above in 9 cells (all but 5 and 8), `cue` in 10 (all but 8), `blind` in 9 (all but 5 and 8),
+`gate` in one (4); none is below anywhere. One seed: a first reading; the claim of Stage 6 waits for three seeds.
+
+**2. Which part carries it.** `full` against `cue`: 0.789 against 0.795 (98 / 107, p = 0.58), no cell differs: gating
+the image features adds nothing to the cue. `full` against `gate`: 0.789 against 0.507 (458 / 86, p = 2.7e-62): the
+grasp point in the conditioning is what carries the method. `cue` against `blind`: 0.795 against 0.783 (112 / 95,
+p = 0.27); one cell differs (5, depth only: 0.792 against 0.692, p = 0.017): with the cue and the joints, the images
+are not shown to add anything over all cells. The gate without the grasp point is above the baseline (0.507 against
+0.414), mostly where depth does not show the glass (0.302 against 0.143 there).
+
+**3. The cue inside the episodes.** The cue is within 1.5 cm of the glass in 0.91 of the episodes (1197 of 1320; the
+same for every arm, it is computed from the first frame). Success with a right cue / with a wrong cue: `full` 0.843 /
+0.260, `cue` 0.855 / 0.220, `blind` 0.835 / 0.268, `gate` 0.535 / 0.236. The cells with the fewest right cues are 9
+(0.68) and 8 (0.80). With a right cue the success is lowest in the cells in which only depth or only thermal shows
+the glass (4, 5, 8, 9: 0.62 to 0.83 for `cue`).
+
+**4. Next to them, not criteria.** References (told the cell, one seed): 0.674 on average; the arms with a cue are
+above it on average and below it in cells 5 and 8. Learned attention weighting on the same episodes (extra
+supervision): P9 0.532, P0 0.242, P5 0.155; `full` against P9: 437 / 98, p = 4.4e-52.
+
+**5. Seeds.** `cue` has the highest success; `full`, `cue` and `blind` are within p >= 0.05 of each other (`full`
+against `blind` p = 0.60), so by the rule the seeds 43 and 44 are run for `full`
+(`L0_vis_rgbdt_700demos_hcg_full_seed43`, `..._seed44`, queued 11/23 13:36 KST).
+
+Outside the read-out, where the gripper closes (last close): within 1.5 cm of the glass in 0.86 of the episodes for
+`full`, 0.87 `cue`, 0.86 `blind`, 0.57 `gate`, 0.36 for the rgbdt baseline; in the cells without depth 0.85 / 0.84 /
+0.84 / 0.33 / 0.08.
+
+**What round 1 says** (one seed):
+
+- A grasp point computed once from the first frame, learned from the demos' own hindsight with no simulator label,
+  takes the plain policy from 0.41 to 0.79 on `L0_vis`, with no cell below the best baseline.
+- Once the policy has that point it does not need the images (`blind`), and gating their features changes nothing
+  (`full` against `cue`): on this benchmark the outcome is decided by finding the glass before the arm moves.
+- So the gate of the method can only matter inside the cue, in deciding which sensors' maps make the grasp point.
+  Rounds 2 and 3 measure that.
+
 ## Policy runs, round 2: what the cue is made of, and two controls (listed 11/23 12:20 KST, before any of them starts)
 
 Written with three of the four runs of round 1 finished and looked at (`blind` still running): `full` 0.789, `cue`
@@ -330,6 +392,50 @@ the 600 of the cells of the training set, and per cell):
    `hcg_full`, `hcg_cue_early`, the rgbdt ImageNet baseline of seed 42), on the same episodes of cells 4 to 9.
 5. `python policy/analyze_cue.py <run>` for the three runs with a cue.
 
+### Results of step 1 of 3a and 3b: the cue alone (11/23 13:10 KST; no policy involved)
+
+Records: [`perception/round3_cue_new_cells.txt`](perception/round3_cue_new_cells.txt),
+[`perception/round3_cue_nosingle.txt`](perception/round3_cue_nosingle.txt) (`python policy/readout_round3.py cue-new |
+cue-nosingle`), the fits without cells 4 to 9 in `perception/nosingle_*.txt`. Share of episodes with the cue within
+1.5 cm of the glass in the evaluation env; "(below)": below the method on the same episodes with p < 0.05.
+
+3a, the 15 new combinations, cues fitted on the 700 demos (1200 episodes):
+
+| cells | method | one network | no gate | gate on map numbers |
+|---|---|---|---|---|
+| all 15 | 0.956 | 0.934 (below, 57 / 31, p = 0.0073) | 0.891 (below, p = 6.1e-16) | 0.932 (below, p = 0.003) |
+| a sensor shows the glass fully (0-11) | 0.964 | 0.939 (below) | 0.906 (below) | 0.944 (below) |
+| none does (12-14) | 0.925 | 0.917 | 0.829 (below) | 0.887 |
+
+On the eleven training cells the same cues are right in 0.907, 0.883, 0.614 and 0.781 of the 1320 episodes. The new
+combinations are not harder than the training cells for any of the cues: most of them have one more sensor that shows
+the glass. The method is above the one network by 0.02; per cell only cell 7 (shows / blind / faint) differs.
+
+3b, cues fitted on the 400 demos without cells 4 to 9 (1320 episodes):
+
+| cell | rgb / depth / thermal | method | one network | no gate |
+|---|---|---|---|---|
+| 4 | blind / blind / shows | 0.708 | 0.958 (above) | 0.283 (below) |
+| 5 | blind / shows / blind | 0.842 | 0.700 (below) | 0.500 (below) |
+| 6 | shows / blind / blind | 0.967 | 0.725 (below) | 0.458 (below) |
+| 7 | faint / blind / blind | 0.925 | 0.667 (below) | 0.483 (below) |
+| 8 | blind / faint / blind | 0.633 | 0.408 (below) | 0.317 (below) |
+| 9 | blind / blind / faint | 0.533 | 0.383 (below) | 0.192 (below) |
+| cells left out (4-9) | | 0.768 | 0.640 (below, 174 / 82, p = 9e-09) | 0.372 (below, p = 6.3e-68) |
+| cells of the training set (0-3, 10) | | 0.933 | 0.952 (p = 0.099) | 0.902 (below, p = 0.0079) |
+
+Against the same cue fitted on all 700 demos, on the same episodes of the cells left out: the method 0.768 against
+0.863 (p = 6.5e-10), the one network 0.640 against 0.839 (p = 1.3e-22), no gate 0.372 against 0.364.
+
+- When two sensors are blind at once for the first time, the cue from maps per sensor with the verified gate stays
+  right more often than the cue of one network on all sensors (0.77 against 0.64); the one network loses twice as much
+  as the method from leaving the cells out (0.20 against 0.10).
+- It is not uniform: in cell 4 (thermal alone) the one network is far above the method (0.96 against 0.71). There the
+  verifier of the blind depth image is unsure (median 0.46; 0.27 when fitted on all 700 demos), with 70 demos in which
+  depth is blind; not examined further.
+- In the cells of the training set the two do not differ (0.93 against 0.95); in cell 1 the one network is above.
+- These are cues, not policies. Step 2 of both parts says whether the success follows.
+
 ### Order of the queue (set 11/23 12:40 KST, before any run of rounds 2 and 3 has started)
 
 `hcg_cue_early`, `hcg_cue_nogate`, the evaluation of 3a for the runs that exist, the four runs of 3b,
@@ -351,4 +457,5 @@ it is the one the claim about the structure per sensor depends on most).
   control with the auxiliary loss), `policy/readout_cue_gate.py` (read-out of round 1, items 1, 2 and 4),
   `policy/readout_cue_controls.py` (read-out of round 2).
 - Round 3: `sim/configs/manifest.json` (test sets `l_cells15_new`, `m_cells15_new_heldout`),
-  `policy/eval_new_cells.sh` (the policies on them), `policy/check_cue_env.py --save` (the cue per episode).
+  `policy/eval_new_cells.sh` (the policies on them), `policy/check_cue_env.py --save` (the cue per episode),
+  `policy/readout_round3.py` (read-out).
