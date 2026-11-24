@@ -119,6 +119,9 @@ class GlassPickEnv:
         self.place = cfg.task == "place"     # pick-and-place: the scene has a coaster and success is placed()
         scene = SCENE_PLACE if self.place else SCENE_DISTRACTORS if self.uses_extras else SCENE
         self.model = mujoco.MjModel.from_xml_path(scene)
+        assert cfg.contacts in ("default", "elliptic"), cfg.contacts
+        if cfg.contacts == "elliptic":       # the contact model of place_scene.xml on any scene
+            self.model.opt.cone, self.model.opt.impratio = mujoco.mjtCone.mjCONE_ELLIPTIC, 10
         self.data = mujoco.MjData(self.model)
         self.sensors = Sensors(self.model, camera=cfg.camera, config=cfg)
         self.n_sub = int(round(CTRL_DT / self.model.opt.timestep))
