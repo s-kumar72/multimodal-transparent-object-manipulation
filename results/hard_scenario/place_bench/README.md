@@ -26,7 +26,9 @@ guarantees.
 - **Coaster.** An opaque disc 12 cm wide and 6 mm thick, fixed to the table (it cannot be pushed away), always with
   the same look: dark with a light centre. Its temperature is within 1 degC of the room. So the colour camera shows
   it in every cell, also in the cells in which the colour camera does not show the glass (there the glass is clear;
-  the light is normal); depth (6 mm of height) and thermal hardly show it.
+  the light is normal); depth (6 mm of height) and thermal hardly show it. *Measured 11/25 (step 3, perception): a
+  network trained to find the place pixel finds it from depth in 0.96 of the frames and from thermal in 0.66, so
+  "hardly" holds for neither; the coaster is shown by all three sensors, best by colour and depth.*
 - **Where the coaster is.** A random spot on the near part of the table (x 0.27 to 0.42 m, y -0.28 to 0.28 m, no
   further from the arm's base than the far corners of the region the glass spawns in, 0.446 m, where the top-down IK
   still reaches the carry height), at least 2 cm (edge to edge) from the glass and from every distractor, and such
@@ -269,7 +271,7 @@ rgbt in 2, 4, 7 and 9. The mean of the best per cell is 0.633, against 0.536 for
 Not approved and not started: seeds 43 and 44, the references, the method on this level, and the check of the
 contact settings.
 
-## Step 3: hindsight cue gating on this level (approved by the user 11/25; listed 11/25 01:40 KST, before anything is fitted or trained)
+## Step 3: hindsight cue gating on this level (approved by the user 11/25; listed 11/25 01:32 KST, before anything is fitted or trained)
 
 The method of [`../cue_gate/README.md`](../cue_gate/README.md), with one addition for the second place that has to be
 found. Nothing about the method is chosen on this level: the networks, the gate and the policy arms are those of the
@@ -304,6 +306,26 @@ that switches the colour camera off (as the gate of the pick level does in those
 `hindsight_cue.py` on the training demos, out of fold, and `python policy/check_cue_env.py <cue.pt> --level
 L0_vis_place --test_set <set>` on both test sets (660 episodes each; the place cue against the coaster's centre), in
 `perception/`.
+
+**Perception: results (11/25 02:10 KST, before any policy run starts).** Records in [`perception/`](perception/):
+`grasp_cue_report.txt`, `place_cue_report.txt` (training demos, out of fold), `env_<grasp | place>_<test set>.txt`
+(the cue the evaluation env computes at reset, 660 episodes per test set).
+
+| cue | training demos, out of fold: within 1.5 px / within 1.5 cm | `j_cells11`: within 1 / 1.5 / 4 cm | `k_cells11_heldout`: within 1 / 1.5 / 4 cm | gate, median: rgb / depth / thermal (`j_cells11`) | sensors trusted per episode |
+|---|---|---|---|---|---|
+| grasp (the glass) | 0.95 / 0.90 | 0.82 / 0.91 / 0.98 | 0.76 / 0.85 / 0.92 | by cell, as on the pick level | 1.79 |
+| place (the coaster) | 1.00 / 0.96 | 0.94 / 0.99 / 1.00 | 0.92 / 0.97 / 1.00 | 1.00 / 1.00 / 0.93 | 2.70 |
+
+- The grasp cue is as on the pick level (there 0.93 and 0.88 within 1.5 cm on the two test sets); its weak cells are
+  again 8 and 9 (0.78 and 0.62 on `j_cells11`).
+- The place cue is right in nearly every episode of every cell.
+- **The coaster is not seen by the colour camera alone.** The level's description says that depth and thermal hardly
+  show it. The cue networks say otherwise: the depth network's own peak is within 2 px of the place pixel in 0.96 of
+  the training frames (the 6 mm of height are enough) and the thermal network's in 0.66, and their gates are 1.00
+  and about 0.9. So with the rule fixed above (a sensor is on when it is trusted for either target) the colour camera
+  and depth are on in every episode and thermal in most: the gate of `hcg2_full` switches off little on this level,
+  and "the two targets are shown by different sensors" holds only for thermal. The rule and the runs stay as
+  listed; `hcg2_full` against `hcg2_cue` is read with this in mind.
 
 **Policy runs** (seed 42; the protocol of the baselines of this level: 700 demos, 101 epochs, last checkpoint,
 ImageNet encoders, episodes of at most 240 steps, rollouts during training on `j_cells11` with 55 episodes, final
