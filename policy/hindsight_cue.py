@@ -3,6 +3,10 @@ Hindsight cue gating, perception part: per-sensor grasp cues and their reliabili
 
 Label from the demo itself ("hindsight"): the tool position at the first step that closes the gripper (arm kinematics),
 projected into the image with the camera calibration. No cell, visibility flag or mask is used anywhere.
+--event release (pick-and-place demos): the label is where the glass is put down instead, the point of the table plane
+under the tool at the first step that opens the gripper again (the table's height is part of the calibration). The
+networks, the gate and the cue vector are the same; the cue then says where the place target is and which sensors
+show it.
 
   cue     per sensor a small fully convolutional network (local receptive field, no global pooling) gives a distribution
           over the 96 x 96 pixels of where the grasp will be and a map of the grasp height, from the first frames of an
@@ -74,10 +78,11 @@ def camera_params(level):
     from env import GlassPickEnv
     from testsets import manifest
     env = GlassPickEnv(config=manifest()["levels"][level])
+    from env import TABLE_TOP
     env.reset(0)
     s, d = env.sensors, env.data
     cam = dict(R=d.cam_xmat[s.cam_id].reshape(3, 3).copy(), t=d.cam_xpos[s.cam_id].copy(), f=float(s.focal),
-               h=int(s.r.height), w=int(s.r.width))
+               h=int(s.r.height), w=int(s.r.width), table_z=float(TABLE_TOP))
     env.close()
     return cam
 
@@ -98,15 +103,23 @@ def backproject(cam, uv, z):
     return (cam["t"] + d[:, None] * ray).astype(np.float32)
 
 
-def load(path, n_frames):
-    """First n_frames frames of every episode, and the hindsight grasp point of every episode."""
+def load(path, n_frames, event="grasp", table_z=None):
+    """First n_frames frames of every episode, and the hindsight point of every episode: the tool where the gripper
+    first closes (event grasp), or the point of the table plane under the tool where it first opens again (release)."""
     import zarr
     z = zarr.open(str(path), "r")
     ends = z["meta/episode_ends"][:]
     starts = np.r_[0, ends[:-1]]
     act = z["data/action"][:]
     close = [s + int(np.argmax(act[s:t, 6] > 0)) for s, t in zip(starts, ends)]
-    goal = fk(act[close, :6])
+    if event == "release":
+        step = [c + int(np.argmax(act[c:t, 6] <= 0)) for c, t in zip(close, ends)]
+        assert all(act[c, 6] > 0 and act[r, 6] <= 0 for c, r in zip(close, step)), "a demo that never lets go"
+        goal = fk(act[step, :6])
+        goal[:, 2] = table_z
+    else:
+        assert event == "grasp", event
+        goal = fk(act[close, :6])
     idx = np.concatenate([np.arange(s, s + n_frames) for s in starts])
     x = {k: torch.from_numpy(z["data"][k].get_orthogonal_selection((idx,))).permute(0, 3, 1, 2).contiguous() for k in SENSORS}
     cells = z["meta/ep_cell"][:] if "ep_cell" in z["meta"] else None
@@ -512,6 +525,9 @@ def auroc(score, positive):
     return float((rank[p].sum() - p.sum() * (p.sum() + 1) / 2) / (p.sum() * (~p).sum()))
 
 
+SHOWS_COASTER = (0, 1, 1)     # report only, event release: the colour camera shows the coaster, depth and thermal do not
+
+
 def report(title, cam, vec, r, uv_m, goal, cells, out, per_sensor=True):
     """Per cell: the fused cue against the hindsight grasp point; per sensor: the gate against what the cell says."""
     uv_true = project(cam, goal)
@@ -535,7 +551,7 @@ def report(title, cam, vec, r, uv_m, goal, cells, out, per_sensor=True):
         lines.append(f"| {'all' if c is None else c} | {row['n']} | {row['px']:.2f} | {row['hit']:.2f} | {row['best']:.2f} | "
                      f"{row['cm']:.2f} | {row['cm1']:.2f} | {row['cm15']:.2f} | {row['cm1_z']:.2f} | {row['z_ok']:.2f} | "
                      + " / ".join(f"{g:.2f}" for g in row["gate"]) + " |")
-    flags, sens = np.array(FLAGS)[cells], {}
+    flags, sens = (np.tile(SHOWS_COASTER, (len(cells), 1)) if cam.get("event") == "release" else np.array(FLAGS)[cells]), {}
     for i, k in enumerate(SENSORS if per_sensor else ()):
         fl, e = flags[:, i], np.linalg.norm(uv_m[:, i] - uv_true, axis=1)
         sens[k] = dict(hit=[float((e[fl == x] < 1.5).mean()) for x in (0, 2, 1)],
@@ -556,6 +572,9 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--eval", default=None)
     ap.add_argument("--level", default="L0_vis")
+    ap.add_argument("--event", default="grasp", choices=("grasp", "release"),
+                    help="what the cue points at: where the gripper first closes, or (pick-and-place demos) the point "
+                         "of the table plane under the tool where it first opens again")
     ap.add_argument("--frames", type=int, default=4)
     ap.add_argument("--epochs", type=int, default=60)
     ap.add_argument("--folds", type=int, default=4)
@@ -571,14 +590,15 @@ def main():
     ap.add_argument("-d", "--device", default="cuda:0")
     a = ap.parse_args()
     out_dir = Path(a.out); out_dir.mkdir(parents=True, exist_ok=True)
-    cam = camera_params(a.level)
-    x, goal, ep, cells = load(a.train, a.frames)
+    assert a.event == "grasp" or a.mode == "verify", "--event release is implemented for the default mode"
+    cam = dict(camera_params(a.level), event=a.event)
+    x, goal, ep, cells = load(a.train, a.frames, a.event, cam["table_z"])
     n_ep = len(goal)
     uv_ep = project(cam, goal)
     uv, zn = uv_ep[ep], ((goal[:, 2] - Z0) / ZS)[ep]
     fold = np.random.default_rng(0).permutation(n_ep) % a.folds
     first = np.arange(n_ep) * a.frames                      # the first frame of every episode
-    print(f"{n_ep} demos, {len(ep)} frames; grasp pixel u {uv_ep[:, 0].min():.0f}-{uv_ep[:, 0].max():.0f}, "
+    print(f"event {a.event}: {n_ep} demos, {len(ep)} frames; grasp pixel u {uv_ep[:, 0].min():.0f}-{uv_ep[:, 0].max():.0f}, "
           f"v {uv_ep[:, 1].min():.0f}-{uv_ep[:, 1].max():.0f}; grasp height {100 * goal[:, 2].min():.1f}-"
           f"{100 * goal[:, 2].max():.1f} cm", flush=True)
 
@@ -642,16 +662,19 @@ def main():
     # 1. maps of every training frame from a network that did not see its episode, and the networks of all demos
     #    (kept in OUT/maps.pt, so the gates can be refitted without training the networks again)
     cache = out_dir / "maps.pt"
+    cache_args = dict(train=a.train, eval=a.eval, frames=a.frames, epochs=a.epochs, folds=a.folds)
+    if a.event != "grasp":             # only then, so that the caches written before the option existed stay valid
+        cache_args["event"] = a.event
     if cache.exists():
         ck = torch.load(cache, map_location="cpu", weights_only=False)
-        assert ck["args"] == dict(train=a.train, eval=a.eval, frames=a.frames, epochs=a.epochs, folds=a.folds), ck["args"]
+        assert ck["args"] == cache_args, ck["args"]
         lps, hms, nets_sd, le, he, ge, ce = (ck[k] for k in ("lps", "hms", "nets", "le", "he", "ge", "ce"))
         print(f"maps read from {cache}", flush=True)
     else:
         lps, hms, nets_sd = torch.zeros(len(ep), M, P), torch.zeros(len(ep), M, P), {}
         le = he = ge = ce = None
         if a.eval:
-            xe, ge, _, ce = load(a.eval, 1)
+            xe, ge, _, ce = load(a.eval, 1, a.event, cam["table_z"])
             le, he = torch.zeros(len(ge), M, P), torch.zeros(len(ge), M, P)
         for i, (k, c) in enumerate(SENSORS.items()):
             for f in range(a.folds):
@@ -666,8 +689,7 @@ def main():
         lps, hms = lps.half(), hms.half()
         if a.eval:
             le, he = le.half(), he.half()
-        torch.save(dict(lps=lps, hms=hms, nets=nets_sd, le=le, he=he, ge=ge, ce=ce,
-                        args=dict(train=a.train, eval=a.eval, frames=a.frames, epochs=a.epochs, folds=a.folds)), cache)
+        torch.save(dict(lps=lps, hms=hms, nets=nets_sd, le=le, he=he, ge=ge, ce=ce, args=cache_args), cache)
 
     if a.mode == "nogate":
         # 2. no gate: the out-of-fold maps of the training demos combined as they are
@@ -714,9 +736,10 @@ def main():
                               pk[i0].numpy(), goal, cells, res))
         torch.save(dict(nets=nets_sd, verifier={k: {n: v.cpu() for n, v in net.state_dict().items()} for k, net in vers.items()},
                         mode="verify", rule=a.rule, cam=cam,
-                        args=dict(frames=a.frames, epochs=a.epochs, folds=a.folds, level=a.level)), out_dir / "cue.pt")
+                        args=dict(frames=a.frames, epochs=a.epochs, folds=a.folds, level=a.level, event=a.event)),
+                   out_dir / "cue.pt")
         if a.eval:
-            xe = load(a.eval, 1)[0]
+            xe = load(a.eval, 1, a.event, cam["table_z"])[0]
             pke = own_peaks(le)
             re = torch.stack([trust(vers[k], patches(xe[k], le[:, m], pke[:, m]), a.device) for m, k in enumerate(SENSORS)], 1)
             for rule in RULES:

@@ -137,6 +137,11 @@ class SceneConfig:
     # the straight path), place_temp and place_emis.
     task: str = "pick"
     place_radius: float = 0.06
+    # Contact model. "default": the scene file's own (pyramidal friction cones, impratio 1, for every pick level;
+    # place_scene.xml sets elliptic cones with impratio 10 itself). "elliptic": elliptic cones with impratio 10 on
+    # any scene, i.e. the contacts of the pick-and-place level on a pick level (L0_vis_ell, a check of what the
+    # contact model does to the pick; results/hard_scenario/contact_check/).
+    contacts: str = "default"
 
     def pool(self, factor):
         """Value pool of a factor for this config's split."""

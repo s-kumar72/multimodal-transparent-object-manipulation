@@ -1,0 +1,19 @@
+# glass_pick_hcue for a pick-and-place level: two hindsight cues, one after the other in the `hcue` observation. The
+# first is the grasp cue (hcue_dir, as on the pick levels), the second the place cue (hcue_dir2: the output folder of
+# `python policy/hindsight_cue.py <the same demo set> --event release --out <hcue_dir2>`), which says where the glass
+# is put down and which sensors show that place.
+defaults:
+  - glass_pick_hcue
+  - _self_
+
+name: glass_pick_hcue2
+hcue_dir: data/hcue/L0_vis_place_700
+hcue_dir2: data/hcue/L0_vis_place_700_release
+
+shape_meta:
+  obs:
+    hcue:
+      shape: [18]          # 2 x hindsight_cue.CUE_DIM: the grasp cue, then the place cue
+      type: low_dim
+      file: ["${task.hcue_dir}/train_cue.npy", "${task.hcue_dir2}/train_cue.npy"]
+      ckpt: ["${task.hcue_dir}/cue.pt", "${task.hcue_dir2}/cue.pt"]

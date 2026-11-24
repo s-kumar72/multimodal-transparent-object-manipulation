@@ -1,0 +1,14 @@
+# glass_pick plus the `stage` key of the stage-guided fusion baseline (policy/msbot_encoder.py): the stage of a
+# training frame by a rule on the demonstrated actions and whether a stage change is near. A loss target only: the
+# encoder does not read it and the evaluation env sets it to zero.
+defaults:
+  - glass_pick
+  - _self_
+
+name: glass_pick_stage
+
+shape_meta:
+  obs:
+    stage:
+      shape: [2]
+      type: low_dim

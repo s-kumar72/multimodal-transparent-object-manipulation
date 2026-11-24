@@ -26,7 +26,9 @@ guarantees.
 - **Coaster.** An opaque disc 12 cm wide and 6 mm thick, fixed to the table (it cannot be pushed away), always with
   the same look: dark with a light centre. Its temperature is within 1 degC of the room. So the colour camera shows
   it in every cell, also in the cells in which the colour camera does not show the glass (there the glass is clear;
-  the light is normal); depth (6 mm of height) and thermal hardly show it.
+  the light is normal); depth (6 mm of height) and thermal hardly show it. *Measured 11/25 (step 3, perception): a
+  network trained to find the place pixel finds it from depth in 0.96 of the frames and from thermal in 0.66, so
+  "hardly" holds for neither; the coaster is shown by all three sensors, best by colour and depth.*
 - **Where the coaster is.** A random spot on the near part of the table (x 0.27 to 0.42 m, y -0.28 to 0.28 m, no
   further from the arm's base than the far corners of the region the glass spawns in, 0.446 m, where the top-down IK
   still reaches the carry height), at least 2 cm (edge to edge) from the glass and from every distractor, and such
@@ -268,6 +270,97 @@ rgbt in 2, 4, 7 and 9. The mean of the best per cell is 0.633, against 0.536 for
 
 Not approved and not started: seeds 43 and 44, the references, the method on this level, and the check of the
 contact settings.
+
+## Step 3: hindsight cue gating on this level (approved by the user 11/25; listed 11/25 01:32 KST, before anything is fitted or trained)
+
+The method of [`../cue_gate/README.md`](../cue_gate/README.md), with one addition for the second place that has to be
+found. Nothing about the method is chosen on this level: the networks, the gate and the policy arms are those of the
+pick level, with their settings.
+
+**Two cues.** A pick-and-place demo says two things in hindsight: where the gripper closed (the glass) and where it
+opened again (the place).
+
+- *Grasp cue*, as on the pick level: the tool position at the first step that closes the gripper, per-sensor maps
+  from the first four frames, a verifier per sensor, the trusted sensors that agree fused
+  (`python policy/hindsight_cue.py results/data/sim_demos_L0_vis_place_700.zarr --level L0_vis_place --out
+  data/hcue/L0_vis_place_700`).
+- *Place cue*, new (`--event release --out data/hcue/L0_vis_place_700_release`): the label is the point of the table
+  plane under the tool at the first step that opens the gripper again. The table plane and not the tool itself,
+  because the tool is 8 to 16 cm above the table at that step, depending on the glass, so its pixel is not where the
+  place target is seen. Same networks, same verifier, same fusion rule; the cue vector has the same nine entries
+  (point, pixel, confidence, r_rgb, r_depth, r_thermal) and says where the glass will be put down and which sensors
+  show that place. In the demos the tool is within 0.1 cm of the coaster's centre at that step.
+- The policy gets both, one after the other, in the observation `hcue` (18 entries; task `glass_pick_hcue2`,
+  `CUES=2` of `policy/train_cuegate.sh`). With the gate on, a sensor's feature is switched off when the sensor is
+  trusted for neither target (the larger of its two r is below 0.5).
+
+**Information used.** As on the pick level (sensor images, joint values, the demonstrated actions, arm kinematics,
+the camera calibration, ImageNet weights), plus one constant of the setup: the height of the table in the robot
+frame. The coaster's position, the cells and the glass's position appear in the reports only.
+
+**What the level asks of the gate that the pick level does not.** The colour camera shows the coaster in every cell;
+in cells 1, 4, 5, 8 and 9 it does not show the glass. There the two targets are shown by different sensors, so a rule
+that switches the colour camera off (as the gate of the pick level does in those cells) would hide the coaster.
+
+**Perception, reported before the policies (no choice depends on it).** For both cues: the report of
+`hindsight_cue.py` on the training demos, out of fold, and `python policy/check_cue_env.py <cue.pt> --level
+L0_vis_place --test_set <set>` on both test sets (660 episodes each; the place cue against the coaster's centre), in
+`perception/`.
+
+**Perception: results (11/25 02:10 KST, before any policy run starts).** Records in [`perception/`](perception/):
+`grasp_cue_report.txt`, `place_cue_report.txt` (training demos, out of fold), `env_<grasp | place>_<test set>.txt`
+(the cue the evaluation env computes at reset, 660 episodes per test set).
+
+| cue | training demos, out of fold: within 1.5 px / within 1.5 cm | `j_cells11`: within 1 / 1.5 / 4 cm | `k_cells11_heldout`: within 1 / 1.5 / 4 cm | gate, median: rgb / depth / thermal (`j_cells11`) | sensors trusted per episode |
+|---|---|---|---|---|---|
+| grasp (the glass) | 0.95 / 0.90 | 0.82 / 0.91 / 0.98 | 0.76 / 0.85 / 0.92 | by cell, as on the pick level | 1.79 |
+| place (the coaster) | 1.00 / 0.96 | 0.94 / 0.99 / 1.00 | 0.92 / 0.97 / 1.00 | 1.00 / 1.00 / 0.93 | 2.70 |
+
+- The grasp cue is as on the pick level (there 0.93 and 0.88 within 1.5 cm on the two test sets); its weak cells are
+  again 8 and 9 (0.78 and 0.62 on `j_cells11`).
+- The place cue is right in nearly every episode of every cell.
+- **The coaster is not seen by the colour camera alone.** The level's description says that depth and thermal hardly
+  show it. The cue networks say otherwise: the depth network's own peak is within 2 px of the place pixel in 0.96 of
+  the training frames (the 6 mm of height are enough) and the thermal network's in 0.66, and their gates are 1.00
+  and about 0.9. So with the rule fixed above (a sensor is on when it is trusted for either target) the colour camera
+  and depth are on in every episode and thermal in most: the gate of `hcg2_full` switches off little on this level,
+  and "the two targets are shown by different sensors" holds only for thermal. The rule and the runs stay as
+  listed; `hcg2_full` against `hcg2_cue` is read with this in mind.
+
+**Policy runs** (seed 42; the protocol of the baselines of this level: 700 demos, 101 epochs, last checkpoint,
+ImageNet encoders, episodes of at most 240 steps, rollouts during training on `j_cells11` with 55 episodes, final
+evaluation on `j_cells11` and `k_cells11_heldout` with 660 episodes each; queue `data/runs/fv_queue.sh` of the
+fusion-vis worktree, results in `results/hard_scenario/place_bench/<run>/`):
+
+| run | arm | cues | images | features gated | question |
+|---|---|---|---|---|---|
+| `L0_vis_place_rgbdt_700demos_hcg2_full` | `full` | grasp + place | yes | yes | the method |
+| `L0_vis_place_rgbdt_700demos_hcg2_cue` | `cue` | grasp + place | yes | no | does gating the features add to the cues? |
+| `L0_vis_place_rgbdt_700demos_hcg_cue` | `cue` | grasp only | yes | no | does the place need a cue of its own? |
+| `L0_vis_place_rgbdt_700demos_hcg2_blind` | `blind` | grasp + place | none | - | do the images add to the cues and the joints on this task? |
+
+Command: `[CUES=2] GROUP=place_bench TOPK=0 NTEST=55 NEVAL=660 TEST_SETS="j_cells11 k_cells11_heldout" TAG=<hcg2_full
+| hcg2_cue | hcg_cue | hcg2_blind> TRAIN="policy/train_cuegate.sh <arm>" EXTRA="training.seed=42
+task.env_runner.test_set=j_cells11 task.env_runner.max_steps=240 [task.hcue_dir=data/hcue/L0_vis_place_700]" bash
+scripts/run_experiment.sh L0_vis_place rgbdt 700` (`CUES=2` for the three runs with both cues; `task.hcue_dir` for
+the run with the grasp cue only). A run that fails or is stopped is reported as such and not started again.
+
+**Read-out, fixed now** (per run, 1320 episodes; `python policy/readout_place_method.py`):
+
+1. Against the baselines: success against `L0_vis_place_rgbdt_700demos_imagenet` (0.536) on the same episodes (sign
+   test, p < 0.05), and per cell against that cell's best baseline (item 5 of the results of step 2). One seed is a
+   first reading.
+2. The pick and the place apart: the share of episodes with the glass picked, and placed among the picked, next to
+   the rgbdt baseline (0.605, 0.886).
+3. Which part carries it, on the same episodes, p < 0.05: `hcg2_full` against `hcg2_cue` (gating the features),
+   `hcg2_cue` against `hcg_cue` (the place cue), `hcg2_cue` against `hcg2_blind` (the images).
+4. The cues inside the episodes: the share with the grasp cue within 1.5 cm of the glass and with the place cue
+   within 1.5 cm of the coaster's centre, and the success with each right and wrong.
+5. Next to them, not a test: success in the cells in which the colour camera shows the glass (0, 2, 3, 6, 7, 10) and
+   in those in which it does not (1, 4, 5, 8, 9), for `hcg2_full` and `hcg2_cue`.
+
+Not in this step: seeds 43 and 44, the controls of round 2 of the pick level (one network, gate on map numbers, no
+gate), the references. Results are reported as they come out, whatever they are.
 
 ## Files
 
