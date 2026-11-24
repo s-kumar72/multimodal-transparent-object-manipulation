@@ -1,0 +1,6 @@
+python sim/teacher_check.py --levels L0_vis_ell --n 700 --workers 8 --test_set j_cells11 --n_test 660
+L0_vis_ell train teacher 700/700  tumbler 140/140 bottle 140/140 wineglass 140/140 jar 140/140 flask 140/140  | episodes that moved a distractor > 2 cm: 0
+L0_vis_ell test  teacher 660/660  tumbler 132/132 bottle 132/132 wineglass 132/132 jar 132/132 flask 132/132  | episodes that moved a distractor > 2 cm: 0
+
+python sim/teacher_check.py --levels L0_vis_ell --n 0 --workers 8 --test_set k_cells11_heldout --n_test 660
+L0_vis_ell test  teacher 660/660  tumbler 132/132 bottle 132/132 wineglass 132/132 jar 132/132 flask 132/132  | episodes that moved a distractor > 2 cm: 0

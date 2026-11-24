@@ -822,6 +822,43 @@ Change of 11/23 17:10 KST (order only, no run has changed): the evaluation of 3a
 the queue and waits until `hcg_cue_mapgate` and `dp_aux` have ended. The queue starts a line as soon as a GPU is free,
 so right behind `dp_aux` it would have started while these two were still training and skipped them.
 
+## Round 4: seeds of `cue` and of the one-network control (approved by the user 11/25; listed 11/25 01:45 KST, before any of them starts)
+
+Rounds 2 and 3 compared the arm `cue` with its controls on one seed. The control that comes closest is the one
+network on all sensors (`hcg_cue_early`: 0.730 against 0.795 on the training cells, 0.791 against 0.849 on the new
+combinations, 0.550 against 0.678 in the cells left out of training). Whether the cue needs per-sensor maps and a
+verified gate, or one network does as well, is the claim these differences carry, so both get seeds 43 and 44. The
+cue files are the fixed ones of rounds 1 to 3 (one seed of the cue networks); only the policy's seed changes.
+
+| run (seeds 43 and 44 of each) | demos | cue | exists with seed 42 |
+|---|---|---|---|
+| `L0_vis_rgbdt_700demos_hcg_cue_seed<s>` | 700 | the method (`data/hcue/L0_vis_700`) | 0.795 |
+| `L0_vis_rgbdt_700demos_hcg_cue_early_seed<s>` | 700 | one network (`data/hcue/L0_vis_700_early`) | 0.730 |
+| `L0_vis_rgbdt_400demos_nosingle_hcg_cue_seed<s>` | 400, cells 4 to 9 left out | the method (`data/hcue/L0_vis_400_nosingle`) | 0.678 in the cells left out |
+| `L0_vis_rgbdt_400demos_nosingle_hcg_cue_early_seed<s>` | 400, cells 4 to 9 left out | one network (`data/hcue/L0_vis_400_nosingle_early`) | 0.550 in the cells left out |
+
+Commands: those of rounds 2 and 3b with `training.seed=<s>` and `TAG=..._seed<s>` (arm `cue` of
+`policy/train_cuegate.sh`; protocol of the benchmark: 101 epochs, last checkpoint, ImageNet encoders, final evaluation
+on `j_cells11` and `k_cells11_heldout` with 660 episodes each). The four runs on the 700 demos are also evaluated on
+the new combinations (`policy/eval_new_cells.sh`, 600 episodes on each of `l_cells15_new` and
+`m_cells15_new_heldout`). Queue `data/runs/fv_queue.sh` of the fusion-vis worktree. A run that fails or is stopped is
+reported as such and not started again.
+
+**Read-out, fixed now** (`python policy/readout_round4.py`; `cue` against the one network, each seed of one against
+the same seed of the other on the same episodes):
+
+1. Training cells (`j_cells11`, `k_cells11_heldout`; 3 x 1320 episodes per arm): success per seed, mean and SD over
+   the seeds, and the sign test over the pooled pairs (p < 0.05); per cell, pooled.
+2. New combinations (`l_cells15_new`, `m_cells15_new_heldout`; 3 x 1200 episodes per arm): the same.
+3. Cells left out of training (the runs on the 400 demos): the same over the 720 episodes of cells 4 to 9 and over the
+   600 of the cells of the training set.
+4. The difference is said to **hold over the seeds** in a setting when the pooled test is significant and `cue` is
+   above the one network in each of the three seeds; to **not hold** when the pooled test is not significant; and to
+   be **mixed** otherwise. Reported per setting, whatever it is.
+
+Not in this round: seeds of the other controls (gate on map numbers, no gate, auxiliary loss), of `full` on the 400
+demos, and the form `cue` or `full` (decided after the tasks are extended, as before).
+
 ## Files
 
 - `policy/hindsight_cue.py` (cue, verifier, fusion; fit and report), `policy/check_cue_env.py` (the cue in the env),
