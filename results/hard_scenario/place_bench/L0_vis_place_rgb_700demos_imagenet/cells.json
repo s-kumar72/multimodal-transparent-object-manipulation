@@ -1,0 +1,62 @@
+{
+ "runs": [
+  "results/hard_scenario/place_bench/L0_vis_place_rgb_700demos_imagenet"
+ ],
+ "test_sets": [
+  "j_cells11",
+  "k_cells11_heldout"
+ ],
+ "macro": 0.09621212121212121,
+ "macro_ci": [
+  0.0803030303030303,
+  0.11212121212121212
+ ],
+ "cells": {
+  "0": {
+   "success": 15,
+   "n": 120
+  },
+  "1": {
+   "success": 9,
+   "n": 120
+  },
+  "2": {
+   "success": 16,
+   "n": 120
+  },
+  "3": {
+   "success": 17,
+   "n": 120
+  },
+  "4": {
+   "success": 6,
+   "n": 120
+  },
+  "5": {
+   "success": 11,
+   "n": 120
+  },
+  "6": {
+   "success": 16,
+   "n": 120
+  },
+  "7": {
+   "success": 12,
+   "n": 120
+  },
+  "8": {
+   "success": 5,
+   "n": 120
+  },
+  "9": {
+   "success": 8,
+   "n": 120
+  },
+  "10": {
+   "success": 12,
+   "n": 120
+  }
+ },
+ "success": 127,
+ "n": 1320
+}

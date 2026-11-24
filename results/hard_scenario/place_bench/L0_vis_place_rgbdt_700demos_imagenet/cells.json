@@ -1,0 +1,62 @@
+{
+ "runs": [
+  "results/hard_scenario/place_bench/L0_vis_place_rgbdt_700demos_imagenet"
+ ],
+ "test_sets": [
+  "j_cells11",
+  "k_cells11_heldout"
+ ],
+ "macro": 0.5363636363636363,
+ "macro_ci": [
+  0.5174242424242425,
+  0.5560606060606061
+ ],
+ "cells": {
+  "0": {
+   "success": 114,
+   "n": 120
+  },
+  "1": {
+   "success": 106,
+   "n": 120
+  },
+  "2": {
+   "success": 32,
+   "n": 120
+  },
+  "3": {
+   "success": 112,
+   "n": 120
+  },
+  "4": {
+   "success": 24,
+   "n": 120
+  },
+  "5": {
+   "success": 108,
+   "n": 120
+  },
+  "6": {
+   "success": 17,
+   "n": 120
+  },
+  "7": {
+   "success": 7,
+   "n": 120
+  },
+  "8": {
+   "success": 84,
+   "n": 120
+  },
+  "9": {
+   "success": 25,
+   "n": 120
+  },
+  "10": {
+   "success": 79,
+   "n": 120
+  }
+ },
+ "success": 708,
+ "n": 1320
+}
