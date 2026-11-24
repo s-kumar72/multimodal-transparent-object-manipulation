@@ -9,7 +9,9 @@ thermal ───► ResNet ──► z_t ────┘          ▲
 The cue is the observation key `hcue` (low_dim, hindsight_cue.CUE_DIM): for a training sample it is read from the file
 of out-of-fold cues (policy/glass_dataset.py), in an evaluation the env computes it from the first frame of the episode
 (policy/glass_gym_env.py); it stays the same for the whole episode. Its last entries are the gate r of rgb / depth /
-thermal, left as they are by the normalizer.
+thermal, left as they are by the normalizer. In a pick-and-place task the key may hold two cues one after the other,
+the grasp cue and the place cue (2 x CUE_DIM, task glass_pick_hcue2): both are part of the conditioning, and a sensor's
+gate is the larger of its two r, so a sensor stays on when it is trusted for either target.
 
 Options (policy.obs_encoder):
   gate      none | hard | soft | top1. How r acts on the image features of the sensors.
@@ -47,7 +49,8 @@ class CueGateObsEncoder(MultiImageObsEncoder):
         self.has_cue = CUE_KEY in self.low_dim_keys
         assert self.has_cue or (gate == "none" and not cue and images), f"gate / cue need the '{CUE_KEY}' observation"
         if self.has_cue:
-            assert tuple(self.key_shape_map[CUE_KEY]) == (CUE_DIM,), self.key_shape_map[CUE_KEY]
+            (n,) = self.key_shape_map[CUE_KEY]
+            assert n % CUE_DIM == 0 and n > 0, self.key_shape_map[CUE_KEY]
         names = list(SENSORS)
         assert all(k in names for k in self.rgb_keys), "image keys must be rgb / depth / thermal"
         self.r_index = [CUE_DIM - len(names) + names.index(k) for k in self.rgb_keys]    # entry of r for every image key
@@ -69,7 +72,7 @@ class CueGateObsEncoder(MultiImageObsEncoder):
 
     def weights(self, cue):
         """(B, n image keys): the weight of every sensor's feature under the gate rule."""
-        r = cue[:, self.r_index]
+        r = cue.view(len(cue), -1, CUE_DIM)[:, :, self.r_index].amax(1)     # over the cues of the vector
         if self.gate == "none":
             return torch.ones_like(r)
         if self.gate == "soft":

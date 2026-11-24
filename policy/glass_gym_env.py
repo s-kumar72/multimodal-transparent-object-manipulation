@@ -44,7 +44,8 @@ class GlassPickGymEnv(gym.Env):
 
     def _with_hcue(self, raw, reset=False):
         """Adds the hindsight cue (policy/hindsight_cue.py) when the policy has the `hcue` observation: computed from
-        the first frame of the episode and kept for all its steps."""
+        the first frame of the episode and kept for all its steps. `ckpt` may be a list of cue files (pick-and-place:
+        the grasp cue and the place cue); the vector is then their cues one after the other."""
         if "hcue" not in self.obs_meta:
             return raw
         if reset:
@@ -52,8 +53,9 @@ class GlassPickGymEnv(gym.Env):
                 import torch
                 from policy.hindsight_cue import HindsightCue
                 torch.set_num_threads(1)      # env workers are forked processes; one thread each, like DataLoader workers
-                self._hcue_model = HindsightCue(self.obs_meta["hcue"]["ckpt"])
-            self._hcue = self._hcue_model(raw)
+                ckpt = self.obs_meta["hcue"]["ckpt"]
+                self._hcue_model = [HindsightCue(p) for p in ([ckpt] if isinstance(ckpt, str) else list(ckpt))]
+            self._hcue = np.concatenate([m(raw) for m in self._hcue_model])
         return dict(raw, hcue=self._hcue)
 
     def seed(self, seed=None):

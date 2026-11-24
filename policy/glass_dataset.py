@@ -128,7 +128,9 @@ class GlassImageDataset(BaseImageDataset):
             data_keys.append("glass_loc")
         hcue_attr = self.obs_meta.get("hcue")
         if hcue_attr is not None:      # hindsight cue of every episode (policy/hindsight_cue.py), the same in all its frames
-            cue_ep = np.load(hcue_attr["file"]).astype(np.float32)
+            files = hcue_attr["file"]      # one file, or a list (pick-and-place: the grasp cue and the place cue)
+            cue_ep = np.concatenate([np.load(f).astype(np.float32)
+                                     for f in ([files] if isinstance(files, str) else list(files))], axis=1)
             ends = np.asarray(self.replay_buffer.episode_ends[:])
             assert len(cue_ep) == len(ends), (hcue_attr["file"], len(cue_ep), len(ends))
             self.replay_buffer.root["data"]["hcue"] = np.repeat(cue_ep, np.diff(np.r_[0, ends]), axis=0)
@@ -181,8 +183,11 @@ class GlassImageDataset(BaseImageDataset):
             if attr.get("type", "low_dim") == "rgb":
                 normalizer[key] = get_image_range_normalizer()
         if "hcue" in self.obs_meta:    # the gate entries stay as they are: the encoder switches sensors on them
-            normalizer["hcue"].params_dict["scale"].data[-3:] = 1.0     # r_rgb, r_depth, r_thermal
-            normalizer["hcue"].params_dict["offset"].data[-3:] = 0.0
+            from policy.hindsight_cue import CUE_DIM
+            p = normalizer["hcue"].params_dict
+            for end in range(CUE_DIM, len(p["scale"]) + 1, CUE_DIM):     # r_rgb, r_depth, r_thermal of every cue
+                p["scale"].data[end - 3:end] = 1.0
+                p["offset"].data[end - 3:end] = 0.0
         if self.has_cue:
             # z-scores rather than limits: cues of corrupted / crossover frames must stay in range, and the fit
             # sample includes corrupted copies of the frames so the training distribution is covered
