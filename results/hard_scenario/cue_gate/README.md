@@ -822,7 +822,7 @@ Change of 11/23 17:10 KST (order only, no run has changed): the evaluation of 3a
 the queue and waits until `hcg_cue_mapgate` and `dp_aux` have ended. The queue starts a line as soon as a GPU is free,
 so right behind `dp_aux` it would have started while these two were still training and skipped them.
 
-## Round 4: seeds of `cue` and of the one-network control (approved by the user 11/25; listed 11/25 01:45 KST, before any of them starts)
+## Round 4: seeds of `cue` and of the one-network control (approved by the user 11/25; listed 11/25 01:38 KST, before any of them starts)
 
 Rounds 2 and 3 compared the arm `cue` with its controls on one seed. The control that comes closest is the one
 network on all sensors (`hcg_cue_early`: 0.730 against 0.795 on the training cells, 0.791 against 0.849 on the new

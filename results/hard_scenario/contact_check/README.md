@@ -34,7 +34,7 @@ Checks before any evaluation (11/25):
 - **The teacher on `L0_vis_ell`:** see "Teacher" below (filled in when the check has run, before the evaluations are
   read).
 
-## Runs (listed 11/25 01:35 KST, before any of them starts)
+## Runs (listed 11/25 01:27 KST, before any of them starts)
 
 The last checkpoint of six finished runs of seed 42, each evaluated on `L0_vis_ell` with the final evaluation of the
 benchmark (`j_cells11` and `k_cells11_heldout`, 660 episodes each, 120 per cell): `GPU=<g> bash

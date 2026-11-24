@@ -28,7 +28,7 @@ other policy of the benchmark. What the MulSA paper leaves open (number of layer
 embeddings) is set in `policy/attn_fusion_encoder.py` and said there: one layer, 8 heads, LayerNorm before it, a
 residual connection, no positional embedding.
 
-## Runs (listed 11/25 01:45 KST, before any of them starts)
+## Runs (listed 11/25 01:38 KST, before any of them starts)
 
 Seed 42; `GROUP=lit_base TOPK=0 NTEST=55 NEVAL=660 TEST_SETS="j_cells11 k_cells11_heldout" TAG=<tag> TRAIN=<script>
 EXTRA="training.seed=42 task.env_runner.test_set=j_cells11 policy.obs_encoder.rgb_model.weights=IMAGENET1K_V1" bash
