@@ -1,0 +1,21 @@
+# Stage-guided dynamic fusion of the sensors (the fusion of Feng et al., CoRL 2024, MS-Bot) in front of Diffusion
+# Policy: a baseline from the literature. Everything but the encoder, the policy class (which adds the gate loss) and
+# the `stage` key of the task is train_glass_unet_image (policy/msbot_encoder.py).
+defaults:
+  - train_glass_unet_image
+  - override task: glass_pick_stage
+  - _self_
+
+name: train_glass_msbot_unet_image
+exp_name: "msbot_rgbdt"
+
+policy:
+  _target_: policy.msbot_encoder.StageFusionDiffusionPolicy
+  gate_weight: 5.0             # lambda of the gate loss
+  obs_encoder:
+    _target_: policy.msbot_encoder.StageFusionObsEncoder
+    n_obs_steps: ${n_obs_steps}
+    num_heads: 8
+    beta: 0.5                  # share of the state token in the query
+    blur_p: 0.25               # random attention blur
+    warmup_steps: 574          # one epoch of the 700 demos of L0_vis; then the stage tokens are set

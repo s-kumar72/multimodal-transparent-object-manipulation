@@ -45,6 +45,8 @@ class GlassPickGymEnv(gym.Env):
     def _with_hcue(self, raw, reset=False):
         """Adds the hindsight cue (policy/hindsight_cue.py) when the policy has the `hcue` observation: computed from
         the first frame of the episode and kept for all its steps."""
+        if "stage" in self.obs_meta:    # a loss target of training (policy/msbot_encoder.py); no value at evaluation
+            raw = dict(raw, stage=np.zeros(2, np.float32))
         if "hcue" not in self.obs_meta:
             return raw
         if reset:

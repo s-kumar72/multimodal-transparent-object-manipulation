@@ -106,7 +106,7 @@ class GlassImageDataset(BaseImageDataset):
         self.has_cue = "cue" in self.obs_meta
         self.roi = cue_roi(self.obs_meta)
         self.cue_opts = cue_opts(self.obs_meta)
-        data_keys = [k for k in self.obs_meta if k not in ("cue", "glass_loc", "hcue")]
+        data_keys = [k for k in self.obs_meta if k not in ("cue", "glass_loc", "hcue", "stage")]
         available = zarr_data_keys(zarr_path)
         if self.has_cue and "thermal" in self.obs_meta and "thermal_raw" in available:
             data_keys.append("thermal_raw")
@@ -133,6 +133,12 @@ class GlassImageDataset(BaseImageDataset):
             assert len(cue_ep) == len(ends), (hcue_attr["file"], len(cue_ep), len(ends))
             self.replay_buffer.root["data"]["hcue"] = np.repeat(cue_ep, np.diff(np.r_[0, ends]), axis=0)
             data_keys.append("hcue")
+
+        if "stage" in self.obs_meta:   # stage of every frame, by a rule on the actions (policy/msbot_encoder.py): a loss target
+            from policy.msbot_encoder import stage_labels
+            self.replay_buffer.root["data"]["stage"] = stage_labels(
+                np.asarray(self.replay_buffer["action"]), np.asarray(self.replay_buffer.episode_ends[:]))
+            data_keys.append("stage")
 
         val_mask = get_val_mask(n_episodes=self.replay_buffer.n_episodes, val_ratio=val_ratio, seed=seed)
         train_mask = downsample_mask(mask=~val_mask, max_n=max_train_episodes, seed=seed)

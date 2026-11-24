@@ -19,7 +19,7 @@ recent fusion modules.
 |---|---|---|
 | self-attention fusion (MulSA) | `policy/attn_fusion_encoder.py`, `policy/train_mulsa.sh`: the tokens are the ResNet features of every sensor at every observation step (3 x 2), one multi-head self-attention across sensors and time, the output tokens concatenated; they condition the denoiser of Diffusion Policy as the concatenated features of the plain baseline do | implemented, listed below |
 | sensor dropout | `policy/train_dropout.sh` (stage 3 of the baseline programme, there without ImageNet encoders: 0.246 over three seeds): each sensor's image is blank with probability 0.3 in a training sample, at least one stays | listed below, now with ImageNet encoders |
-| stage-guided dynamic fusion (MS-Bot) | not implemented yet; its run is specified here before it starts | to do |
+| stage-guided dynamic fusion (MS-Bot) | `policy/msbot_encoder.py`, `policy/train_msbot.sh`: a state token from the sensors' feature tokens and the joints, learnable stage tokens (reach, grasp, lift; set to the mean state token of their stage after one epoch), a gate that scores the stages with the paper's soft constraint, the stage-injected state token as the query of a cross-attention over the feature tokens, random attention blur; the fused token and the joints condition the denoiser | implemented, listed below (11/25 01:48 KST, before it starts) |
 
 What stays the same in all of them: Diffusion Policy's denoiser, schedule and optimizer, one ResNet-18 per sensor
 started from ImageNet, crops, 700 demos of `L0_vis`, 101 epochs, last checkpoint. The papers' own action heads (an
@@ -27,6 +27,15 @@ MLP on discrete actions) are not used: the fusion is the thing compared, and the
 other policy of the benchmark. What the MulSA paper leaves open (number of layers and heads, normalization,
 embeddings) is set in `policy/attn_fusion_encoder.py` and said there: one layer, 8 heads, LayerNorm before it, a
 residual connection, no positional embedding.
+
+MS-Bot, what is the paper's and what is not (`policy/msbot_encoder.py`): the paper's are the four parts, the gate
+loss with weight 5, beta 0.5 and the attention blur with probability 0.25. Different here: the state token reads the
+joint values of the two observation steps where the paper runs an LSTM over the action history (the policies of the
+benchmark observe two steps and no past actions); the stages are a rule on the demonstrated actions (reach: the
+gripper is commanded open, 63% of the frames; grasp: closed and the arm's target still, 13%; lift: after that, 24%),
+as the paper's rule-based labels are, and a frame within one step of a stage change is not constrained; 8 heads and
+the MLP sizes are not given in the paper. The stage labels use the demonstrated actions only, which the comparison
+rules allow.
 
 ## Runs (listed 11/25 01:38 KST, before any of them starts)
 
@@ -39,6 +48,7 @@ combinations that are not in the training set, 600 episodes on each of the two t
 |---|---|
 | `L0_vis_rgbdt_700demos_mulsa` | `policy/train_mulsa.sh` |
 | `L0_vis_rgbdt_700demos_dropout_imagenet` | `policy/train_dropout.sh` |
+| `L0_vis_rgbdt_700demos_msbot` (listed 11/25 01:48 KST) | `policy/train_msbot.sh` |
 
 Seeds 43 and 44 of each follow after the first reading, so that they stand in the table of Stage 6 with three seeds
 like the plain baselines. A run that fails or is stopped is reported as such and not started again.
