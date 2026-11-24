@@ -126,8 +126,152 @@ reported as they come out, whatever they are.
 **Later, not specified yet.** The method (hindsight cue gating) on this level: the cue of the pick as it is, and
 whether the place gets a cue of its own (the pixel where the gripper opens in the demos) is the open design question.
 
+## Results of step 2: the four baselines (11/24 22:25 KST; seed 42, 1320 test episodes per run, 120 per cell)
+
+All four runs trained to epoch 100 and were evaluated; none failed or was stopped. They started at 08:00 (rgbdt),
+09:50 (rgbd), 11:01 (rgbt) and 15:24 KST (rgb) and were done, with the final evaluation, at 15:24, 15:40, 16:44 and
+19:48 KST (4.4 to 7.4 hours, depending on how many runs shared the machine). Rollouts during training (55 episodes of
+`j_cells11`, epochs 25 / 50 / 75 / 100): rgbdt 0.40 / 0.51 / 0.53 / 0.60, rgbd 0.42 / 0.55 / 0.55 / 0.64, rgbt 0.16 /
+0.15 / 0.35 / 0.31, rgb 0.02 / 0.07 / 0.24 / 0.11. The read-out is [`readout_baselines.txt`](readout_baselines.txt)
+(`python policy/readout_place.py`).
+
+**1. Success (the glass placed).**
+
+| cell | sensors that show the glass | rgbdt | rgbd | rgbt | rgb |
+|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.950 | 0.925 | 0.458 | 0.125 |
+| 1 | depth+thermal | 0.883 | 0.933 | 0.417 | 0.075 |
+| 2 | rgb+thermal | 0.267 | 0.108 | 0.475 | 0.133 |
+| 3 | rgb+depth | 0.933 | 0.975 | 0.092 | 0.142 |
+| 4 | thermal | 0.200 | 0.050 | 0.483 | 0.050 |
+| 5 | depth | 0.900 | 0.942 | 0.075 | 0.092 |
+| 6 | rgb | 0.142 | 0.100 | 0.117 | 0.133 |
+| 7 | rgb (faint) | 0.058 | 0.083 | 0.108 | 0.100 |
+| 8 | depth (faint) | 0.700 | 0.842 | 0.075 | 0.042 |
+| 9 | thermal (faint) | 0.208 | 0.108 | 0.300 | 0.067 |
+| 10 | all three (faint) | 0.658 | 0.817 | 0.308 | 0.100 |
+| all (macro average over the cells) | | 0.536 | 0.535 | 0.264 | 0.096 |
+| `j_cells11` / `k_cells11_heldout` | | 0.555 / 0.518 | 0.542 / 0.527 | 0.280 / 0.248 | 0.092 / 0.100 |
+
+- With depth in the inputs, the cells in which depth shows the glass fully (0, 1, 3, 5) are at 0.88 to 0.98 and the
+  ones in which it shows it faintly (8, 10) at 0.66 to 0.84. Every cell without depth is at 0.27 or below for them.
+- rgbdt and rgbd are equal over all episodes but not per cell: rgbd is higher where depth is faint (cells 8 and 10:
+  0.842 and 0.817 against 0.700 and 0.658), rgbdt where thermal is the sensor that shows the glass (cells 2, 4, 9:
+  0.267, 0.200, 0.208 against 0.108, 0.050, 0.108).
+- rgbt is the highest in the thermal cells (2, 4, 9: 0.475, 0.483, 0.300). rgb is at 0.096 and above 0.142 nowhere.
+- The cells in which only the colour camera shows the glass (6, 7) are at 0.06 to 0.14 for every baseline.
+
+**2. The pick and the place apart.**
+
+| | rgbdt | rgbd | rgbt | rgb |
+|---|---|---|---|---|
+| glass picked (lifted 10 cm at some point), share of all episodes | 0.605 | 0.574 | 0.342 | 0.124 |
+| placed, among the picked | 0.886 | 0.926 | 0.757 | 0.701 |
+| never picked / picked and not placed, share of all episodes | 0.395 / 0.069 | 0.426 / 0.042 | 0.658 / 0.083 | 0.876 / 0.037 |
+
+Most failures are before the glass is lifted. Where depth shows the glass fully, rgbdt and rgbd pick it in 0.95 to
+0.99 of the episodes and then place it in 0.93 to 0.99 of those (per cell in the read-out). The runs without depth
+also place less often once the glass is picked (0.757, 0.701), although the colour camera shows the coaster to every
+run in every cell; why was not examined.
+
+**3. Failure labels** (share of all episodes; rgbdt / rgbd / rgbt / rgb). Before the pick: `missed_grasp` 0.167 /
+0.156 / 0.270 / 0.384, `other` 0.141 / 0.161 / 0.228 / 0.280, `dropped` 0.055 / 0.057 / 0.091 / 0.106, `wrong_height`
+0.023 / 0.037 / 0.042 / 0.086, `wrong_object` 0.017 or less. After the pick: `place_fell` 0.050 / 0.030 / 0.064 /
+0.030, `place_off` 0.018 / 0.011 / 0.019 / 0.006, `place_held` and `place_other` 0.001 or less. `timeout` is 0.005 to
+0.008: the 240 steps are enough.
+
+**4. Against the pick level (next to the read-out, not a test).** The same inputs on `L0_vis` (frozen run of seed 42,
+the same scenes and seeds), success there against "picked" here, on the same episodes:
+
+| inputs | cells | success on the pick level | picked here | only the pick level / only here | p |
+|---|---|---|---|---|---|
+| rgbdt | all | 0.414 | 0.605 | 62 / 314 | 1.1e-41 |
+| rgbdt | depth shows the glass at least faintly (0, 1, 3, 5, 8, 10) | 0.639 | 0.917 | 11 / 211 | 3.9e-49 |
+| rgbdt | it does not (2, 4, 6, 7, 9) | 0.143 | 0.230 | 51 / 103 | 3.4e-05 |
+| rgbd | all | 0.404 | 0.574 | 75 / 300 | 5.6e-33 |
+| rgbd | depth cells | 0.621 | 0.949 | 5 / 241 | 1.3e-64 |
+| rgbd | the others | 0.143 | 0.125 | 70 / 59 | 0.38 |
+| rgbt | all | 0.195 | 0.342 | 121 / 315 | 5.3e-21 |
+| rgb | all | 0.158 | 0.124 | 174 / 130 | 0.014 |
+
+Learning the place did not cost the pick. With depth or thermal in the inputs the glass is picked more often here
+than the pick succeeds on the pick level, and by a wide margin; with colour alone it is picked somewhat less often.
+So for these baselines the level is not harder than the pick level in terms of success: rgbdt places the glass in
+0.536 of the episodes here and picks it in 0.414 there.
+
+The two sides of this comparison differ in more than the task, and the files cannot tell these apart: (a) the
+contact settings (elliptic cones with impratio 10 here, the defaults on the pick levels; see "Contacts" above), (b)
+the gradient steps (the same 101 epochs, but 1124 batches per epoch here against 574), (c) the step limit (240
+against 120), (d) the coaster in the images and the longer demos.
+
+A further look from the same files, not in the fixed read-out and not a test ([`pick_compare.txt`](pick_compare.txt),
+`python policy/place_pick_compare.py`; distances in the table plane between the tool and the glass's grasp point at
+the first close of the gripper):
+
+| inputs | level | picked | closes per episode | picked with a single close | first close within 1.5 cm | picked when the first close is 0 to 1 cm away | 1 to 1.5 cm | 1.5 to 3 cm | over 3 cm |
+|---|---|---|---|---|---|---|---|---|---|
+| rgbdt | pick | 0.414 | 1.97 | 0.365 | 0.465 | 0.873 | 0.480 | 0.293 | 0.033 |
+| rgbdt | place | 0.605 | 1.19 | 0.581 | 0.479 | 0.986 | 0.973 | 0.685 | 0.040 |
+| rgbd | pick | 0.404 | 1.55 | 0.377 | 0.469 | 0.878 | 0.451 | 0.223 | 0.030 |
+| rgbd | place | 0.574 | 1.14 | 0.562 | 0.499 | 0.996 | 0.959 | 0.610 | 0.016 |
+| rgbt | pick | 0.195 | 1.98 | 0.157 | 0.195 | 0.772 | 0.430 | 0.240 | 0.021 |
+| rgbt | place | 0.342 | 1.26 | 0.308 | 0.182 | 0.934 | 0.891 | 0.604 | 0.044 |
+| rgb | pick | 0.158 | 1.24 | 0.133 | 0.193 | 0.651 | 0.372 | 0.201 | 0.020 |
+| rgb | place | 0.124 | 1.39 | 0.078 | 0.072 | 0.595 | 0.585 | 0.350 | 0.026 |
+
+- **The runs here do not find the glass better.** With depth or thermal in the inputs the first close is as near to
+  the glass on both levels (within 1.5 cm: 0.465 and 0.479 for rgbdt, 0.469 and 0.499 for rgbd, 0.195 and 0.182 for
+  rgbt).
+- **What differs is what follows a first close that is near.** On the pick level a first close 1 to 1.5 cm from the
+  glass ends in a pick in 0.43 to 0.48 of the episodes, here in 0.89 to 0.97; at 1.5 to 3 cm, 0.22 to 0.29 against
+  0.60 to 0.69. On the same episodes with the first close within 1.5 cm on both levels (491 for rgbdt, 516 for rgbd)
+  the glass is picked only here in 101 and 112 and only on the pick level in 0 and 2 (p = 8e-31 and 6e-31); on the
+  pick level those end as `dropped`, `missed_grasp` or `wrong_height`.
+- **It is not the extra time.** The runs here close the gripper fewer times per episode (1.19 against 1.97 for
+  rgbdt), and the share picked with a single close is 0.581 against 0.365.
+- **It depends on the object.** After a first close within 1.5 cm the jar is picked on both levels (0.98 and 0.94
+  for rgbdt); the bottle in 0.57 on the pick level and 1.00 here, the flask 0.65 and 0.98, the tumbler 0.73 and
+  0.99, the wineglass 0.81 and 1.00.
+- **Colour alone goes the other way** for another reason: its first close is further from the glass here (within
+  1.5 cm in 0.072 of the episodes against 0.193).
+
+What this suggests and does not show: on the pick level a grasp that is at the glass often does not hold, and here it
+does. Of the differences (a) to (d), the contact settings are the one that acts at that point, and they were changed
+for this level because a held glass crept between the fingers with the settings of the pick levels. But the policies
+differ too (twice the gradient steps, longer demos), so this is not separated. A check that would separate it: the
+final evaluation of the frozen pick-level checkpoints in the scenes of `L0_vis` with the contact settings of this
+level (evaluation only; a new config, the existing levels unchanged). Not run and not approved.
+
+If it is the contacts, it concerns the pick benchmark and not only this level (last table of
+[`pick_compare.txt`](pick_compare.txt), seed 42): on `L0_vis` the rgbdt baseline fails after a first close within
+1.5 cm in 0.117 of all episodes (0.20 of its failed episodes), and the method `hcg_cue` in 0.094 (0.46 of its failed
+episodes: `dropped` 55, `missed_grasp` 54, `wrong_height` 15). The earlier reading that a pick needs the gripper
+within about 1 cm of the glass ([`../grid_bench/README.md`](../grid_bench/README.md), failure analysis) would then be
+a property of those contact settings: here a first close 1 to 1.5 cm away is picked in 0.97.
+
+**5. The best baseline of each cell** (one seed, a first reading): rgbdt in cells 0 and 6, rgbd in 1, 3, 5, 8 and 10,
+rgbt in 2, 4, 7 and 9. The mean of the best per cell is 0.633, against 0.536 for the best single baseline. In cells
+0, 6 and 7 the first two are within 0.03 of each other, which 120 episodes of one seed do not order.
+
+**What step 2 says (one seed each).**
+
+1. The structure of the pick benchmark carries over to this level: high where depth shows the glass, low elsewhere,
+   each sensor's baseline is the best in its own cells and none is the best everywhere, and no baseline solves the
+   cells in which only the colour camera shows the glass.
+2. The place itself is a small part of the difficulty for the baselines that have depth (0.89 to 0.93 of the picked
+   glasses are placed); the pick is where the episodes are lost, as on the pick level.
+3. The level was built as a harder task than the pick. For the baselines it is not harder in success, because the
+   pick succeeds more often here than on the pick level; the further look above points at the contact settings, which
+   is not confirmed.
+4. Room for a method on this level is in the cells without depth (best baseline 0.11 to 0.48 in cells 2, 4, 6, 7, 9)
+   and in the faint ones (0.82 and 0.84); the cells in which depth shows the glass fully are at 0.93 to 0.98.
+
+Not approved and not started: seeds 43 and 44, the references, the method on this level, and the check of the
+contact settings.
+
 ## Files
 
+- `policy/readout_place.py` (the fixed read-out), `policy/place_pick_compare.py` (the first close on both levels).
 - `sim/configs/L0_vis_place.yaml`, `sim/assets/gen3_lite/place_scene.xml`, `sim/config.py` (`task`, `place_radius`),
   `sim/env.py` (`_place_target`, `placed`), `sim/teacher.py` (carry and place), `policy/glass_gym_env.py` (labels).
 - `sim/place_check.py` (teacher check without rendering the steps), `sim/figure_place.py` (the figure).

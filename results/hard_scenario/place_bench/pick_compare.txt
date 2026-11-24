@@ -1,0 +1,37 @@
+## The first close on the pick level and on the place level; seed 42, 1320 episodes per run
+
+| inputs | level | picked | closes per episode | picked with a single close | first close: median distance to the glass (cm) | first close within 1.5 cm | picked when the first close is 0 to 1 cm away | picked when the first close is 1 to 1.5 cm away | picked when the first close is 1.5 to 3 cm away | over 3 cm away |
+|---|---|---|---|---|---|---|---|---|---|---|
+| rgbdt | pick | 0.414 | 1.97 | 0.365 | 1.66 | 0.465 | 0.873 | 0.480 | 0.293 | 0.033 |
+| rgbdt | place | 0.605 | 1.19 | 0.581 | 1.58 | 0.479 | 0.986 | 0.973 | 0.685 | 0.040 |
+| rgbd | pick | 0.404 | 1.55 | 0.377 | 1.68 | 0.469 | 0.878 | 0.451 | 0.223 | 0.030 |
+| rgbd | place | 0.574 | 1.14 | 0.562 | 1.49 | 0.499 | 0.996 | 0.959 | 0.610 | 0.016 |
+| rgbt | pick | 0.195 | 1.98 | 0.157 | 3.30 | 0.195 | 0.772 | 0.430 | 0.240 | 0.021 |
+| rgbt | place | 0.342 | 1.26 | 0.308 | 3.57 | 0.182 | 0.934 | 0.891 | 0.604 | 0.044 |
+| rgb | pick | 0.158 | 1.24 | 0.133 | 3.72 | 0.193 | 0.651 | 0.372 | 0.201 | 0.020 |
+| rgb | place | 0.124 | 1.39 | 0.078 | 5.15 | 0.072 | 0.595 | 0.585 | 0.350 | 0.026 |
+
+## The same episodes with the first close within 1.5 cm of the glass on both levels
+
+| inputs | episodes | picked on the pick level | picked here | only the pick level / only here | p | labels on the pick level of those not picked there |
+|---|---|---|---|---|---|---|
+| rgbdt | 491 | 0.792 | 0.998 | 0 / 101 | 7.9e-31 | dropped 52, missed_grasp 38, wrong_height 11, other 1 |
+| rgbd | 516 | 0.783 | 0.996 | 2 / 112 | 6.3e-31 | missed_grasp 60, dropped 29, wrong_height 22, other 1 |
+| rgbt | 79 | 0.709 | 0.924 | 4 / 21 | 0.00091 | missed_grasp 10, wrong_height 9, dropped 3, other 1 |
+| rgb | 23 | 0.696 | 0.565 | 8 / 5 | 0.58 | missed_grasp 7 |
+
+## Picked after a first close within 1.5 cm, per object: pick level / here (episodes)
+
+| inputs | bottle | flask | jar | tumbler | wineglass |
+|---|---|---|---|---|---|
+| rgbdt | 0.57 (119) / 1.00 (114) | 0.65 (130) / 0.98 (123) | 0.98 (127) / 0.94 (127) | 0.73 (132) / 0.99 (138) | 0.81 (106) / 1.00 (130) |
+| rgbd | 0.69 (111) / 0.99 (127) | 0.60 (129) / 0.99 (131) | 0.98 (124) / 0.97 (135) | 0.76 (135) / 0.99 (136) | 0.68 (120) / 0.98 (130) |
+| rgbt | 0.55 (51) / 0.85 (40) | 0.52 (58) / 1.00 (43) | 0.88 (56) / 0.80 (45) | 0.60 (47) / 0.91 (67) | 0.49 (45) / 1.00 (45) |
+| rgb | 0.48 (52) / 0.60 (10) | 0.37 (59) / 0.76 (21) | 0.77 (47) / 0.36 (25) | 0.51 (57) / 0.39 (18) | 0.45 (40) / 0.86 (21) |
+
+## On the pick level: episodes lost after a first close within 1.5 cm, seed 42
+
+| run | success | first close within 1.5 cm | success after it | failed after it, share of all episodes | share of the run's failed episodes | their labels |
+|---|---|---|---|---|---|---|
+| rgbdt baseline | 0.414 | 0.465 | 0.748 | 0.117 | 0.20 | dropped 73, missed_grasp 59, wrong_height 19, other 4 |
+| L0_vis_rgbdt_700demos_hcg_cue | 0.795 | 0.875 | 0.893 | 0.094 | 0.46 | dropped 55, missed_grasp 54, wrong_height 15 |
