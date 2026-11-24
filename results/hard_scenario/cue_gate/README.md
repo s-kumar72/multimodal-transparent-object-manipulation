@@ -497,7 +497,7 @@ control) and the two training runs themselves (one seed each); the run cannot se
    that are not in the training set it adds 0.13 (round 3b).
 3. The success follows how often the cue is right (0.91, 0.88, 0.78, 0.61 against 0.795, 0.730, 0.695, 0.502): the
    controls with a cue differ in finding the glass, not in what the policy does with a right cue (0.80 to 0.86,
-   except without a gate, 0.67). *Refined 11/24 10:10 KST:* "within 1.5 cm" is coarse. By finer bins of the cue's
+   except without a gate, 0.67). *Refined 11/24 09:55 KST:* "within 1.5 cm" is coarse. By finer bins of the cue's
    error ([`cue_error_bins.txt`](cue_error_bins.txt)) the cue accounts for 0.57 (one network), 0.83 (gate on map
    numbers) and 0.73 (no gate) of the deficit; the rest is the control's policy succeeding less often at the same cue
    error. So the cue is the larger part, not all of it.
@@ -667,7 +667,7 @@ cell). The four controls of round 2 are evaluated at the end of the queue; read-
 So the method's advantage over the plain policy holds on visibility combinations that were not in the training set.
 Whether the structure per sensor is what carries it there is items 1 and 2.
 
-### Results of step 2 of 3a, the controls of round 2 on the 15 new combinations (11/24 10:10 KST)
+### Results of step 2 of 3a, the controls of round 2 on the 15 new combinations (11/24 09:55 KST)
 
 The evaluation of the four controls finished 11/24 09:50 KST; this completes the read-out of 3a. Full tables:
 [`readout_round3_new_cells.txt`](readout_round3_new_cells.txt) (now with all eight policies). Seed 42, the last
