@@ -477,7 +477,7 @@ control) and the two training runs themselves (one seed each); the run cannot se
    baseline 0.36). The weight of the auxiliary loss (1) and the head were set before the run and not tuned; a smaller
    weight was not tried.
 
-### Round 2 as a whole (11/24 05:50 KST; one seed each)
+### Round 2 as a whole (11/24 05:39 KST; one seed each)
 
 | run | what differs from the method's cue | success | kept of the method's 0.38 over the rgbdt baseline | cue within 1.5 cm | against `hcg_cue` |
 |---|---|---|---|---|---|
@@ -497,7 +497,10 @@ control) and the two training runs themselves (one seed each); the run cannot se
    that are not in the training set it adds 0.13 (round 3b).
 3. The success follows how often the cue is right (0.91, 0.88, 0.78, 0.61 against 0.795, 0.730, 0.695, 0.502): the
    controls with a cue differ in finding the glass, not in what the policy does with a right cue (0.80 to 0.86,
-   except without a gate, 0.67).
+   except without a gate, 0.67). *Refined 11/24 10:10 KST:* "within 1.5 cm" is coarse. By finer bins of the cue's
+   error ([`cue_error_bins.txt`](cue_error_bins.txt)) the cue accounts for 0.57 (one network), 0.83 (gate on map
+   numbers) and 0.73 (no gate) of the deficit; the rest is the control's policy succeeding less often at the same cue
+   error. So the cue is the larger part, not all of it.
 4. The three controls with a cue are above the rgbdt baseline; with one network or the gate on map numbers no cell is
    below its best baseline, without a gate two are (5 and 8).
 5. The hindsight label as an auxiliary loss on the plain policy does not help; with the weight set here it is below
@@ -664,6 +667,69 @@ cell). The four controls of round 2 are evaluated at the end of the queue; read-
 So the method's advantage over the plain policy holds on visibility combinations that were not in the training set.
 Whether the structure per sensor is what carries it there is items 1 and 2.
 
+### Results of step 2 of 3a, the controls of round 2 on the 15 new combinations (11/24 10:10 KST)
+
+The evaluation of the four controls finished 11/24 09:50 KST; this completes the read-out of 3a. Full tables:
+[`readout_round3_new_cells.txt`](readout_round3_new_cells.txt) (now with all eight policies). Seed 42, the last
+checkpoints of the runs trained on the 700 demos, 1200 episodes per run (80 per cell).
+
+| cells | `hcg_cue` | `hcg_cue_early` (one network) | `hcg_cue_mapgate` (gate on map numbers) | `hcg_cue_nogate` | `dp_aux` | rgbdt ImageNet |
+|---|---|---|---|---|---|---|
+| all 15 new cells | 0.849 | 0.791 | 0.782 | 0.702 | 0.322 | 0.574 |
+| a sensor shows the glass fully (0 to 11) | 0.861 | 0.793 | 0.802 | 0.734 | 0.349 | 0.628 |
+| none does, two faint and one blind (12 to 14) | 0.800 | 0.783 | 0.700 | 0.571 | 0.212 | 0.358 |
+| for orientation: the 11 training cells | 0.795 | 0.730 | 0.695 | 0.502 | 0.226 | 0.414 |
+| cue within 1.5 cm on the new cells (step 1) | 0.956 | 0.934 | 0.932 | 0.891 | | |
+
+1. `hcg_cue` against `hcg_cue_early`: 0.849 against 0.791 (only the method's cue succeeds 162, only the one network
+   92, p = 1.3e-05). By the read-out: the maps per sensor with the gate carry over to new combinations better than
+   one network on all sensors. The difference, 0.058, is the size it has on the training cells (0.065), not larger;
+   it is 0.13 in the cells that were left out of the training set (3b). Per cell the method's cue is higher in 14 of
+   15 and above with p < 0.05 in two (2: 0.887 against 0.775, p = 0.049; 9: 0.938 against 0.850, p = 0.039); the one
+   network is higher in cell 13 (0.863 against 0.800, p = 0.36). In the three cells in which no sensor shows the
+   glass fully the two do not differ (0.800 against 0.783, p = 0.69).
+2. `hcg_cue` against `hcg_cue_nogate`: 0.849 against 0.702 (254 / 77, p = 3.2e-23), above in nine cells and below in
+   none. Against `hcg_cue_mapgate`: 0.849 against 0.782 (165 / 84, p = 3.2e-07), above in cells 8 and 14 and below
+   in none. The gate on map numbers loses most where the colour camera is blind (cells 6, 8, 14): 0.583 against
+   0.767 (63 / 19, p = 1.1e-06). There it turns on depth alone (median gate 0 / 1 / 0) where the method's gate turns
+   on depth and thermal (0.17 / 0.98 / 0.99), and its cue is within 1.5 cm in 0.79 of the episodes against 0.91. In
+   the other twelve cells the two cues are right equally often (0.968) and the success is 0.831 against 0.870
+   (102 / 65, p = 0.0052).
+4. Against the rgbdt ImageNet baseline of seed 42 (0.574): `hcg_cue_early` 0.791 (376 / 116, p = 4.8e-33),
+   `hcg_cue_mapgate` 0.782 (364 / 115, p = 3.6e-31), `hcg_cue_nogate` 0.702 (286 / 133, p = 5.9e-14); none of the
+   three is below the baseline in a cell with p < 0.05. `dp_aux` 0.322 is below the baseline (106 / 409,
+   p = 5.5e-43): below in eleven cells, above in two (7: 0.400 against 0.138; 13: 0.237 against 0.100). In both of
+   those depth is blind and the baseline is near its floor, as in cell 2 of the training cells.
+5. For orientation: every policy is higher on the new cells than on the training cells. The controls come in the
+   same order on both (one network, gate on map numbers, no gate, baseline, `dp_aux`); one network and the gate on
+   map numbers are closer here (0.791, 0.782; 0.730, 0.695 on the training cells).
+
+Next to the read-out, not a test ([`cue_error_bins.txt`](cue_error_bins.txt), `python policy/cue_error_bins.py`):
+how much of a control's deficit is the cue. The success of `hcg_cue` per bin of the cue's error (0 to 0.5, 0.5 to 1,
+1 to 1.5, over 1.5 cm: 0.93, 0.84, 0.60, 0.32 on the new cells) weighted by the control's shares of the bins is the
+success the control would have if only its cue differed.
+
+| control | test sets | `hcg_cue` | expected from the control's cue errors | the control | the cue's part of the deficit |
+|---|---|---|---|---|---|
+| `hcg_cue_early` | training cells | 0.795 | 0.758 | 0.730 | 0.57 |
+| `hcg_cue_early` | new cells | 0.849 | 0.815 | 0.791 | 0.58 |
+| `hcg_cue_mapgate` | training cells | 0.795 | 0.712 | 0.695 | 0.83 |
+| `hcg_cue_mapgate` | new cells | 0.849 | 0.834 | 0.782 | 0.22 |
+| `hcg_cue_nogate` | training cells | 0.795 | 0.580 | 0.502 | 0.73 |
+| `hcg_cue_nogate` | new cells | 0.849 | 0.785 | 0.702 | 0.44 |
+
+The less precise cue is a part of every deficit (0.2 to 0.8 of it); the rest is that the control's policy succeeds
+less often at the same cue error. Why is not examined: each control is one training run, and a policy trained with a
+cue that is wrong more often may learn to rely on it less.
+
+**3a as a whole.** On the 15 combinations that are not in the training set: (a) every policy with a cue is above the
+plain baseline, the method's by 0.275; (b) the method's cue is above each of the three other ways to make the cue,
+by 0.06 to 0.15, so its parts matter here too; (c) gating the image features does not matter (`hcg_full` 0.843,
+`hcg_blind` 0.852 against 0.849). What 3a does not show is an advantage of the structure per sensor that is specific
+to new combinations: over one network it is as large as on the training cells. Most of these new combinations have
+two sensors that show the glass at least faintly; the harder case, two sensors blind for the first time, is 3b,
+where the difference is twice as large. One seed each.
+
 ### Results of step 2 of 3b: policies trained without cells 4 to 9 (11/24 02:30 KST)
 
 Full tables: [`readout_round3_nosingle.txt`](readout_round3_nosingle.txt) (`python policy/readout_round3.py
@@ -770,4 +836,4 @@ so right behind `dp_aux` it would have started while these two were still traini
   `policy/readout_cue_controls.py` (read-out of round 2).
 - Round 3: `sim/configs/manifest.json` (test sets `l_cells15_new`, `m_cells15_new_heldout`),
   `policy/eval_new_cells.sh` (the policies on them), `policy/check_cue_env.py --save` (the cue per episode),
-  `policy/readout_round3.py` (read-out).
+  `policy/readout_round3.py` (read-out), `policy/cue_error_bins.py` (success by the cue's error, rounds 2 and 3a).

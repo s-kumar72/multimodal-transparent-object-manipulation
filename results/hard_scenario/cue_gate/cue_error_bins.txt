@@ -1,0 +1,18 @@
+## Success by the cue's error, the 11 training cells (j_cells11, k_cells11_heldout); seed 42
+
+| run | success | 0 to 0.5 cm: share / success | 0.5 to 1.0 cm: share / success | 1.0 to 1.5 cm: share / success | over 1.5 cm: share / success | expected with the success of `hcg_cue` per bin | of the deficit, the cue's part |
+|---|---|---|---|---|---|---|---|
+| `hcg_cue` | 0.795 | 0.53 / 0.93 | 0.28 / 0.80 | 0.09 / 0.57 | 0.09 / 0.22 | 0.795 |  |
+| `hcg_cue_early` | 0.730 | 0.39 / 0.89 | 0.38 / 0.77 | 0.12 / 0.60 | 0.12 / 0.19 | 0.758 | 0.57 |
+| `hcg_cue_mapgate` | 0.695 | 0.46 / 0.89 | 0.23 / 0.80 | 0.09 / 0.69 | 0.22 / 0.19 | 0.712 | 0.83 |
+| `hcg_cue_nogate` | 0.502 | 0.25 / 0.78 | 0.23 / 0.63 | 0.13 / 0.50 | 0.39 / 0.24 | 0.580 | 0.73 |
+
+## Success by the cue's error, the 15 new cells (l_cells15_new, m_cells15_new_heldout); seed 42
+
+| run | success | 0 to 0.5 cm: share / success | 0.5 to 1.0 cm: share / success | 1.0 to 1.5 cm: share / success | over 1.5 cm: share / success | expected with the success of `hcg_cue` per bin | of the deficit, the cue's part |
+|---|---|---|---|---|---|---|---|
+| `hcg_cue` | 0.849 | 0.58 / 0.93 | 0.30 / 0.84 | 0.07 / 0.60 | 0.04 / 0.32 | 0.849 |  |
+| `hcg_cue_early` | 0.791 | 0.45 / 0.93 | 0.37 / 0.79 | 0.12 / 0.54 | 0.07 / 0.28 | 0.815 | 0.58 |
+| `hcg_cue_mapgate` | 0.782 | 0.56 / 0.87 | 0.29 / 0.77 | 0.08 / 0.60 | 0.07 / 0.27 | 0.834 | 0.22 |
+| `hcg_cue_nogate` | 0.702 | 0.39 / 0.80 | 0.38 / 0.70 | 0.13 / 0.63 | 0.11 / 0.44 | 0.785 | 0.44 |
+
