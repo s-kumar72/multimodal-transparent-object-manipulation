@@ -480,10 +480,53 @@ contact model; the pick level's numbers under that model are in [`../contact_che
 Not approved and not started: seeds 43 and 44 of the method and of the baselines on this level, the controls, the
 references.
 
+## Step 4: seeds 43 and 44 of the baselines and of the method (decision of the user 11/26; listed 11/26 00:46 KST, before any of them starts)
+
+**Decision of the user (11/26).** The pick-and-place level gets three seeds, as the pick level has, so that the
+comparison of Stage 6 can be made on it: seeds 43 and 44 of the four baselines and of the method. Ten training runs.
+
+**Which arm is the method here: `hcg2_cue`.** Step 3 called `hcg2_full` the method. Since then gating the image
+features has added nothing in any of the three comparisons made (`full` against `cue`: 0.789 / 0.795 on `L0_vis`,
+0.855 / 0.867 on this level, 0.898 / 0.914 on `L0_vis_ell`, there below with p = 0.02), `cue` is the arm recommended
+to the user as the final form (11/25), and it is the arm of the seeds of round 4 of
+[`../cue_gate/README.md`](../cue_gate/README.md). So the seeds of this level are those of `hcg2_cue` (both cues in
+the conditioning, no feature gate). The choice is made before any seed of this level exists. `hcg2_full`, `hcg_cue`
+and `hcg2_blind` stay at seed 42.
+
+| runs | what |
+|---|---|
+| `L0_vis_place_<rgbdt \| rgbd \| rgbt \| rgb>_700demos_imagenet_seed43`, `..._seed44` | the four baselines of step 2 |
+| `L0_vis_place_rgbdt_700demos_hcg2_cue_seed43`, `..._seed44` | the method; the two cue networks are those of step 3 (the seed changes the policy only, as in round 4 of the pick level) |
+
+Commands: those of steps 2 and 3 with `training.seed=<seed>` and `TAG=imagenet_seed<seed>` or `TAG=hcg2_cue_seed<seed>`
+(the method with `CUES=2 TRAIN="policy/train_cuegate.sh cue"`). Through the queue of the fusion-vis worktree, with
+the RAM guard of this level running (`data/runs/place_ram_guard.sh`). A run that fails or is stopped is reported as
+such and not started again.
+
+**Read-out, fixed now** (`python policy/readout_place_seeds.py > readout_seeds.txt`; tested on the runs of seed 42
+with `--seeds 42`). Runs paired by seed on the same episodes and pooled, sign test, p < 0.05:
+
+1. The macro average of every run per seed, mean and standard deviation.
+2. The table of the baselines: success per cell over the three seeds, and the best baseline of each cell, built as
+   Stage 6 of [`../grid_bench/README.md`](../grid_bench/README.md) builds it on the pick level.
+3. `hcg2_cue` under rules 4 and 5 of Stage 6 with that table: per cell against the cell's best baseline; "better in
+   nearly every case" **holds** on `L0_vis_place` when no cell is below its best baseline and the macro average is
+   above that of every baseline, and **does not hold** otherwise.
+4. The pick and the place apart: glass picked, and placed among the picked, per seed.
+
+**Known when this is listed.** Seed 42 (steps 2 and 3): baselines 0.536 / 0.535 / 0.264 / 0.096, best baseline per
+cell 0.633 on average, `hcg2_cue` 0.867. At seed 42 `hcg2_cue` is above its best baseline in six cells (2, 4, 6, 7,
+9, 10), not separated in four (0, 1, 3, 8) and below in one: cell 5, depth alone shows the glass, 0.867 against rgbd
+0.942 (4 / 13, p = 0.049). So at seed 42 the claim does not hold on this level, by one cell at the margin of the
+test; the three seeds decide.
+
+**Not in this step.** Seeds of the other arms, the controls of the pick level (one network, no gate), references,
+baselines from the literature on this level.
+
 ## Files
 
 - `policy/readout_place.py` (the fixed read-out), `policy/place_pick_compare.py` (the first close on both levels),
-  `policy/readout_place_method.py` (the read-out of step 3).
+  `policy/readout_place_method.py` (the read-out of step 3), `policy/readout_place_seeds.py` (that of step 4).
 - `sim/configs/L0_vis_place.yaml`, `sim/assets/gen3_lite/place_scene.xml`, `sim/config.py` (`task`, `place_radius`),
   `sim/env.py` (`_place_target`, `placed`), `sim/teacher.py` (carry and place), `policy/glass_gym_env.py` (labels).
 - `sim/place_check.py` (teacher check without rendering the steps), `sim/figure_place.py` (the figure).
