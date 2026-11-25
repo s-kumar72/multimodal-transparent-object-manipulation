@@ -1,0 +1,18 @@
+# The ACT head (train_glass_act_image) with the hindsight cue in the conditioning, as the arm `cue` of
+# train_glass_cuegate_unet_image has it: the encoder class with the cue and no feature gate, the task with the cue
+# observation.
+defaults:
+  - train_glass_act_image
+  - override task: glass_pick_hcue
+  - _self_
+
+name: train_glass_act_cue_image
+exp_name: "act_cue_rgbdt"
+
+policy:
+  obs_encoder:
+    _target_: policy.cue_gate_encoder.CueGateObsEncoder
+    gate: none               # features not gated (the arm `cue`)
+    gate_thr: 0.5
+    cue: true                # the cue vector in the conditioning
+    images: true

@@ -171,3 +171,13 @@ seed on the same episodes and pooled, sign test, p < 0.05:
 self-attention fusion and sensor dropout among the baselines, the best baseline of cells 3 and 10 on `L0_vis` and of
 cell 2 on `L0_vis_ell` is one of the two, and no cell of `hcg_full` or `hcg_cue` is below its best baseline on
 either level.
+
+**MS-Bot: decision of the user (11/26), the seeds are run as announced** (listed 11/26 00:46 KST, before they start).
+`L0_vis_rgbdt_700demos_msbot_seed43` and `L0_vis_rgbdt_700demos_msbot_seed44`: the run of seed 42 with
+`training.seed=<seed>` and `TAG=msbot_seed<seed>`, followed by `bash policy/eval_new_cells.sh lit_base/<run>` and
+`bash policy/eval_contacts.sh <run>`, in the fusion-vis worktree (its code is here; the results on `L0_vis_ell` are
+in this worktree's `../contact_check/`). Nothing of the implementation or of the protocol is changed. They are read
+with the three-seed read-out above (MS-Bot enters items 1 to 4 once it has three seeds). Next to it, fixed now and
+not a criterion: per seed, the first epoch whose mean training loss is below 0.5 (seed 42: epoch 40), and the success
+in the 55 test episodes at epochs 25, 50, 75 and 100. They say whether the flat gate loss of seed 42 is an accident
+of that seed.
