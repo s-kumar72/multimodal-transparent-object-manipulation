@@ -158,3 +158,44 @@ to 0.875 and in cell 9 from 0.467 to 0.717.
 `L0_vis` and its results are unchanged. Until it is decided, the runs of round 4 of the method and of `../lit_base/`
 are evaluated on `L0_vis` as listed, and their checkpoints are kept so that they can be evaluated on `L0_vis_ell` too.
 
+## Round 2: the pick level of the benchmark with the contact model of the place level (decision of the user 11/25; listed 11/25 09:07 KST, before any of the runs starts)
+
+**Decision of the user (11/25).** The pick level is reported with the contact model of the place level, from
+evaluations of the existing checkpoints on `L0_vis_ell`, next to the numbers on `L0_vis`. Nothing is retrained and
+no demos are collected again; `L0_vis` and every result on it stay as they are.
+
+**Runs.** The last checkpoint of ten finished runs, each evaluated on `L0_vis_ell` as in the first round
+(`j_cells11` and `k_cells11_heldout`, 660 episodes each; `GPU=<g> bash policy/eval_contacts.sh <run>`, about 35
+minutes per run). With the six of the first round they complete the three seeds of the four baselines of the
+comparison and of the method's arm `full`:
+
+| runs | what they are |
+|---|---|
+| `L0_vis_rgbdt_700demos_imagenet_seed43`, `..._seed44` | baseline, colour + depth + thermal |
+| `L0_vis_rgbd_700demos_imagenet_seed43`, `..._seed44` | baseline, colour + depth |
+| `L0_vis_rgbt_700demos_imagenet_seed43`, `..._seed44` | baseline, colour + thermal |
+| `L0_vis_rgb_700demos_imagenet_seed43`, `..._seed44` | baseline, colour |
+| `L0_vis_rgbdt_700demos_hcg_full_seed43`, `..._seed44` | hindsight cue gating, arm `full` |
+
+They are started through the queue of the fusion-vis worktree, ahead of the trainings that have not started. A run
+that fails is reported and not started again.
+
+**Read-out, fixed now** (`python policy/readout_contacts_seeds.py > readout_seeds.txt`; the script was tested on
+the six evaluations of the first round only).
+
+1. Every run on `L0_vis_ell` against the same checkpoint on `L0_vis`, same episodes (sign test, p < 0.05); the macro
+   average of each baseline and of the method over the three seeds on both levels.
+2. The table of the baselines on `L0_vis_ell`, built as the frozen table of Stage 6
+   ([`../grid_bench/README.md`](../grid_bench/README.md)): per cell the success of each baseline over its three
+   seeds, the highest of them as the best baseline of the cell (ties go to the baseline with more sensors), and the
+   macro averages. The cells whose best baseline is another one than on `L0_vis` are named.
+3. The method (`hcg_full`, three seeds) under rules 4 and 5 of Stage 6 with the table of item 2, runs paired by seed
+   on the same episodes and pooled: "better in nearly every case" **holds on `L0_vis_ell`** if no cell is below its
+   best baseline with p < 0.05 and the macro average is above every baseline, and **does not hold** otherwise.
+4. The method against the rgbdt baseline, and the baselines against each other in the order of Stage 6 (rgbdt, rgbd,
+   rgbt, rgb), over all episodes on both levels.
+
+**Not in this round.** The references of Stage 6 (single-sensor policies) are not evaluated on `L0_vis_ell`. The
+policies stay the ones trained on demos collected with the default contacts. The runs of round 4 of the method and
+of [`../lit_base/`](../lit_base/README.md) are evaluated on `L0_vis` as listed; their evaluation on `L0_vis_ell` is
+not listed here.
