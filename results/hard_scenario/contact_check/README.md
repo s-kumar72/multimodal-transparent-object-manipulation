@@ -199,3 +199,60 @@ the six evaluations of the first round only).
 policies stay the ones trained on demos collected with the default contacts. The runs of round 4 of the method and
 of [`../lit_base/`](../lit_base/README.md) are evaluated on `L0_vis` as listed; their evaluation on `L0_vis_ell` is
 not listed here.
+
+## Round 3: the controls of the method, the seeds of round 4 and the baselines from the literature on `L0_vis_ell` (decision of the user 11/25; listed 11/25 12:02 KST, before any of these evaluations starts)
+
+**Decision of the user (11/25).** The table of the paper is on `L0_vis_ell` (round 2). The runs that stand in that
+table or carry its claims are therefore evaluated on `L0_vis_ell` too: the baselines from the literature
+([`../lit_base/README.md`](../lit_base/README.md)), the seeds of `cue` and of the one-network control (round 4 of
+[`../cue_gate/README.md`](../cue_gate/README.md)), and the seed-42 controls of rounds 1 and 2 of the method, on which
+the statement "what the method is made of" rests. Evaluations only (`bash policy/eval_contacts.sh <run>`:
+`j_cells11` and `k_cells11_heldout`, 660 episodes each, last checkpoint, about 35 minutes per run). Nothing is
+retrained; every training and every evaluation on `L0_vis` stays as listed.
+
+**Evaluations (18).**
+
+| runs | what they are | when |
+|---|---|---|
+| `L0_vis_rgbdt_700demos_hcg_cue_early`, `..._hcg_cue_nogate`, `..._hcg_cue_mapgate`, `..._hcg_blind`, `L0_vis_rgbdt_700demos_dp_aux` | the seed-42 controls of rounds 1 and 2 of the method (one network, no gate, gate on map numbers, no images, the label as an auxiliary loss) | existing checkpoints: after the ten evaluations of round 2, before the trainings that have not started |
+| `L0_vis_rgbdt_400demos_nosingle_hcg_cue`, `..._nosingle_hcg_cue_early` | seed 42 of the two runs trained without cells 4 to 9 (round 3b of the method) | the same |
+| `L0_vis_rgbdt_700demos_mulsa` | self-attention fusion, seed 42 (finished 11/25 11:30 KST) | the same |
+| `L0_vis_rgbdt_700demos_msbot`, `L0_vis_rgbdt_700demos_dropout_imagenet` | the two other baselines from the literature, seed 42 | not trained yet: in the queue line of the run, after its training and its evaluations on `L0_vis` (`... && bash policy/eval_contacts.sh <run>`) |
+| `L0_vis_rgbdt_700demos_hcg_cue_seed43`, `..._seed44`, `L0_vis_rgbdt_700demos_hcg_cue_early_seed43`, `..._seed44`, `L0_vis_rgbdt_400demos_nosingle_hcg_cue_seed43`, `..._seed44`, `L0_vis_rgbdt_400demos_nosingle_hcg_cue_early_seed43`, `..._seed44` | the eight runs of round 4 of the method | the same |
+
+`msbot` is trained in the fusion-vis worktree (its code is there), so its evaluation runs there and its results are in
+that worktree's `results/hard_scenario/contact_check/`. The trainings and their evaluations on `L0_vis` are not
+changed by the added step; a training that fails is not evaluated. The three kinds of checkpoint that
+`eval_contacts.sh` had not loaded before (`mulsa`, `dp_aux`, `hcg_blind`) were tried with two episodes each on
+`L0_vis_ell` before the listing (11/25, results discarded): all three load and run.
+
+**Known when this is listed.** On `L0_vis_ell`: the seed-42 evaluations of the four plain baselines, of `hcg_cue`
+(0.914) and of `hcg_full` (0.898) from the first round, and three of the ten evaluations of round 2. From the test of
+the script below: `full` against `cue` on `L0_vis_ell`, seed 42, is 0.898 against 0.914 (30 / 52, p = 0.02). None of
+the 18 evaluations above has started.
+
+**Read-out, fixed now.** All on the same episodes, sign test, p < 0.05; the read-outs are those fixed for `L0_vis`,
+applied to the evaluations on `L0_vis_ell`.
+
+1. *What the method is made of* (`PYTHONPATH=$PWD/policy python policy/readout_contacts_round3.py >
+   readout_round3.txt`, part A; seed 42). The pairs of rounds 1 and 2 of the method on `L0_vis_ell`, next to the same
+   pair on `L0_vis`: `full` against `cue` (gating the image features), `cue` against `blind` (the images), and `cue`
+   against each control (one network, gate on map numbers, no gate, the label as an auxiliary loss). A part of the
+   method **matters on `L0_vis_ell`** when `cue` is above the control without it with p < 0.05, as in round 2. Next
+   to it: the share of the gain of `cue` over the plain rgbdt baseline that each run keeps, and the cells in which it
+   is below the best plain baseline of the cell (seed-42 runs).
+2. *The seeds* (`python policy/readout_round4.py --root results/hard_scenario/contact_check >
+   readout_round4_ell.txt`): settings 1 (training cells) and 3 (trained without cells 4 to 9) of round 4 with its
+   rule, unchanged: the difference between `cue` and the one network **holds over the seeds** when the pooled test is
+   significant and `cue` is above in each of the three seeds, **does not hold** when the pooled test is not
+   significant, and is **mixed** otherwise. Setting 2 (the 15 new combinations) is not evaluated on `L0_vis_ell`.
+3. *The baselines from the literature* (part B of `readout_contacts_round3.py`; seed 42): items 1, 2 and 4 of the
+   read-out of `lit_base` on `L0_vis_ell`: against the plain rgbdt baseline over all episodes and per cell, per cell
+   against the cell's best plain baseline (seed-42 runs on `L0_vis_ell`), against `hcg_full` and `hcg_cue`, and where
+   the gripper first closes. Run where the results of all three are present.
+
+The scripts were tested on the run folders of `L0_vis` standing in for the evaluations that do not exist yet.
+
+**Not in this round.** The 15 new combinations on `L0_vis_ell`; the runs of [`../fusion_vis/`](../fusion_vis/README.md)
+on `L0_vis_ell`; the references of Stage 6; seeds 43 and 44 of the baselines from the literature (they follow after
+the first reading, as listed there, and are then evaluated on both levels).
