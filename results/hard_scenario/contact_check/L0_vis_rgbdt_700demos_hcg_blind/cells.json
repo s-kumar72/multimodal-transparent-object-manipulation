@@ -1,0 +1,62 @@
+{
+ "runs": [
+  "results/hard_scenario/contact_check/L0_vis_rgbdt_700demos_hcg_blind"
+ ],
+ "test_sets": [
+  "j_cells11",
+  "k_cells11_heldout"
+ ],
+ "macro": 0.8878787878787879,
+ "macro_ci": [
+  0.8712121212121214,
+  0.9030303030303031
+ ],
+ "cells": {
+  "0": {
+   "success": 119,
+   "n": 120
+  },
+  "1": {
+   "success": 115,
+   "n": 120
+  },
+  "2": {
+   "success": 116,
+   "n": 120
+  },
+  "3": {
+   "success": 119,
+   "n": 120
+  },
+  "4": {
+   "success": 100,
+   "n": 120
+  },
+  "5": {
+   "success": 93,
+   "n": 120
+  },
+  "6": {
+   "success": 113,
+   "n": 120
+  },
+  "7": {
+   "success": 116,
+   "n": 120
+  },
+  "8": {
+   "success": 91,
+   "n": 120
+  },
+  "9": {
+   "success": 79,
+   "n": 120
+  },
+  "10": {
+   "success": 111,
+   "n": 120
+  }
+ },
+ "success": 1172,
+ "n": 1320
+}

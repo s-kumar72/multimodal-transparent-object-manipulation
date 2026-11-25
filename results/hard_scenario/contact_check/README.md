@@ -342,3 +342,125 @@ The scripts were tested on the run folders of `L0_vis` standing in for the evalu
 **Not in this round.** The 15 new combinations on `L0_vis_ell`; the runs of [`../fusion_vis/`](../fusion_vis/README.md)
 on `L0_vis_ell`; the references of Stage 6; seeds 43 and 44 of the baselines from the literature (they follow after
 the first reading, as listed there, and are then evaluated on both levels).
+
+### Results of round 3, first part: the seed-42 controls and self-attention fusion (11/25 13:58 KST; 1320 episodes per run, 120 per cell)
+
+The eight evaluations of existing checkpoints ran (12:15 to 13:48 KST); none failed. The read-out is
+[`readout_round3.txt`](readout_round3.txt) (`PYTHONPATH=$PWD/policy python policy/readout_contacts_round3.py`). Item 1
+is complete. Item 2 needs seeds 43 and 44 (in training); what seed 42 shows is given without a verdict. Item 3 has
+self-attention fusion only; the two other baselines from the literature are in training.
+
+**1. What the method is made of** (seed 42, same episodes on each level).
+
+| what differs | first | second | `L0_vis`: first / second | only the first succeeds / only the second | p | `L0_vis_ell`: first / second | only the first / only the second | p | on `L0_vis_ell` the first is |
+|---|---|---|---|---|---|---|---|---|---|
+| gating the image features | `full` | `cue` | 0.789 / 0.795 | 98 / 107 | 0.58 | 0.898 / 0.914 | 30 / 52 | 0.02 | below |
+| the images | `cue` | `blind` | 0.795 / 0.783 | 112 / 95 | 0.27 | 0.914 / 0.888 | 64 / 29 | 0.00037 | above |
+| maps per sensor with the gate, against one network | `cue` | one network | 0.795 / 0.730 | 215 / 128 | 3.1e-06 | 0.914 / 0.911 | 75 / 70 | 0.74 | not separated |
+| a gate that looks at the image, against a gate on map numbers | `cue` | gate on map numbers | 0.795 / 0.695 | 230 / 97 | 1.3e-13 | 0.914 / 0.825 | 163 / 45 | 6.7e-17 | above |
+| a gate among the sensors, against none | `cue` | no gate | 0.795 / 0.502 | 446 / 58 | 3.4e-75 | 0.914 / 0.655 | 379 / 36 | 2.6e-73 | above |
+| the cue in the conditioning, against the label as an auxiliary loss | `cue` | auxiliary loss | 0.795 / 0.226 | 776 / 24 | 1.7e-195 | 0.914 / 0.439 | 655 / 27 | 1.8e-157 | above |
+
+By the rule fixed above, on `L0_vis_ell` these parts **matter**: a gate among the sensors against none, a gate that
+looks at the image against one on map numbers, the cue in the conditioning against an auxiliary loss, and the images
+(`cue` above `blind`; on `L0_vis` the two were not separated). These do **not**: the maps per sensor with the gate
+against one network over all sensors (0.914 against 0.911; on `L0_vis` `cue` was 6.5 points above), and gating the
+image features (`full` is below `cue` on `L0_vis_ell`).
+
+The share of the gain of `cue` over the plain rgbdt baseline that a run keeps, and the cells (p < 0.05):
+
+| run | `L0_vis` | kept | `L0_vis_ell` | kept | cells below their best plain baseline on `L0_vis_ell` | cells in which it differs from `cue` on `L0_vis_ell`: above / below |
+|---|---|---|---|---|---|---|
+| `full` | 0.789 | 0.98 | 0.898 | 0.95 | none | none / 8 |
+| `cue` | 0.795 | 1.00 | 0.914 | 1.00 | none | |
+| `blind` | 0.783 | 0.97 | 0.888 | 0.93 | none | none / 5, 8 |
+| one network | 0.730 | 0.83 | 0.911 | 0.99 | none | 4 / 7 |
+| gate on map numbers | 0.695 | 0.74 | 0.825 | 0.75 | none | none / 4, 6, 7, 8, 9 |
+| no gate | 0.502 | 0.23 | 0.655 | 0.27 | 5, 8 | none / 0, 2, 4, 5, 6, 7, 8, 9, 10 |
+| auxiliary loss | 0.226 | -0.49 | 0.439 | -0.34 | 0, 1, 3, 5, 8, 10 | none / all eleven |
+| plain rgbdt | 0.414 | 0 | 0.560 | 0 | | |
+
+Success per cell on `L0_vis_ell` (seed 42; `cells.json` of every run):
+
+| cell | sensors that show the glass | `full` | `cue` | `blind` | one network | gate on map numbers | no gate | auxiliary loss | plain rgbdt |
+|---|---|---|---|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.983 | 1.000 | 0.992 | 0.967 | 0.975 | 0.950 | 0.625 | 0.900 |
+| 1 | depth+thermal | 0.942 | 0.933 | 0.958 | 0.967 | 0.933 | 0.917 | 0.608 | 0.892 |
+| 2 | rgb+thermal | 0.950 | 0.983 | 0.967 | 0.950 | 0.975 | 0.817 | 0.650 | 0.350 |
+| 3 | rgb+depth | 0.958 | 0.958 | 0.992 | 0.933 | 0.933 | 0.917 | 0.600 | 0.858 |
+| 4 | thermal | 0.833 | 0.833 | 0.833 | 0.950 | 0.658 | 0.483 | 0.192 | 0.250 |
+| 5 | depth | 0.875 | 0.883 | 0.775 | 0.950 | 0.800 | 0.642 | 0.475 | 0.875 |
+| 6 | rgb | 0.958 | 0.967 | 0.942 | 0.942 | 0.825 | 0.408 | 0.367 | 0.242 |
+| 7 | rgb (faint) | 0.950 | 0.958 | 0.967 | 0.892 | 0.792 | 0.383 | 0.267 | 0.158 |
+| 8 | depth (faint) | 0.817 | 0.875 | 0.758 | 0.817 | 0.717 | 0.508 | 0.308 | 0.767 |
+| 9 | thermal (faint) | 0.675 | 0.717 | 0.658 | 0.725 | 0.508 | 0.342 | 0.233 | 0.117 |
+| 10 | all three (faint) | 0.933 | 0.950 | 0.925 | 0.925 | 0.958 | 0.833 | 0.500 | 0.750 |
+| macro average | | 0.898 | 0.914 | 0.888 | 0.911 | 0.825 | 0.655 | 0.439 | 0.560 |
+
+**2. The seeds: what seed 42 shows, no verdict yet** (`python policy/readout_round4.py --root
+results/hard_scenario/contact_check`, run with the one seed present; `readout_round4_ell.txt` is written when the three
+seeds are).
+
+| setting | cells | level | `cue` | one network | only `cue` / only the one network | p |
+|---|---|---|---|---|---|---|
+| 1. training cells | all eleven | `L0_vis` | 0.795 | 0.730 | 215 / 128 | 3.1e-06 |
+| | | `L0_vis_ell` | 0.914 | 0.911 | 75 / 70 | 0.74 |
+| 3. trained without cells 4 to 9 | the cells left out (4 to 9) | `L0_vis` | 0.678 | 0.550 | 179 / 87 | 1.8e-08 |
+| | | `L0_vis_ell` | 0.831 | 0.749 | 126 / 67 | 2.6e-05 |
+| | the cells of the training set (0, 1, 2, 3, 10) | `L0_vis` | 0.883 | 0.875 | 47 / 42 | 0.67 |
+| | | `L0_vis_ell` | 0.958 | 0.955 | 16 / 14 | 0.86 |
+
+In the cells the two runs were not trained on, `cue` stays above the one network on `L0_vis_ell` (8 points); in the
+cells they were trained on, in either setting, the two are level there.
+
+**3. Self-attention fusion (MulSA), a first reading** (part B; the item is read again when the three baselines from
+the literature are evaluated).
+
+- Against the plain rgbdt baseline: 0.564 against 0.560 (120 / 114, p = 0.74); on `L0_vis` 0.412 against 0.414. No
+  cell differs from plain rgbdt. Against the best plain baseline of the cell it is below in cell 6 (0.242 against
+  rgb 0.450) and above in none.
+- Against the method: 0.564 against 0.898 (`full`; 46 / 486) and 0.914 (`cue`; 36 / 498); below `full` in eight
+  cells and `cue` in nine, above in none.
+- The first close of the gripper is within 1.5 cm of the glass in 0.471 of the episodes (plain rgbdt 0.461, `full`
+  and `cue` 0.870); the success after such a close is 0.923 (plain 0.929, `full` 0.979, `cue` 0.996).
+
+**Next to the read-out, not a test: the cue's error on both levels**
+([`cue_error_bins_ell.txt`](cue_error_bins_ell.txt): the first table of `python policy/cue_error_bins.py --root
+results/hard_scenario/contact_check`; the script then stops at the 15 new combinations, which are not evaluated on
+`L0_vis_ell`; the table of `L0_vis` is [`../cue_gate/cue_error_bins.txt`](../cue_gate/cue_error_bins.txt)). Share of
+the episodes / success, by the distance in the table plane between the cue's grasp point and the glass:
+
+| run | level | 0 to 0.5 cm | 0.5 to 1.0 cm | 1.0 to 1.5 cm | over 1.5 cm |
+|---|---|---|---|---|---|
+| `cue` | `L0_vis` | 0.53 / 0.93 | 0.28 / 0.80 | 0.09 / 0.57 | 0.09 / 0.22 |
+| | `L0_vis_ell` | 0.53 / 0.99 | 0.28 / 0.96 | 0.09 / 0.88 | 0.09 / 0.41 |
+| one network | `L0_vis` | 0.39 / 0.89 | 0.38 / 0.77 | 0.12 / 0.60 | 0.12 / 0.19 |
+| | `L0_vis_ell` | 0.39 / 0.98 | 0.37 / 0.97 | 0.12 / 0.92 | 0.12 / 0.49 |
+| gate on map numbers | `L0_vis` | 0.46 / 0.89 | 0.23 / 0.80 | 0.09 / 0.69 | 0.22 / 0.19 |
+| | `L0_vis_ell` | 0.46 / 0.99 | 0.23 / 0.95 | 0.09 / 0.92 | 0.22 / 0.32 |
+| no gate | `L0_vis` | 0.25 / 0.78 | 0.23 / 0.63 | 0.13 / 0.50 | 0.39 / 0.24 |
+| | `L0_vis_ell` | 0.26 / 0.91 | 0.23 / 0.81 | 0.13 / 0.71 | 0.39 / 0.38 |
+
+The cues are those of the same checkpoints on the same scenes, so the shares are the same on both levels. The one
+network puts nearly as many cues within 1.5 cm of the glass as `cue` (0.88 against 0.91) but fewer within 0.5 cm
+(0.39 against 0.53). For these two runs a cue 0.5 to 1.5 cm off fails in about a quarter of the episodes with the
+default contacts (0.25 and 0.27) and in about one in twenty with the contact model of the place level (0.06 and
+0.04). The precision in which the maps per sensor were ahead is what this contact model no longer asks for. The gate
+on map numbers and the run without a gate put more cues beyond 1.5 cm (0.22 and 0.39 against 0.09), and most of
+those fail on both levels.
+
+**What this says.**
+
+- *A choice among the sensors is needed, on both levels.* Without it (the maps averaged) the run keeps a quarter of
+  the gain and is below the plain baselines in the two cells in which depth alone shows the glass; a gate that sees
+  only the numbers of the maps keeps three quarters.
+- *How the choice is made is not settled on the level of the paper's table.* One network over all three sensors,
+  with no gate to read, forms the cue as well as the maps per sensor with the gate in the cells both were trained
+  on (0.911 against 0.914, seed 42). What `cue` keeps over it at seed 42 is in the combinations of sensors not in
+  the training set (0.831 against 0.749 in the cells left out). The verdicts of item 2 need the three seeds.
+- *Gating the image features adds nothing*: not separated on `L0_vis` and on the place level, below on `L0_vis_ell`.
+- *The images matter on `L0_vis_ell`* (2.6 points, cells 5 and 8), which `L0_vis` did not show.
+- *Self-attention fusion is a plain rgbdt policy by its results* on both levels.
+
+**What it does not say.** One seed each. The new combinations (setting 2) are not evaluated on `L0_vis_ell`. That the
+one network catches up is read from the cue's error after the fact; no run was made to test it.
