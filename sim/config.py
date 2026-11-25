@@ -45,6 +45,10 @@ class ThermalConfig:
     # Visibility cells, thermal faint episode (cell flag 2): the apparent temperature of the glass is this many degC
     # (range, either sign) from that of the table behind it.
     faint_contrast: tuple = None
+    # Visibility cells, thermal shows (cell flag 0), second version of the benchmark: when set, the apparent temperature
+    # of the glass is this many degC (range, either sign) from that of the table behind it, as for faint, in place
+    # of `gap` degC from the room. None (every level before V2): the glass is `gap` from the room, as always.
+    show_contrast: tuple = None
     distractor_ambient_p: float = 0.7   # distractors within +-1 degC of ambient, else +-distractor_gap
     distractor_gap: tuple = (5.0, 35.0)
     liquid_temp: dict = field(default_factory=lambda: {"cold": (4.0, 10.0), "room": None, "warm": (40.0, 60.0)})
@@ -128,6 +132,11 @@ class SceneConfig:
     # then also has rgb_faint, depth_faint and thermal_faint (only in levels that have such a cell).
     faint_alpha: float = None
     faint_holes: float = None
+    # Second version of the benchmark (V2 levels; None or a single number leaves every earlier level as it is):
+    # show_holes: in a cell where depth shows the glass, the share of the glass's pixels that are holes is drawn per
+    # episode from this range (a hole-type depth sensor; None: glass_holes). faint_holes and clear_alpha may also be
+    # a range [low, high], drawn per episode. These draws have RNG streams of their own (env._cell_draw).
+    show_holes: tuple = None
     # Task. "pick": lift the glass 10 cm (every level before L0_vis_place; nothing below is drawn or loaded).
     # "place": pick the glass, carry it to the coaster and put it down upright on it, then let go. The coaster is an
     # opaque disc of this radius (m), 6 mm thick, fixed to the table at a random free spot within the arm's reach.

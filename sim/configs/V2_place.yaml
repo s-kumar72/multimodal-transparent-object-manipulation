@@ -1,0 +1,21 @@
+# Second version of the visibility benchmark, task T1: pick the glass and put it down on a coaster
+# (results/hard_scenario/bench_v2/README.md; a draft level, not frozen). The scenes, cells and weights of L0_vis_place;
+# the three states of every sensor are set from what real sensors do with real glass (real_data/glass_visibility.py),
+# and each is drawn per episode from a range:
+#   depth    shows: a hole-type sensor, 80-100% of the glass's pixels without a reading; faint: a see-through sensor
+#            with some dropout, 10-35%; blind: a see-through sensor, none
+#   thermal  shows: a glass at rest, the middle 80% of tabletop glass: 10-103 units of the camera noise (0.2-2.2 degC);
+#            faint: 3-10 units (0.06-0.21 degC); blind: below 3 units. The values below are those of
+#            sensors.matching_temp that give these contrasts in the image (sim/measure_visibility.py).
+#   colour   shows: alpha 0.5; faint: alpha 0.2; blind: contrast below 3 grey levels, alpha 0-0.03
+# One contact model for demos and evaluation (place_scene.xml: elliptic cones). meta/ep_level id 38.
+base: L0_vis_place.yaml
+name: V2_place
+level: 38
+show_holes: [0.80, 1.00]
+faint_holes: [0.10, 0.35]
+clear_alpha: [0.0, 0.03]
+thermal:
+  show_contrast: [0.36, 3.66]
+  faint_contrast: [0.11, 0.37]
+  blind_contrast: 0.1

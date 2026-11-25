@@ -1,0 +1,11 @@
+# V2_place with the thermal states of the first version (L0_vis): shows = the glass 5-35 degC from the room (a glass
+# with warm or cold content), faint = about 3 degC from the table, blind = within 0.1 degC. Depth and colour as
+# V2_place. For the pilot only (results/hard_scenario/bench_v2/README.md): the two are run side by side so that the
+# thermal states can be chosen with numbers. meta/ep_level id 39.
+base: V2_place.yaml
+name: V2_place_warm
+level: 39
+thermal:
+  show_contrast: null
+  faint_contrast: [2.7, 3.3]
+  blind_contrast: 0.1

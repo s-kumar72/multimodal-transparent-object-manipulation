@@ -1,6 +1,7 @@
 # Visibility benchmark, second version: design draft for review
 
-**Status (11/26): a draft. Nothing of it is implemented, collected, trained or frozen.** Decision of the user 11/26:
+**Status (11/26): a draft. The states of section 3 and the level of task T1 are implemented (section 10); nothing is
+collected, trained or frozen.** Decision of the user 11/26:
 a second version of the benchmark is designed in one piece, tried with a pilot, frozen once, and then everything is
 run on it once. The levels that exist (`L0_vis`, `L0_vis_ell`, `L0_vis_place`) and their results are not touched: they
 stay as the development record and as the fallback for the paper if this version is late. Points marked **[decide]**
@@ -90,12 +91,12 @@ Each state is a cause that exists, with its range from section 2.
 | depth | shows | a hole-type sensor (structured light, stereo) | 0.80 to 1.00 of the glass's pixels missing, drawn per episode | 0.40 |
 | depth | faint | a see-through sensor with some dropout | 0.10 to 0.35 missing | 0.20 |
 | depth | blind | a see-through sensor (lidar, time of flight) | none missing, the surface behind | the same |
-| thermal | shows | a glass at rest, usual contrast | 26 to 103 noise units (0.5 to 2.2 degC), either sign | 4 to 18 degC |
+| thermal | shows | a glass at rest, usual contrast: the middle 80% of the tabletop regions | 10 to 103 noise units (0.2 to 2.2 degC), either sign | 4 to 18 degC |
 | thermal | faint | a glass at rest, low contrast | 3 to 10 noise units (0.06 to 0.21 degC) | about 1.7 degC |
 | thermal | blind | glass and background in equilibrium | below 3 noise units | below about 5 |
 | colour | shows | usual contrast against the table | alpha 0.5 (median contrast 27) | the same |
 | colour | faint | low contrast | alpha 0.2 (median 13) | the same |
-| colour | blind | contrast below 3 grey levels | alpha 0 to 0.04 | alpha 0.001 |
+| colour | blind | contrast below 3 grey levels | alpha 0 to 0.03 | alpha 0.001 |
 
 **What this does to the difficulty, expected and not known.** Where depth shows the glass it gets easier (the glass
 is one large hole). Where only thermal shows it, it gets harder: "shows" of this version is about "faint" of the
@@ -193,7 +194,67 @@ whose runs are finishing now.
 3. The tuning budget of section 6: with (proposed) or without.
 4. T3 with two coasters and free order (proposed), or with a fixed order.
 
+## 10. Progress
+
+**The points of section 9 (11/26).** The user leaves them to the proposals. So: (1) the thermal states are not
+chosen now: the pilot runs T1 with the states of section 3 (`V2_place`) and with the thermal states of the first
+version (`V2_place_warm`: 5 to 35 degC, about 3 degC, 0.1 degC) side by side, and the user chooses with the two
+tables; (2) glass with warm or cold content is outside the cells; (3) the tuning budget is kept; (4) T3 has two
+coasters and a free order. All four can still be changed until the freeze.
+
+**Step 2, the states and the level of T1 (11/26).** New settings in `sim/config.py` and `sim/env.py`: `show_holes`
+(depth shows, a range), ranges for `faint_holes` and `clear_alpha`, `thermal.show_contrast` (thermal shows, a contrast
+against the table in place of a gap from the room). Each has an RNG stream of its own and is off unless a level sets
+it: `sim/regression_test.py` gives 190 of 190 arrays identical for `L0_vis`, `L0_vis_place`, `L0_vis_ell` and the
+default scene before and after. Levels `sim/configs/V2_place.yaml` and `V2_place_warm.yaml` (drafts, ids 38 and 39).
+`python sim/measure_visibility.py V2_place -n 440` ([`measurements/sim_V2_place_visibility.txt`](measurements/sim_V2_place_visibility.txt)),
+next to the real ranges of section 2:
+
+| sensor, state | `V2_place`: p10 / median / p90 | real |
+|---|---|---|
+| depth shows, share missing | 0.80 / 0.88 / 0.97 | 0.78 / 1.00 / 1.00 and 0.88 / 0.94 / 0.96 (the two hole-type sensors) |
+| depth faint, share missing | 0.12 / 0.25 / 0.33 | the lidar's upper quarter: 0.07 (p75) to 0.34 (p90) |
+| depth blind, share missing; reading from behind | 0.00; 0.90 | the lidar: 0.00; 0.91 |
+| thermal shows, noise units | 19 / 61 / 93 | 10 / 47 / 103 |
+| thermal faint, noise units | 2.8 / 6.6 / 9.8 | 3 to 10: 6% of the tabletop regions |
+| thermal blind, noise units | 0.4 / 1.5 / 3.4 | below 3: 3% |
+| colour shows, grey levels | 9 / 27 / 44 | 2.7 / 20 / 77 |
+| colour faint | 4 / 13 / 23 | the lower quarter: 7.6 and below |
+| colour blind | 0.0 / 0.8 / 3.0 | below 3: 11% |
+
+The thermal values of the level file are those of `sensors.matching_temp`; the image shows about 0.6 of them
+(the blur of the 160x120 thermal image on a glass of about 50 pixels), which is why they are larger than the
+contrasts they give. "Shows" is drawn evenly over the range, so its median is above the real one (61 against 47).
+
+**Step 3, the pilot (listed 11/26 07:12 KST, before any demo of the two levels is collected, any cue fitted or any
+policy trained).** Task T1 on the two draft levels, seed 42, the protocol of `L0_vis_place` (700 demos of the scripted
+teacher, 101 epochs, last checkpoint, ImageNet encoders, episodes of at most 240 steps, 660 episodes on each of
+`j_cells11` and `k_cells11_heldout`).
+
+| run, for `<level>` = `V2_place` and `V2_place_warm` | what |
+|---|---|
+| `<level>_rgbdt_700demos_imagenet` | the plain rgbdt baseline |
+| `<level>_rgbd_700demos_imagenet` | the plain rgbd baseline |
+| `<level>_rgbdt_700demos_hcg2_cue` | the arm `cue` with the grasp cue and the place cue of the method, fitted on the level's demos |
+| `<level>_rgbdt_700demos_hcg2_cue_early` | the same with the grasp cue of one network on all sensors (the place cue is the method's: `hindsight_cue.py --event release` exists for the default fit only) |
+
+Before them, per level: `python sim/collect_demos.py --n 700 --workers 4 --config sim/configs/<level>.yaml --out
+results/data/sim_demos_<level>_700.zarr`, then `python policy/hindsight_cue.py <demos> --level <level> --out
+data/hcue/<level>_700` (the grasp cue), `... --mode early --out data/hcue/<level>_700_early` and `... --event release
+--out data/hcue/<level>_700_release`. Commands of the runs: those of steps 2 and 3 of
+[`../place_bench/README.md`](../place_bench/README.md) with `GROUP=bench_v2`, the level, and for the two runs with cues
+`CUES=2 TRAIN="policy/train_cuegate.sh cue"` and `task.hcue_dir=data/hcue/<level>_700[_early]
+task.hcue_dir2=data/hcue/<level>_700_release`. Eight runs through the queue of the fusion-vis worktree, after
+everything queued before them; a run that fails is reported and not started again.
+
+Read-out, fixed now (`python policy/readout_v2_pilot.py > readout_pilot.txt`): per level the success per cell of the
+four runs and the share of episodes with the glass picked; the two stops of step 3 (a cell in which every run is
+below 0.30; every cell of every run above 0.95); `cue` against plain rgbdt and against the one network on the same
+episodes (sign test); the two levels side by side. The pilot is one seed and decides two things only: whether the
+states are in a range that can be measured, and which thermal states the user takes. Nothing of it enters the tables
+of the frozen benchmark.
+
 ## Files
 
 `real_data/glass_visibility.py` (real sensors), `sim/measure_visibility.py` (the simulator, same functions),
-`measurements/` (their outputs of 11/26).
+`measurements/` (their outputs of 11/26). `sim/configs/V2_place.yaml`, `sim/configs/V2_place_warm.yaml` (draft levels).
