@@ -1,0 +1,53 @@
+## 1. Against the plain baselines (seed 42, 1320 episodes, 120 per cell)
+
+| run | success | plain rgbdt | only the run / only plain rgbdt | p |
+|---|---|---|---|---|
+| self-attention fusion (MulSA) | 0.412 | 0.414 | 135 / 137 | 0.95 |
+| sensor dropout | 0.410 | 0.414 | 167 / 172 | 0.83 |
+| stage-guided fusion (MS-Bot) | 0.161 | 0.414 | 67 / 401 | 4.9e-59 |
+
+Per cell (+ / - : above / below at p < 0.05), against plain rgbdt and against the cell's best plain baseline:
+
+| cell | plain rgbdt | best plain baseline | self-attention fusion (MulSA): success, vs rgbdt, vs best | sensor dropout: success, vs rgbdt, vs best | stage-guided fusion (MS-Bot): success, vs rgbdt, vs best |
+|---|---|---|---|---|---|
+| 0 | 0.775 | rgbdt 0.775 | 0.725, 9 / 15, 9 / 15 | 0.692, 12 / 22, 12 / 22 | 0.275, 6 / 66 -, 6 / 66 - |
+| 1 | 0.750 | rgbdt 0.750 | 0.750, 11 / 11, 11 / 11 | 0.658, 7 / 18 -, 7 / 18 - | 0.275, 4 / 61 -, 4 / 61 - |
+| 2 | 0.225 | rgbt 0.408 | 0.283, 18 / 11, 14 / 29 - | 0.367, 28 / 11 +, 18 / 23 | 0.133, 8 / 19, 9 / 42 - |
+| 3 | 0.650 | rgbd 0.700 | 0.708, 19 / 12, 9 / 8 | 0.617, 14 / 18, 12 / 22 | 0.208, 6 / 59 -, 5 / 64 - |
+| 4 | 0.192 | rgbdt 0.192 | 0.117, 8 / 17, 8 / 17 | 0.125, 11 / 19, 11 / 19 | 0.075, 5 / 19 -, 5 / 19 - |
+| 5 | 0.650 | rgbdt 0.650 | 0.608, 16 / 21, 16 / 21 | 0.625, 20 / 23, 20 / 23 | 0.250, 10 / 58 -, 10 / 58 - |
+| 6 | 0.158 | rgb 0.275 | 0.192, 12 / 8, 9 / 19 | 0.200, 15 / 10, 8 / 17 | 0.025, 2 / 18 -, 1 / 31 - |
+| 7 | 0.092 | rgbd 0.183 | 0.142, 9 / 3, 11 / 16 | 0.183, 18 / 7 +, 11 / 11 | 0.050, 5 / 10, 4 / 20 - |
+| 8 | 0.525 | rgbdt 0.525 | 0.458, 11 / 19, 11 / 19 | 0.433, 13 / 24, 13 / 24 | 0.242, 8 / 42 -, 8 / 42 - |
+| 9 | 0.050 | rgbt 0.108 | 0.092, 7 / 2, 9 / 11 | 0.100, 11 / 5, 9 / 10 | 0.033, 4 / 6, 3 / 12 - |
+| 10 | 0.483 | rgbdt 0.483 | 0.458, 15 / 18, 15 / 18 | 0.508, 18 / 15, 18 / 15 | 0.200, 9 / 43 -, 9 / 43 - |
+
+## 2. Against the method (seed 42, same episodes)
+
+| run | method run | run | method | only the run / only the method | p | cells with the run above / below the method (p < 0.05) |
+|---|---|---|---|---|---|---|
+| self-attention fusion (MulSA) | hcg_full | 0.412 | 0.789 | 76 / 573 | 2.9e-95 | none / [0, 1, 2, 3, 4, 5, 6, 7, 9, 10] |
+| self-attention fusion (MulSA) | hcg_cue | 0.412 | 0.795 | 64 / 570 | 2e-102 | none / [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] |
+| sensor dropout | hcg_full | 0.410 | 0.789 | 61 / 561 | 3.2e-102 | none / [0, 1, 2, 3, 4, 6, 7, 8, 9, 10] |
+| sensor dropout | hcg_cue | 0.410 | 0.795 | 64 / 573 | 3.4e-103 | none / [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] |
+| stage-guided fusion (MS-Bot) | hcg_full | 0.161 | 0.789 | 19 / 848 | 9.3e-223 | none / [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] |
+| stage-guided fusion (MS-Bot) | hcg_cue | 0.161 | 0.795 | 29 / 867 | 1.2e-215 | none / [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] |
+
+## 3. The 15 new combinations (1200 episodes)
+
+| run | success | plain rgbdt | only the run / only plain rgbdt | p | hcg_cue | only the run / only hcg_cue | p |
+|---|---|---|---|---|---|---|---|
+| self-attention fusion (MulSA) | 0.579 | 0.574 | 152 / 146 | 0.77 | 0.849 | 79 / 403 | 2.3e-53 |
+| sensor dropout | 0.553 | 0.574 | 165 / 190 | 0.2 | 0.849 | 69 / 424 | 2.4e-63 |
+| stage-guided fusion (MS-Bot) | 0.220 | 0.574 | 53 / 478 | 1.4e-86 | 0.849 | 27 / 782 | 1.2e-193 |
+
+## 4. The first close of the gripper (training cells)
+
+| run | first close within 1.5 cm of the glass | median distance (cm) | success after a first close within 1.5 cm |
+|---|---|---|---|
+| plain rgbdt | 0.465 | 1.66 | 0.748 |
+| self-attention fusion (MulSA) | 0.473 | 1.64 | 0.742 |
+| sensor dropout | 0.504 | 1.49 | 0.693 |
+| stage-guided fusion (MS-Bot) | 0.167 | 4.07 | 0.620 |
+| hcg_full | 0.870 | 0.55 | 0.886 |
+| hcg_cue | 0.875 | 0.56 | 0.893 |
