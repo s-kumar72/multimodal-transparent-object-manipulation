@@ -254,7 +254,33 @@ episodes (sign test); the two levels side by side. The pilot is one seed and dec
 states are in a range that can be measured, and which thermal states the user takes. Nothing of it enters the tables
 of the frozen benchmark.
 
+**Step 4, task T2 `align` in the simulator (11/26 08:39 KST; no demo collected, no policy).** `task: align`
+(`sim/config.py`), scene `sim/assets/gen3_lite/align_scene.xml`, level `sim/configs/V2_align.yaml` (a draft, id 40; the
+states of `V2_place`).
+
+- *Glasses*: boxes with the long side wider than the open gripper: `slab` 14 x 4 x 8 cm, `bar` 15 x 3.5 x 7 cm, `block`
+  13 x 4.5 x 10 cm for training, `tile` 12 x 4 x 7 cm for a test set of unseen shapes. One lies on the table at an
+  angle drawn from 0 to 180 degrees.
+- *Mat*: 17 x 7 cm, dark with a light stripe along it, at a free spot within reach (as the coaster of T1) and at an
+  angle of its own.
+- *Success*: the glass upright on the mat, its centre within 2 cm of the mat's and its long side within 15 degrees of
+  the mat's (either way round), at rest, the gripper away. Failure labels as T1, plus `place_turned`. The record of
+  an episode has `yaw_error`.
+- *Teacher*: the plan of T1 with the tool turned about the vertical: to the glass's angle on the way there, to the
+  mat's angle while the glass is carried (at most 6 degrees per step). The last arm joint has room in one direction
+  only, so the angle is taken from the half turn -170 to 10 degrees. 60 of 60 scenes (seeds 0 to 59, 20 per shape);
+  121 steps in the median, 142 at most, of the 240 allowed.
+- The test sets deal the three training shapes of this task; the object ids of its records continue after those of
+  the five glasses (5 to 8).
+- Every existing level is as it was: `sim/regression_test.py`, 190 of 190 arrays identical for `L0_vis`,
+  `L0_vis_place`, `L0_vis_ell` and the default scene.
+
+Not done for T2: the cue of the method with the grasp angle (the gripper's angle at its first close, read in
+hindsight as the point is), a plain rgbdt run, the solvability check per cell. T3 has not been started.
+
 ## Files
 
 `real_data/glass_visibility.py` (real sensors), `sim/measure_visibility.py` (the simulator, same functions),
 `measurements/` (their outputs of 11/26). `sim/configs/V2_place.yaml`, `sim/configs/V2_place_warm.yaml` (draft levels).
+T2: `sim/assets/gen3_lite/align_scene.xml`, `sim/configs/V2_align.yaml`, `sim/env.py` (`ALIGN_OBJECTS`, `_mat_target`,
+`placed`), `sim/teacher.py` (`_plan_align`).

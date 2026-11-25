@@ -18,7 +18,7 @@ import yaml
 CONFIG_DIR = Path(__file__).parent / "configs"
 # Fixed ids of the per-factor RNG streams (np.random.default_rng([seed, id])); never renumber
 FACTORS = {"background": 1, "lighting": 2, "transparent": 3, "liquid": 4, "distractors": 5,
-           "thermal": 6, "sensor": 7, "cell": 8, "place": 9}
+           "thermal": 6, "sensor": 7, "cell": 8, "place": 9, "align": 10}
 HELDOUT_ALL = ["background", "lighting", "distractors"]
 # Thermal config names stored as ids in meta/ep_thermal_config (append only)
 THERMAL_NAMES = ["v0", "calibrated_v1", "calibrated_v1_narrow", "calibrated_v1_fixed"]
@@ -144,6 +144,8 @@ class SceneConfig:
     # three sensors it is the colour camera that shows it (sim/env.py, GlassPickEnv._place_target). Episode info
     # then has place_x, place_y, place_dist (glass to coaster at the start, m), place_clear (1: no distractor under
     # the straight path), place_temp and place_emis.
+    # "align" (second version of the benchmark, T2): an elongated glass lies at a random angle and is put down on a
+    # rectangular mat in the mat's direction (sim/env.py: ALIGN_OBJECTS, _mat_target, placed).
     task: str = "pick"
     place_radius: float = 0.06
     # Contact model. "default": the scene file's own (pyramidal friction cones, impratio 1, for every pick level;

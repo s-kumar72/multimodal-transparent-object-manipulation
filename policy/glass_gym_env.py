@@ -10,7 +10,7 @@ import numpy as np
 from gym import spaces
 
 from config import load_config
-from env import COASTER_H, PLACE_UPRIGHT, PLACE_Z_TOL, GlassPickEnv, OBJECT_NAMES, OBJECTS
+from env import ALIGN_NAMES, ALIGN_POS_TOL, COASTER_H, PLACE_UPRIGHT, PLACE_Z_TOL, GlassPickEnv, OBJECT_NAMES
 from policy.obs_util import to_policy_obs
 from testsets import manifest, test_set
 
@@ -73,7 +73,8 @@ class GlassPickGymEnv(gym.Env):
             if self.level is None:
                 cfg, objects = None, OBJECT_NAMES
             elif self._split == "train":
-                cfg, objects = load_config(manifest()["levels"][self.level]), OBJECT_NAMES
+                cfg = load_config(manifest()["levels"][self.level])
+                objects = ALIGN_NAMES if cfg.task == "align" else OBJECT_NAMES
             else:
                 cfg, _, objects = test_set(self.level, self.test_set_name)
             self._envs[key] = (GlassPickEnv(max_steps=self.max_steps, config=cfg), objects)
@@ -98,7 +99,7 @@ class GlassPickGymEnv(gym.Env):
             extras = {n: np.linalg.norm(e.data.body(n).xpos[:2] - tool[:2]) for n in e.extra_z0}
             self._log["closes"].append(dict(
                 d_target=float(np.linalg.norm(target[:2] - tool[:2])),
-                dz=float(tool[2] - (self._log["z0"] + OBJECTS[e.obj])),   # vs. the right height for this object
+                dz=float(tool[2] - (self._log["z0"] + e.grasp_height())),   # vs. the right height for this object
                 d_extra=float(min(extras.values())) if extras else None))
         self._log["max_lift"] = max(self._log["max_lift"], float(e.data.body(e.obj).xpos[2] - self._log["z0"]))
         self._frame = raw["rgb"]
@@ -120,7 +121,9 @@ class GlassPickGymEnv(gym.Env):
         place_fell    it does not stand upright
         place_held    it is still in the air (not let go, or the episode ran out on the way)
         place_off     it stands upright, but not with its footprint inside the coaster
-        place_other   it stands on the coaster, but the gripper has not let go of it or it still moves"""
+        place_other   it stands on the coaster, but the gripper has not let go of it or it still moves
+        Task "align": place_off when its centre is further than the tolerance from the centre of the mat, and
+        place_turned  when it lies on the mat but not in the mat's direction"""
         e, log = self._env, self._log
         if e is None or log is None:
             return None
@@ -132,6 +135,9 @@ class GlassPickGymEnv(gym.Env):
                 return "place_fell"
             if b.xpos[2] - log["z0"] > COASTER_H + PLACE_Z_TOL:
                 return "place_held"
+            if e.align:
+                return "place_off" if e.place_offset() > ALIGN_POS_TOL else \
+                    "place_turned" if e.yaw_error() > e.yaw_tolerance else "place_other"
             if e.place_offset() > e.cfg.place_radius - e.obj_r[e.obj]:
                 return "place_off"
             return "place_other"
@@ -160,6 +166,8 @@ class GlassPickGymEnv(gym.Env):
         if self._env.place:             # pick-and-place: was the glass picked, and how far from the coaster it ended
             rec.update(picked=bool(self._log["max_lift"] >= PICKED), place_offset=self._env.place_offset(),
                        coaster_xy=[float(v) for v in self._env.place_xy])
+        if getattr(self._env, "align", False):   # T2: how far the glass is turned from the mat at the end (deg)
+            rec.update(yaw_error=self._env.yaw_error())
         if self._hcue is not None:      # the cue the policy was given, and where the glass really was (for the analysis)
             rec.update(hcue=[float(v) for v in self._hcue], target_xyz=[float(v) for v in self._log["target0"]])
         return rec

@@ -14,6 +14,7 @@ from sensors import Sensors, apparent_contrast, matching_temp
 SCENE = "sim/assets/gen3_lite/transparent_scene.xml"
 SCENE_DISTRACTORS = "sim/assets/gen3_lite/distractor_scene.xml" # SCENE + parked distractors (only when used)
 SCENE_PLACE = "sim/assets/gen3_lite/place_scene.xml" # SCENE_DISTRACTORS + the coaster (only for cfg.task "place")
+SCENE_ALIGN = "sim/assets/gen3_lite/align_scene.xml" # SCENE_DISTRACTORS + elongated glasses and a mat (cfg.task "align")
 
 # This position is arm above table, gripper down
 READY = np.array([-0.118, -0.575, 0.968, 1.571, 1.599, -1.689])
@@ -36,6 +37,13 @@ REST_Z = 0.022 # table top (0.02) + 2 mm, so the object starts upright on the ta
 # the taller objects, so the far 6 cm of the original 0.32-0.48 range is not used.
 SPAWN_X, SPAWN_Y = (0.30, 0.42), (-0.15, 0.15)
 PARK = [(1.6 + 0.25 * i, -1.0, 0.002) for i in range(len(OBJECT_NAMES))] # on the floor behind the camera
+# Task "align" (second version of the benchmark, align_scene.xml): elongated glass boxes, long side along body x.
+# The value is the grasp height above the base, as in OBJECTS. The policy is trained on ALIGN_NAMES; ALIGN_UNSEEN
+# are shapes for a test set only. Ids in the episode records continue after those of OBJECT_NAMES.
+ALIGN_OBJECTS = {"slab": 0.05, "bar": 0.045, "block": 0.065, "tile": 0.045}
+ALIGN_NAMES, ALIGN_UNSEEN = ["slab", "bar", "block"], ["tile"]
+ALIGN_PARK = {"slab": (3.2, -1.0, 0.002), "bar": (3.5, -1.0, 0.002), "block": (3.8, -1.0, 0.002), "tile": (4.1, -1.0, 0.002)}
+GRASP_HEIGHT = {**OBJECTS, **ALIGN_OBJECTS}
 
 # Table looks (materials in transparent_scene.xml); "xml" is main's plain brown table. The renderer uses the geom
 # rgba (times the texture), so each look sets the table rgba; bright looks are toned down so they do not saturate.
@@ -83,6 +91,10 @@ PLACE_UPRIGHT = 0.985       # cos 10 deg: the placed glass leans less than this
 PLACE_Z_TOL = 0.005         # the placed glass rests this close (m) to the height of the coaster's top
 PLACE_RELEASE = 0.05        # the gripper has let go when the tool is this far (m) above the glass's grasp point
 PLACE_STILL = 0.05          # ... and the glass moves slower than this (m/s)
+# Task "align": the mat (align_scene.xml), and how close the glass has to lie to it
+MAT_HALF = (0.085, 0.035)   # half sides of the mat (m): long, short
+ALIGN_POS_TOL = 0.02        # the centre of the glass is within this (m) of the centre of the mat
+ALIGN_YAW_TOL = 15.0        # its long side within this many degrees of the mat's (either way round)
 
 def _resize(img):
     return np.asarray(Image.fromarray(img).resize((IMG, IMG), Image.BILINEAR))
@@ -115,9 +127,13 @@ class GlassPickEnv:
             cfg.split = split
         self.cfg = cfg
         self.uses_extras = max(cfg.n_distractors) > 0 or cfg.lookalike_p > 0 or max(cfg.n_absorbers) > 0
-        assert cfg.task in ("pick", "place"), cfg.task
-        self.place = cfg.task == "place"     # pick-and-place: the scene has a coaster and success is placed()
-        scene = SCENE_PLACE if self.place else SCENE_DISTRACTORS if self.uses_extras else SCENE
+        assert cfg.task in ("pick", "place", "align"), cfg.task
+        self.align = cfg.task == "align"     # T2: an elongated glass at an angle, a mat with a direction
+        self.place = cfg.task in ("place", "align")   # the scene has a place target and success is placed()
+        # objects an episode can have on the table / every glass body of the scene (ids of the episode records)
+        self.names = list(ALIGN_NAMES) if self.align else OBJECT_NAMES
+        self.all_names = OBJECT_NAMES + list(ALIGN_OBJECTS) if self.align else OBJECT_NAMES
+        scene = SCENE_ALIGN if self.align else SCENE_PLACE if self.place else SCENE_DISTRACTORS if self.uses_extras else SCENE
         self.model = mujoco.MjModel.from_xml_path(scene)
         assert cfg.contacts in ("default", "elliptic"), cfg.contacts
         if cfg.contacts == "elliptic":       # the contact model of place_scene.xml on any scene
@@ -125,26 +141,29 @@ class GlassPickEnv:
         self.data = mujoco.MjData(self.model)
         self.sensors = Sensors(self.model, camera=cfg.camera, config=cfg)
         self.n_sub = int(round(CTRL_DT / self.model.opt.timestep))
-        self.obj_q = {n: self.model.jnt_qposadr[self.model.body(n).jntadr[0]] for n in OBJECT_NAMES}
+        self.obj_q = {n: self.model.jnt_qposadr[self.model.body(n).jntadr[0]] for n in self.all_names}
         self.link_names = [self.model.body(i).name for i in range(self.model.nbody) if "link" in self.model.body(i).name]
         self.max_steps = max_steps
         self.obj = OBJECT_NAMES[0]
         m = self.model
         self.extra_q = {n: m.jnt_qposadr[m.body(n).jntadr[0]] for n in EXTRA_NAMES} if self.uses_extras else {}
         self.extra_r = {n: _footprint(m, m.body(n).id) for n in self.extra_q}
-        self.obj_r = {n: _footprint(m, m.body(n).id) for n in OBJECT_NAMES}
+        self.obj_r = {n: _footprint(m, m.body(n).id) for n in self.all_names}
         self.table_geom = int(np.flatnonzero(m.geom_bodyid == m.body("table").id)[0])
         self.glass_geoms = {n: [g for g in np.flatnonzero(m.geom_bodyid == m.body(n).id)
-                                if not m.geom(g).name.startswith("liquid_")] for n in OBJECT_NAMES}
+                                if not m.geom(g).name.startswith("liquid_")] for n in self.all_names}
         # Model fields the factors change; restored on every reset
         self._fields = ["geom_rgba", "geom_matid", "geom_size", "geom_pos", "geom_contype", "geom_conaffinity",
                         "body_contype", "body_conaffinity", "body_gravcomp", "light_active", "light_diffuse",
                         "light_dir", "light_pos", "light_specular"]
         if self.place:
-            self.coaster = m.body("coaster").id
-            self.coaster_geoms = [m.geom("coaster").id, m.geom("coaster_top").id]   # the disc and its light centre
-            self.obj_dof = {n: m.jnt_dofadr[m.body(n).jntadr[0]] for n in OBJECT_NAMES}
+            target = "mat" if self.align else "coaster"
+            self.coaster = m.body(target).id
+            self.coaster_geoms = [m.geom(target).id, m.geom(target + "_top").id]   # the disc and its light centre
+            self.obj_dof = {n: m.jnt_dofadr[m.body(n).jntadr[0]] for n in self.all_names}
             self._fields.append("body_pos")
+            if self.align:
+                self._fields.append("body_quat")
         self._defaults = {f: getattr(m, f).copy() for f in self._fields}
         self._head = (m.vis.headlight.diffuse.copy(), m.vis.headlight.ambient.copy())
         self._head_spec = m.vis.headlight.specular.copy()
@@ -164,13 +183,23 @@ class GlassPickEnv:
 
         # One object upright on the table, the others parked out of view (legacy RNG, main's order)
         cell = self._cell(seed)              # None, or (index, rgb blind, depth blind, thermal blind, object index)
-        self.obj = obj if obj is not None else OBJECT_NAMES[r.integers(len(OBJECT_NAMES))]
+        self.obj = obj if obj is not None else self.names[r.integers(len(self.names))]
         if obj is None and cell is not None:
-            self.obj = OBJECT_NAMES[cell[4]] # with cells the object is dealt with the cell (seed % 5), not drawn
+            self.obj = self.names[cell[4]]   # with cells the object is dealt with the cell (seed % 5), not drawn
         for name, park in zip(OBJECT_NAMES, PARK):
             q = self.obj_q[name]
             pos = [r.uniform(*SPAWN_X), r.uniform(*SPAWN_Y), REST_Z] if name == self.obj else park
             d.qpos[q:q + 7] = [*pos, 1, 0, 0, 0]
+        self.obj_yaw = 0.0
+        if self.align:                       # the elongated glass lies at a random angle (its long side, 0 to 180 deg)
+            self.obj_yaw = float(factor_rng(seed, "align").uniform(0, np.pi))
+            for name, park in ALIGN_PARK.items():
+                q = self.obj_q[name]
+                if name == self.obj:
+                    d.qpos[q:q + 7] = [r.uniform(*SPAWN_X), r.uniform(*SPAWN_Y), REST_Z,
+                                       np.cos(self.obj_yaw / 2), 0, 0, np.sin(self.obj_yaw / 2)]
+                else:
+                    d.qpos[q:q + 7] = [*park, 1, 0, 0, 0]
 
         # Thermal conditions (legacy RNG, main's order)
         self.t_env = r.uniform(*th.t_env)
@@ -202,7 +231,7 @@ class GlassPickEnv:
             gap, crossover = realistic_gap, False
             self.temps[self.obj] = self.t_env + gap
         info = dict(split=int(cfg.split == "test"), seed=-1 if seed is None else seed, level=cfg.level,
-                    object=OBJECT_NAMES.index(self.obj), t_env=self.t_env, obj_temp=self.temps[self.obj],
+                    object=self.all_names.index(self.obj), t_env=self.t_env, obj_temp=self.temps[self.obj],
                     thermal_gap=gap, is_crossover=int(crossover), realistic=int(realistic),
                     obj_emis=self.emis[self.obj])
         info.update(self._transparent(seed))
@@ -220,7 +249,7 @@ class GlassPickEnv:
         liquid = self._liquid(seed, info)
         extras = self._extras(seed, info) if self.uses_extras else []
         if self.place:
-            info.update(self._place_target(seed, extras))
+            info.update(self._mat_target(seed, extras) if self.align else self._place_target(seed, extras))
         narrow = cfg.camera == "front_cam_narrow"
         self.sensor_scene = self.sensors.episode(seed, self.obj, liquid, extras, d,
                                                  (EXTRA_X_NARROW, EXTRA_Y_NARROW) if narrow else (EXTRA_X, EXTRA_Y),
@@ -288,13 +317,13 @@ class GlassPickEnv:
         if not cfg.cells:
             return None
         assert cfg.thermal.realistic_p == 0, "visibility cells set the glass temperature themselves"
-        pat = cell_pattern(cfg.cells, len(OBJECT_NAMES))
+        pat = cell_pattern(cfg.cells, len(self.names))
         k = int(factor_rng(None, "cell").integers(len(pat))) if seed is None else seed % len(pat)
         i = int(pat[k])
         flags = tuple(int(x) for x in cfg.cells[i][1:4])   # per sensor: 0 shows, 1 blind, 2 faint
         assert all(f in (0, 1, 2) for f in flags) and (flags[0] != 2 or cfg.faint_alpha is not None) and \
             (flags[1] != 2 or cfg.faint_holes is not None) and (flags[2] != 2 or cfg.thermal.faint_contrast is not None), flags
-        return (i, *flags, k % len(OBJECT_NAMES))
+        return (i, *flags, k % len(self.names))
 
     def _lighting(self, seed, dark=False):
         cfg, m = self.cfg, self.model
@@ -421,6 +450,53 @@ class GlassPickEnv:
         return dict(place_x=float(xy[0]), place_y=float(xy[1]), place_dist=float(np.linalg.norm(xy - glass)),
                     place_clear=clear, place_temp=self.temps["coaster"], place_emis=self.emis["coaster"])
 
+    def _mat_target(self, seed, extras):
+        """Task "align": puts the mat on the table at a random angle, as _place_target puts the coaster (free of the
+        glass and of the distractors by the circle around the mat; a straight path to it clear of distractors where
+        there is one). RNG stream of the place target, then the angle."""
+        m, d = self.model, self.data
+        rng = factor_rng(seed, "place")
+        self.temps["mat"] = self.t_env + rng.uniform(-1, 1)
+        self.emis["mat"] = rng.uniform(0.88, 0.95)
+        R, r_obj = float(np.hypot(*MAT_HALF)), self.obj_r[self.obj]
+        glass = d.qpos[self.obj_q[self.obj]:self.obj_q[self.obj] + 2].copy()
+        others = [(d.qpos[self.extra_q[n]:self.extra_q[n] + 2].copy(), self.extra_r[n]) for n in extras]
+        free, best = None, (-np.inf, None)
+        for _ in range(500):
+            xy = np.array([rng.uniform(*PLACE_X), rng.uniform(*PLACE_Y)])
+            if np.hypot(*xy) > PLACE_REACH:
+                continue
+            room = min([np.linalg.norm(xy - glass) - R - r_obj] + [np.linalg.norm(xy - p) - R - r for p, r in others])
+            if room > best[0]:
+                best = (room, xy)
+            if room < GAP_EXTRA:
+                continue
+            clear = all(_seg_dist(p, glass, xy) >= r_obj + r + PLACE_CLEAR for p, r in others)
+            if clear or free is None:
+                free = (xy, int(clear))
+            if clear:
+                break
+        xy, clear = free if free is not None else (best[1], -1)
+        self.place_yaw = float(rng.uniform(0, np.pi))
+        m.body_pos[self.coaster] = [*xy, TABLE_TOP]
+        m.body_quat[self.coaster] = [np.cos(self.place_yaw / 2), 0, 0, np.sin(self.place_yaw / 2)]
+        self.place_xy = xy
+        return dict(place_x=float(xy[0]), place_y=float(xy[1]), place_dist=float(np.linalg.norm(xy - glass)),
+                    place_clear=clear, place_temp=self.temps["mat"], place_emis=self.emis["mat"],
+                    obj_yaw=float(np.degrees(self.obj_yaw)), place_yaw=float(np.degrees(self.place_yaw)))
+
+    def object_yaw(self):
+        """Angle (rad) of the long side of the glass in the table plane now (task "align")."""
+        x = self.data.body(self.obj).xmat.reshape(3, 3)[:, 0]
+        return float(np.arctan2(x[1], x[0]))
+
+    yaw_tolerance = ALIGN_YAW_TOL
+
+    def yaw_error(self):
+        """Degrees between the long side of the glass and that of the mat, either way round (0 to 90)."""
+        e = np.degrees(self.object_yaw() - self.place_yaw) % 180.0
+        return float(min(e, 180.0 - e))
+
     def step(self, action):
         self.data.ctrl[:7] = action
         for _ in range(self.n_sub):
@@ -443,6 +519,12 @@ class GlassPickEnv:
         the gripper has let go of it (the tool is PLACE_RELEASE above the glass's grasp point)."""
         d, b = self.data, self.data.body(self.obj)
         dof = self.obj_dof[self.obj]
+        if self.align:   # T2: on the mat, its centre and its direction within the tolerances, upright, at rest, let go
+            return bool(self.place_offset() <= ALIGN_POS_TOL and self.yaw_error() <= ALIGN_YAW_TOL
+                        and abs(b.xpos[2] - (self.obj_z0 + COASTER_H)) < PLACE_Z_TOL
+                        and b.xmat[8] > PLACE_UPRIGHT
+                        and np.linalg.norm(d.qvel[dof:dof + 3]) < PLACE_STILL
+                        and d.body("tool_frame").xpos[2] > b.xpos[2] + GRASP_HEIGHT[self.obj] + PLACE_RELEASE)
         return bool(self.place_offset() <= self.cfg.place_radius - self.obj_r[self.obj]
                     and abs(b.xpos[2] - (self.obj_z0 + COASTER_H)) < PLACE_Z_TOL
                     and b.xmat[8] > PLACE_UPRIGHT
@@ -455,7 +537,7 @@ class GlassPickEnv:
 
     @property
     def obj_id(self):
-        return OBJECT_NAMES.index(self.obj)
+        return self.all_names.index(self.obj)
 
     def get_obs(self):
         th = self.cfg.thermal
@@ -490,7 +572,7 @@ class GlassPickEnv:
         return self.data.body(self.obj).xpos.copy()
 
     def grasp_height(self):
-        return OBJECTS[self.obj]
+        return GRASP_HEIGHT[self.obj]
 
     def tool_position(self):
         return self.data.body("tool_frame").xpos.copy()
