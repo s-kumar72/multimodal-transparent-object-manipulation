@@ -1,0 +1,7 @@
+# Second version of the visibility benchmark, task T2 (results/hard_scenario/bench_v2/README.md; a draft level, not
+# frozen): an elongated glass (slab, bar, block) lies at a random angle; pick it across its narrow side and put it down
+# on a rectangular mat in the mat's direction. Scenes, cells and sensor states as V2_place. meta/ep_level id 40.
+base: V2_place.yaml
+name: V2_align
+level: 40
+task: align
