@@ -200,6 +200,92 @@ policies stay the ones trained on demos collected with the default contacts. The
 of [`../lit_base/`](../lit_base/README.md) are evaluated on `L0_vis` as listed; their evaluation on `L0_vis_ell` is
 not listed here.
 
+### Results of round 2 (11/25 12:44 KST; seeds 42, 43 and 44, 1320 episodes per run, 120 per cell)
+
+All ten evaluations ran (11:06 to 12:42 KST); none failed. The read-out is [`readout_seeds.txt`](readout_seeds.txt)
+(`PYTHONPATH=$PWD/policy python policy/readout_contacts_seeds.py`), in the order fixed above.
+
+**1. The two levels.** Each of the 15 checkpoints succeeds more often on `L0_vis_ell` than on `L0_vis` on the same
+episodes (p from 5e-12 to 1e-46). Macro average over the three seeds, mean (standard deviation):
+
+| run | `L0_vis` | `L0_vis_ell` | difference |
+|---|---|---|---|
+| rgbdt | 0.428 (0.013) | 0.587 (0.025) | +0.159 |
+| rgbd | 0.397 (0.009) | 0.523 (0.010) | +0.126 |
+| rgbt | 0.194 (0.004) | 0.304 (0.008) | +0.110 |
+| rgb | 0.153 (0.011) | 0.237 (0.020) | +0.084 |
+| `hcg_full` | 0.792 (0.004) | 0.904 (0.007) | +0.111 |
+
+The numbers on `L0_vis` are the frozen ones of Stage 6.
+
+**2. The table of the baselines on `L0_vis_ell`** (three seeds pooled, 360 episodes per cell and baseline):
+
+| cell | sensors that show the glass | rgbdt | rgbd | rgbt | rgb | best baseline on `L0_vis_ell` | best baseline on `L0_vis` (frozen) |
+|---|---|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.911 | 0.847 | 0.561 | 0.378 | rgbdt 0.911 | rgbdt 0.781 |
+| 1 | depth+thermal | 0.908 | 0.858 | 0.275 | 0.081 | rgbdt 0.908 | rgbdt 0.758 |
+| 2 | rgb+thermal | 0.433 | 0.289 | 0.542 | 0.442 | rgbt 0.542 | rgbt 0.397 |
+| 3 | rgb+depth | 0.883 | 0.836 | 0.361 | 0.414 | rgbdt 0.883 | rgbd 0.700 |
+| 4 | thermal | 0.231 | 0.061 | 0.236 | 0.056 | rgbt 0.236 | rgbt 0.189 |
+| 5 | depth | 0.903 | 0.886 | 0.086 | 0.092 | rgbdt 0.903 | rgbd 0.697 |
+| 6 | rgb | 0.256 | 0.203 | 0.364 | 0.414 | rgb 0.414 | rgb 0.256 |
+| 7 | rgb (faint) | 0.192 | 0.186 | 0.294 | 0.314 | rgb 0.314 | rgb 0.181 |
+| 8 | depth (faint) | 0.783 | 0.742 | 0.100 | 0.078 | rgbdt 0.783 | rgbdt 0.486 |
+| 9 | thermal (faint) | 0.161 | 0.106 | 0.172 | 0.072 | rgbt 0.172 | rgbt 0.094 |
+| 10 | all three (faint) | 0.794 | 0.742 | 0.356 | 0.267 | rgbdt 0.794 | rgbdt 0.503 |
+| macro average | | 0.587 | 0.523 | 0.304 | 0.237 | 0.624 | 0.458 |
+
+The best baseline is another one in two cells (3 and 5: rgbdt instead of rgbd). On `L0_vis_ell` rgbdt is the best
+baseline of every cell in which depth shows the glass, rgbt of the three in which thermal does and depth does not,
+and rgb of the two in which only the colour camera does. The baselines where depth shows the glass are at 0.78 to
+0.91; where it does not they stay at 0.17 to 0.54.
+
+**3. The method (`hcg_full`, three seeds) under rules 4 and 5 of Stage 6, with the table of item 2.**
+
+| cell | sensors that show the glass | seed 42 | seed 43 | seed 44 | pooled | best baseline of the cell | only the method succeeds / only the baseline | p | |
+|---|---|---|---|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.983 | 0.983 | 0.983 | 0.983 | 0.911 (rgbdt) | 29 / 3 | 2.6e-06 | above |
+| 1 | depth+thermal | 0.942 | 0.958 | 0.958 | 0.953 | 0.908 (rgbdt) | 29 / 13 | 0.02 | above |
+| 2 | rgb+thermal | 0.950 | 0.958 | 0.983 | 0.964 | 0.542 (rgbt) | 159 / 7 | 1.4e-38 | above |
+| 3 | rgb+depth | 0.958 | 0.983 | 0.967 | 0.969 | 0.883 (rgbdt) | 41 / 10 | 1.5e-05 | above |
+| 4 | thermal | 0.833 | 0.825 | 0.858 | 0.839 | 0.236 (rgbt) | 222 / 5 | 4.6e-59 | above |
+| 5 | depth | 0.875 | 0.875 | 0.917 | 0.889 | 0.903 (rgbdt) | 31 / 36 | 0.63 | |
+| 6 | rgb | 0.958 | 0.950 | 0.967 | 0.958 | 0.414 (rgb) | 197 / 1 | 9.9e-58 | above |
+| 7 | rgb (faint) | 0.950 | 0.958 | 0.967 | 0.958 | 0.314 (rgb) | 234 / 2 | 5.1e-67 | above |
+| 8 | depth (faint) | 0.817 | 0.808 | 0.800 | 0.808 | 0.783 (rgbdt) | 63 / 54 | 0.46 | |
+| 9 | thermal (faint) | 0.675 | 0.683 | 0.708 | 0.689 | 0.172 (rgbt) | 197 / 11 | 3.1e-45 | above |
+| 10 | all three (faint) | 0.933 | 0.942 | 0.908 | 0.928 | 0.794 (rgbdt) | 57 / 9 | 1.2e-09 | above |
+| macro average | | 0.898 | 0.902 | 0.911 | 0.904 | 0.624 | | | |
+
+No cell is below its best baseline with p < 0.05; nine are above and two are not separated (5 and 8, the cells in
+which depth alone shows the glass). The macro average is 0.904 (lowest seed 0.898, highest 0.911) against 0.587 for
+the highest baseline, and above each baseline on the same episodes (p < 1e-250). **"Better in nearly every case"
+holds on `L0_vis_ell`**, as it does on `L0_vis`.
+
+**4. The differences on both levels** (runs paired by seed, pooled):
+
+| pair | `L0_vis` | `L0_vis_ell` |
+|---|---|---|
+| `hcg_full` against rgbdt | 0.792 / 0.428, +0.364 (p = 5.9e-276) | 0.904 / 0.587, +0.317 (p = 5.6e-251) |
+| rgbdt against rgbd | 0.428 / 0.397, +0.031 (p = 7.4e-05) | 0.587 / 0.523, +0.064 (p = 8.2e-19) |
+| rgbd against rgbt | 0.397 / 0.194, +0.203 (p = 1.2e-93) | 0.523 / 0.304, +0.219 (p = 1.4e-92) |
+| rgbt against rgb | 0.194 / 0.153, +0.042 (p = 1.6e-08) | 0.304 / 0.237, +0.067 (p = 4.8e-16) |
+
+**What this says.**
+
+- The pick table of the paper on `L0_vis_ell`: baselines 0.587 (rgbdt), 0.523 (rgbd), 0.304 (rgbt), 0.237 (rgb), the
+  best baseline of every cell 0.624 on average, the method 0.904 with a standard deviation of 0.007 over the seeds.
+- The verdict of Stage 6 is the same on both levels, and so is the order of the baselines. The method's margin over
+  the rgbdt baseline is 0.32 instead of 0.36: the baseline gains more from the contact model (+0.16) than the method
+  (+0.11), which is at 0.95 or above in six cells.
+- The cells in which the method is not ahead are the same on both levels and on the place level: those in which
+  depth alone shows the glass. The cells in which it stays lowest are 9 (thermal, faint: 0.689), 8 (0.808) and 4
+  (0.839).
+
+**What it does not say.** The policies are those trained on demos collected with the default contacts; the references
+of Stage 6 were not evaluated on `L0_vis_ell`; the controls of the method and the baselines from the literature
+follow in round 3.
+
 ## Round 3: the controls of the method, the seeds of round 4 and the baselines from the literature on `L0_vis_ell` (decision of the user 11/25; listed 11/25 12:02 KST, before any of these evaluations starts)
 
 **Decision of the user (11/25).** The table of the paper is on `L0_vis_ell` (round 2). The runs that stand in that
