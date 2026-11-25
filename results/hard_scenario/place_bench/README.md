@@ -362,9 +362,128 @@ the run with the grasp cue only). A run that fails or is stopped is reported as 
 Not in this step: seeds 43 and 44, the controls of round 2 of the pick level (one network, gate on map numbers, no
 gate), the references. Results are reported as they come out, whatever they are.
 
+## Results of step 3: hindsight cue gating on `L0_vis_place` (11/25 11:15 KST; seed 42, 1320 test episodes per run, 120 per cell)
+
+All four runs trained to epoch 100 and were evaluated; none failed or was stopped. They started at 02:33 to 02:37 KST;
+`hcg2_blind` was done at 06:18, the three with images at 11:06 to 11:09 KST. The read-out is
+[`readout_method.txt`](readout_method.txt) (`python policy/readout_place_method.py`), in the order fixed above.
+
+**1. Against the baselines.** Every arm is above the rgbdt baseline (0.536) on the same episodes:
+
+| run | success | `j_cells11` / `k_cells11_heldout` | only the run / only the baseline | p |
+|---|---|---|---|---|
+| `hcg2_full` (the method) | 0.855 | 0.883 / 0.827 | 484 / 63 | 1.9e-81 |
+| `hcg2_cue` | 0.867 | 0.891 / 0.842 | 500 / 64 | 8.8e-85 |
+| `hcg_cue` | 0.866 | 0.897 / 0.835 | 502 / 67 | 2.2e-83 |
+| `hcg2_blind` | 0.809 | 0.842 / 0.776 | 466 / 106 | 8.6e-55 |
+
+Per cell against the cell's best baseline (+ / - : above / below it at p < 0.05):
+
+| cell | sensors that show the glass | best baseline | `hcg2_full` | `hcg2_cue` | `hcg_cue` | `hcg2_blind` |
+|---|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | rgbdt 0.950 | 0.975 | 0.975 | 0.983 | 0.900 |
+| 1 | depth+thermal | rgbd 0.933 | 0.917 | 0.908 | 0.933 | 0.892 |
+| 2 | rgb+thermal | rgbt 0.475 | 0.933 + | 0.925 + | 0.942 + | 0.867 + |
+| 3 | rgb+depth | rgbd 0.975 | 0.967 | 0.983 | 0.958 | 0.892 - |
+| 4 | thermal | rgbt 0.483 | 0.783 + | 0.733 + | 0.817 + | 0.758 + |
+| 5 | depth | rgbd 0.942 | 0.867 - | 0.867 - | 0.817 - | 0.792 - |
+| 6 | rgb | rgbdt 0.142 | 0.842 + | 0.892 + | 0.892 + | 0.850 + |
+| 7 | rgb (faint) | rgbt 0.108 | 0.842 + | 0.875 + | 0.883 + | 0.850 + |
+| 8 | depth (faint) | rgbd 0.842 | 0.742 | 0.775 | 0.767 | 0.683 - |
+| 9 | thermal (faint) | rgbt 0.300 | 0.608 + | 0.650 + | 0.600 + | 0.533 + |
+| 10 | all three (faint) | rgbd 0.817 | 0.933 + | 0.950 + | 0.933 + | 0.883 |
+| all | | 0.633 (mean of the best per cell) | 0.855 | 0.867 | 0.866 | 0.809 |
+
+- The method is above the best baseline in six cells (2, 4, 6, 7, 9, 10), not separated from it in four (0, 1, 3, 8)
+  and **below it in one: cell 5** (depth alone shows the glass; 0.867 against rgbd 0.942, 4 / 13 episodes, p = 0.049).
+  Cell 8 (depth, faint) is 0.742 against 0.842 (11 / 23, p = 0.058). `hcg2_cue` has the same eleven verdicts;
+  `hcg_cue` too, with cell 5 further down (0.817, p = 0.0015).
+- So "no cell below its best baseline", the rule of stage 6 of the pick level, does not hold on this level on this
+  seed: one cell is below. One seed of the method against one seed of each baseline is a first reading, and no rule
+  was fixed for this level.
+
+**2. The pick and the place apart.**
+
+| run | glass picked, share of all episodes | placed, among the picked | never picked / picked and not placed |
+|---|---|---|---|
+| rgbdt baseline | 0.605 | 0.886 | 0.395 / 0.069 |
+| `hcg2_full` | 0.903 | 0.947 | 0.097 / 0.048 |
+| `hcg2_cue` | 0.917 | 0.945 | 0.083 / 0.050 |
+| `hcg_cue` | 0.912 | 0.949 | 0.088 / 0.046 |
+| `hcg2_blind` | 0.867 | 0.934 | 0.133 / 0.058 |
+
+The gain is in the pick (0.61 to 0.90-0.92). Once the glass is picked it is also placed more often (0.89 to 0.95).
+
+**3. Which part carries it** (the arms on the same episodes):
+
+| what differs | A | B | success A / B | only A / only B | p | picked A / B | only A / only B | p |
+|---|---|---|---|---|---|---|---|---|
+| gating the features | `hcg2_full` | `hcg2_cue` | 0.855 / 0.867 | 43 / 58 | 0.16 | 0.903 / 0.917 | 20 / 38 | 0.025 |
+| the place cue | `hcg2_cue` | `hcg_cue` | 0.867 / 0.866 | 50 / 49 | 1 | 0.917 / 0.912 | 29 / 23 | 0.49 |
+| the images | `hcg2_cue` | `hcg2_blind` | 0.867 / 0.809 | 133 / 57 | 3.5e-08 | 0.917 / 0.867 | 82 / 16 | 7.4e-12 |
+
+- *Gating the features adds nothing*, as on the pick level (there 0.789 against 0.795, p = 0.58). In success the two
+  arms are not separated; in the share of picked glasses the gated arm is lower (p = 0.025). The perception results
+  said before the runs that the gate switches off little here (the coaster is seen by depth and mostly by thermal).
+- *The place cue adds nothing*: the policy with the grasp cue alone places as often (0.949 of the picked against
+  0.945). The colour camera shows the coaster in every cell, and the policy finds it in the images.
+- *The images add 5.8 points here*, most of it in the pick. On the pick level the same pair was not separated (0.795
+  against 0.783, p = 0.27).
+
+**4. The cues inside the episodes** (right: within 1.5 cm in the table plane; the env computes the same cues for
+every run, so the shares of right cues are the same):
+
+| run | grasp cue right | picked with it right / wrong | place cue right | placed among the picked with it right / wrong | success with both right |
+|---|---|---|---|---|---|
+| `hcg2_full` | 0.882 | 0.966 / 0.429 | 0.984 | 0.946 / 1.000 (18 of 18) | 0.927 |
+| `hcg2_cue` | 0.882 | 0.975 / 0.481 | 0.984 | 0.946 / 0.941 (16 of 17) | 0.933 |
+| `hcg_cue` | 0.882 | 0.979 / 0.410 | no place cue | - | - |
+| `hcg2_blind` | 0.882 | 0.930 / 0.391 | 0.984 | 0.937 / 0.688 (11 of 16) | 0.887 |
+
+- The pick stands and falls with the grasp cue: 0.97 picked with it right, 0.41 to 0.48 with it wrong (156 of the
+  1320 episodes).
+- The place cue is wrong in 21 episodes. With images the glass is placed anyway (18 of 18, 16 of 17); without images
+  the policy follows the wrong cue more often (11 of 16). Few episodes.
+
+**5. Next to them, not a test: the cells by whether the colour camera shows the glass.**
+
+| run | it shows the glass (0, 2, 3, 6, 7, 10) | it shows the coaster and not the glass (1, 4, 5, 8, 9) |
+|---|---|---|
+| rgbdt baseline | 0.501 | 0.578 |
+| `hcg2_full` | 0.915 | 0.783 |
+| `hcg2_cue` | 0.933 | 0.787 |
+| `hcg_cue` | 0.932 | 0.787 |
+| `hcg2_blind` | 0.874 | 0.732 |
+
+The gated arm is not ahead of the ungated one in the cells in which the two targets are shown by different sensors
+(0.783 against 0.787), which is where a gate that keeps the colour camera for the coaster could have mattered.
+
+**Next to the read-out, not a test: cells 5 and 8.** These are the cells in which depth alone shows the glass. The
+baselines with depth pick it there nearly always (rgbd: 0.975 in cell 5, 0.925 in cell 8), and the method picks it
+less often (`hcg2_full` 0.900 and 0.817) with the grasp cue right in 0.842 and 0.775 of the episodes of these cells.
+Among the picked, the method places as often as rgbd (0.963 against 0.966 in cell 5, 0.908 against 0.910 in cell 8).
+So where a baseline already finds the glass in nearly every episode, the method is held back by its cue. On the pick
+level cells 5 and 8 are the two cells in which the method was not above the best baseline on seed 42 either.
+
+**What this says.**
+
+- Hindsight cue gating carries over to pick-and-place without a change to the method: 0.855 against 0.536 for the
+  rgbdt baseline and 0.633 for the best baseline of every cell, on one seed.
+- What carries it is the grasp cue, as on the pick level. Neither the gate nor the second cue adds to it on this
+  level. For the place this level is too easy to say more: the coaster is seen by the colour camera in every cell.
+- One cell is below its best baseline (5), and the weak cells are those of the pick level.
+
+**What it does not say.** One seed. No control from round 2 of the pick level was run here (one network, gate on map
+numbers, no gate), so the share of the two-stage design is not measured on this level. The level has the elliptic
+contact model; the pick level's numbers under that model are in [`../contact_check/README.md`](../contact_check/README.md).
+
+Not approved and not started: seeds 43 and 44 of the method and of the baselines on this level, the controls, the
+references.
+
 ## Files
 
-- `policy/readout_place.py` (the fixed read-out), `policy/place_pick_compare.py` (the first close on both levels).
+- `policy/readout_place.py` (the fixed read-out), `policy/place_pick_compare.py` (the first close on both levels),
+  `policy/readout_place_method.py` (the read-out of step 3).
 - `sim/configs/L0_vis_place.yaml`, `sim/assets/gen3_lite/place_scene.xml`, `sim/config.py` (`task`, `place_radius`),
   `sim/env.py` (`_place_target`, `placed`), `sim/teacher.py` (carry and place), `policy/glass_gym_env.py` (labels).
 - `sim/place_check.py` (teacher check without rendering the steps), `sim/figure_place.py` (the figure).
