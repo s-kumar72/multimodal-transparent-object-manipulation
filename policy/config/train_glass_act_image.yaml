@@ -1,0 +1,21 @@
+# A second policy on the benchmark's encoders: the action head of ACT (policy/act_policy.py) in place of Diffusion
+# Policy's denoiser. Everything but the policy class is train_glass_unet_image: encoders, data, optimizer, schedule,
+# EMA, horizon 16 with 8 actions executed. The diffusion settings inherited from it are not used.
+defaults:
+  - train_glass_unet_image
+  - _self_
+
+name: train_glass_act_image
+exp_name: "act_rgbdt"
+
+policy:
+  _target_: policy.act_policy.ActChunkImagePolicy
+  d_model: 512
+  n_heads: 8
+  n_encoder_layers: 4
+  n_decoder_layers: 1
+  n_vae_encoder_layers: 4
+  dim_feedforward: 3200
+  dropout: 0.1
+  latent_dim: 32
+  kl_weight: 10.0
