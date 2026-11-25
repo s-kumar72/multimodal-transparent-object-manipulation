@@ -1022,6 +1022,82 @@ What leaving the cells out costs the cue, in the cells left out (against the sam
   at once for the first time) and is not found in the two new sets; in the one with a signal weaker than any seen it
   is the other way round. These are cues, not policies: step 2 runs as listed and says whether the success follows.
 
+## Round 6: three additions for the paper (decision of the user 11/26; listed 11/26 05:34 KST, before anything of it is fitted, trained or evaluated)
+
+Additions only; nothing listed before is changed.
+
+### 6a. The cue over several seeds of its fit (no policy)
+
+**Why.** The seeds of rounds 4 and 5 change the policy. The cue networks of a training set were fitted once, and the
+fit is the same every time (its functions seed themselves). So "the cue of the method against the cue of one network"
+rests on one fit of each.
+
+**Fits.** For each of the four training sets (all 700 demos, `nosingle`, `nopair`, `nofaint`) and each of the two
+cues (the method; one network), four more fits, k = 1 to 4: `python policy/hindsight_cue_fitseed.py <k> <set> --eval
+results/data/sim_demos_L0_vis_700_seed700.zarr --out data/hcue/<folder>[_early]_fit<k> [--mode early]` (every seed of
+the fit shifted by 1000 k: other initial weights, batch order and augmentation; the folds are those of the default
+fit, which is k = 0 and the fit the policies were trained with). 32 fits. Each is checked in the evaluation env on
+`j_cells11` and `k_cells11_heldout` (`policy/check_cue_env.py --save`), those of the 700 demos also on the 15 new
+combinations.
+
+**Read-out, fixed now** (`python policy/readout_cue_fitseeds.py > perception/round6_cue_fitseeds.txt`; tested on fit
+0). Share of episodes with the cue within 1.5 cm of the glass; the method against the one network of the same fit
+number on the same episodes (sign test); per training set in the cells left out and in the cells of the training set
+(all eleven cells and the new combinations for the 700 demos). The difference **holds over the fits** when one of the
+two is above in each of the five fits and the pooled test is significant (p < 0.05; said with which of the two is
+above), **does not hold** when the pooled test is not significant, and is **mixed** otherwise. No policy is trained
+on fits 1 to 4: this says whether the difference between the cues is that of the two designs; the policies stay those
+of fit 0.
+
+### 6b. Success against the number of demos
+
+**Training sets.** The first half and the first fifth of every cell's demos of the 700 (`python
+policy/subset_demos_frac.py results/data/sim_demos_L0_vis_700.zarr results/data/sim_demos_L0_vis_<350_half |
+140_fifth>.zarr --den <2 | 5>`): 350 demos (70, 3 x 35, 7 x 25) and 140 demos (28, 3 x 14, 7 x 10), the cell weights of
+the level. The cue of the method is fitted on each (the default fit; `data/hcue/L0_vis_350_half`,
+`data/hcue/L0_vis_140_fifth`) and checked in the env, as in round 5.
+
+**Runs** (12; protocol of the benchmark, 101 epochs, last checkpoint, 660 episodes on each of `j_cells11` and
+`k_cells11_heldout`, then `bash policy/eval_contacts.sh <run>`): `L0_vis_rgbdt_<350demos_half | 140demos_fifth>_hcg_cue`
+and `..._imagenet` (the plain rgbdt baseline), each with seeds 42, 43 and 44. Commands as in round 5 with
+`ZARR=results/data/sim_demos_L0_vis_<n>_<set>.zarr TAG=<set>_<hcg_cue | imagenet>[_seed<seed>]` and, for `cue`,
+`task.hcue_dir=data/hcue/L0_vis_<n>_<set>`.
+
+**Read-out, fixed now** (`python policy/readout_demo_curve.py > readout_demo_curve.txt`; tested on the 700 demos). On
+`L0_vis` and `L0_vis_ell`, with the runs on all 700 demos as the third point: the macro average per seed, mean and
+standard deviation per number of demos; `cue` against the plain baseline at each number (same seed, pooled, sign test);
+and `cue` on 140 and on 350 demos against the plain baseline on all 700.
+
+### 6c. The true grasp point in the cue (a reference that reads the simulator)
+
+Not a method and not a baseline under the comparison rules: it reads the glass's position from the simulator. It says
+how much of what the method still fails is the point of its cue.
+
+- *The policies of the method with the true point.* The three seeds of `cue` (`L0_vis_rgbdt_700demos_hcg_cue`,
+  `..._seed43`, `..._seed44`), evaluated again with the first five entries of the cue (point and pixel) replaced by
+  the true grasp point of the scene; confidence and gate entries stay the cue's own (`bash policy/eval_oracle_cue.sh
+  <run>`: `policy/oracle_cue_env.py`, on `L0_vis` and `L0_vis_ell`, 660 episodes on each of the two test sets).
+- *A policy trained on the hindsight labels.* `L0_vis_rgbdt_700demos_hcg_oracle`, seed 42: the arm `cue` with
+  `task.hcue_dir=data/hcue/L0_vis_700_label` (the label of every demo as its cue, confidence and gates 1), evaluated
+  with the true grasp point and confidence and gates 1 (`ORACLE_CUE_ONES=1 bash policy/eval_oracle_cue.sh <run>`). The
+  evaluations that `scripts/run_experiment.sh` makes during and after its training have no cue (the label folder has
+  no network) and are not read; the final one is cut to 55 episodes of `j_cells11`.
+
+**Checks before the listing (11/26).** `python policy/check_oracle_point.py` on the 700 demos: the true grasp point of
+the scene is the hindsight label of the demo within 0.07 cm in the table plane and 0.04 cm in height (the glass's
+position and the grasp height of the object are where the teacher closes the gripper). A trial of
+`eval_oracle_cue.sh` with six episodes on `L0_vis_ell` (results discarded): the cue's error is zero and its other
+entries are the checkpoint's.
+
+**Read-out, fixed now** (`python policy/readout_oracle_cue.py > ../oracle_cue/readout.txt`; tested with other runs
+standing in). On both levels: the three seeds of `cue` with the true point against the same checkpoints with their own
+cue on the same episodes (sign test), over all episodes and per cell, and the share of the failures that is gone with
+the true point; next to them the policy trained on the labels with the true point.
+
+**Known when this is listed.** Fit 0 of every cue (rounds 2, 3 and 5). The runs on the 700 demos. From round 2: with
+its own cue within 0.5 cm, `cue` succeeds in 0.93 (`L0_vis`) and 0.99 (`L0_vis_ell`) of the episodes. Nothing of 6a,
+6b or 6c exists beyond the two checks above.
+
 ## Files
 
 - `policy/hindsight_cue.py` (cue, verifier, fusion; fit and report), `policy/check_cue_env.py` (the cue in the env),
@@ -1040,3 +1116,6 @@ What leaving the cells out costs the cue, in the cells left out (against the sam
 - Round 5: `policy/readout_leaveout_cue.py` (the cues of the left-out sets), `policy/readout_leaveout.py` (the
   policies), `policy/eval_new_cells_ell.sh` and `policy/readout_new_cells_ell.py` (the new combinations on
   `L0_vis_ell`).
+- Round 6: `policy/hindsight_cue_fitseed.py`, `policy/readout_cue_fitseeds.py` (6a); `policy/subset_demos_frac.py`,
+  `policy/readout_demo_curve.py` (6b); `policy/oracle_cue_env.py`, `policy/eval_oracle_cue.py`,
+  `policy/eval_oracle_cue.sh`, `policy/check_oracle_point.py`, `policy/readout_oracle_cue.py` (6c).
