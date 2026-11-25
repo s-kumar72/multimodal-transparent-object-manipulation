@@ -8,7 +8,7 @@ import numpy as np
 from PIL import Image
 
 from common.thermal import normalize_thermal_raw
-from config import SceneConfig, cell_pattern, factor_rng, load_config
+from config import FACTORS, SceneConfig, cell_pattern, factor_rng, load_config
 from sensors import Sensors, apparent_contrast, matching_temp
 
 SCENE = "sim/assets/gen3_lite/transparent_scene.xml"
@@ -188,6 +188,12 @@ class GlassPickEnv:
             self.temps[self.obj] = matching_temp(self.temps["table"], self.emis["table"], self.emis[self.obj],
                                                  self.t_env, c)
             gap = self.temps[self.obj] - self.t_env
+        elif cell is not None and th.show_contrast is not None:   # V2, thermal shows: a glass at rest against the table
+            rc = self._cell_draw(seed, 3)
+            c = rc.choice([-1.0, 1.0]) * rc.uniform(*th.show_contrast)
+            self.temps[self.obj] = matching_temp(self.temps["table"], self.emis["table"], self.emis[self.obj],
+                                                 self.t_env, c)
+            gap = self.temps[self.obj] - self.t_env
 
         # New factors: each has its own RNG stream, so turning one on does not change the others
         rt = factor_rng(seed, "thermal")
@@ -203,6 +209,8 @@ class GlassPickEnv:
         assert cfg.rgb_blind in ("dark", "clear"), cfg.rgb_blind
         if cell is not None and (cell[1] == 2 or cell[1] == 1 and cfg.rgb_blind == "clear"):
             a = cfg.faint_alpha if cell[1] == 2 else cfg.clear_alpha   # faint glass / not in the colour image at all
+            if isinstance(a, (list, tuple)):                           # V2: a range, drawn per episode
+                a = float(self._cell_draw(seed, 1).uniform(*a))
             for geoms in self.glass_geoms.values():
                 self.model.geom_rgba[geoms, 3] = a
             info["alpha"] = a
@@ -217,7 +225,7 @@ class GlassPickEnv:
         self.sensor_scene = self.sensors.episode(seed, self.obj, liquid, extras, d,
                                                  (EXTRA_X_NARROW, EXTRA_Y_NARROW) if narrow else (EXTRA_X, EXTRA_Y),
                                                  force_seethrough=None if cell is None else cell[2] == 1,
-                                                 glass_holes=cfg.faint_holes if cell is not None and cell[2] == 2 else None)
+                                                 glass_holes=self._cell_holes(seed, cell))
         info["n_table_blobs"] = len(self.sensor_scene["blobs"])
         info["glass_seethrough"] = self.sensor_scene["seethrough"]   # 1 in a see-through episode (dots or blobs)
         if cell is not None:
@@ -233,6 +241,23 @@ class GlassPickEnv:
         self.extra_z0 = {n: d.body(n).xpos[2] for n in extras}
         self.steps = 0
         return self.get_obs()
+
+    @staticmethod
+    def _cell_draw(seed, k):
+        """RNG of the k-th per-episode draw of a V2 visibility state (1 alpha, 2 depth holes, 3 thermal shows): streams
+        of their own, so no level that does not use them draws anything else than before."""
+        return np.random.default_rng(None if seed is None else [seed, FACTORS["cell"], k])
+
+    def _cell_holes(self, seed, cell):
+        """Share of the glass's pixels that are depth holes in this episode, or None for the level's glass_holes:
+        faint_holes in a cell where depth is faint, show_holes (V2) where it shows the glass; a range is drawn."""
+        cfg = self.cfg
+        if cell is None:
+            return None
+        h = cfg.faint_holes if cell[2] == 2 else cfg.show_holes if cell[2] == 0 else None
+        if isinstance(h, (list, tuple)):
+            h = float(self._cell_draw(seed, 2).uniform(*h))
+        return h
 
     def _transparent(self, seed):
         """Lever A: lower alpha and a slight tint on every transparent object."""

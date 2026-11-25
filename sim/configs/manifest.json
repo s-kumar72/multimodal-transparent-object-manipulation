@@ -38,7 +38,9 @@
     "L0_grid_clear_a05": "sim/configs/L0_grid_clear_a05.yaml",
     "L0_vis": "sim/configs/L0_vis.yaml",
     "L0_vis_place": "sim/configs/L0_vis_place.yaml",
-    "L0_vis_ell": "sim/configs/L0_vis_ell.yaml"
+    "L0_vis_ell": "sim/configs/L0_vis_ell.yaml",
+    "V2_place": "sim/configs/V2_place.yaml",
+    "V2_place_warm": "sim/configs/V2_place_warm.yaml"
   },
   "test_sets": {
     "a_in_distribution": {
