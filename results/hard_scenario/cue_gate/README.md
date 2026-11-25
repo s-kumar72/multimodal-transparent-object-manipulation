@@ -859,6 +859,97 @@ the same seed of the other on the same episodes):
 Not in this round: seeds of the other controls (gate on map numbers, no gate, auxiliary loss), of `full` on the 400
 demos, and the form `cue` or `full` (decided after the tasks are extended, as before).
 
+## Round 5: two more training sets with cells left out, and the new combinations on `L0_vis_ell` (decision of the user 11/26; listed 11/26 00:53 KST, before anything of it is fitted, trained or evaluated)
+
+**Why.** On `L0_vis_ell`, the level of the paper's table, `cue` and the one-network control are level in the cells
+both were trained on (0.914 / 0.911 at seed 42, round 3 of [`../contact_check/README.md`](../contact_check/README.md)),
+and `cue` is above where the visibility conditions are not in the training set (the cells left out in round 3b). What
+the paper can say for the maps per sensor with the gate therefore rests on conditions that are not in the training
+set, and round 3b is one training set. This round adds two that leave out other things, with three seeds, and
+evaluates the 15 new combinations of round 3a on `L0_vis_ell`. Additions only: nothing listed before is changed.
+
+**Training sets** (subsets of the 700 demos, `python policy/subset_demos.py results/data/sim_demos_L0_vis_700.zarr
+results/data/sim_demos_L0_vis_<n>_<set>.zarr --cells ...`):
+
+| set | cells kept | demos | cells left out | what is new at test |
+|---|---|---|---|---|
+| `nosingle` (round 3b) | 0, 1, 2, 3, 10 | 400 | 4 to 9 | two sensors blind at once |
+| `nopair` (new) | 0, 4, 5, 6, 7, 8, 9, 10 | 490 | 1, 2, 3 | one sensor blind while the two others show the glass fully; in the training set either all three show it, or one does alone, or all three faintly |
+| `nofaint` (new) | 0 to 6 | 500 | 7, 8, 9, 10 | a sensor that shows the glass faintly |
+
+In `nopair`, as in `nosingle`, every sensor has all three of its states in the training set (shows, blind, faint):
+what is new is the combination. In `nofaint` the state itself is new for every sensor. That is another question (a
+weaker signal than any seen, not a new combination of seen states) and is reported as such.
+
+**Step 1, the cues, fitted on each new set** (`python policy/hindsight_cue.py <set> --eval
+results/data/sim_demos_L0_vis_700_seed700.zarr --out data/hcue/L0_vis_<n>_<set>[_early] [--mode early]`: the method,
+and one network on all sensors), then checked in the evaluation env on both test sets (`python
+policy/check_cue_env.py <folder>/cue.pt --test_set <set> --save <folder>/env_<set>.npz`). Reported before the policies
+with `python policy/readout_leaveout_cue.py > perception/round5_cue_leaveout.txt`: the share of episodes with the cue
+within 1.5 cm of the glass in the cells left out and in the cells of the training set, the method against the one
+network on the same episodes. No choice depends on it; the policies are trained whatever it shows.
+
+**Step 2, policies** (14 runs; protocol of the benchmark as in round 3b: 101 epochs, last checkpoint, ImageNet
+encoders, 55 episodes of `j_cells11` during training, 660 episodes on each of `j_cells11` and `k_cells11_heldout`;
+then the same checkpoint on `L0_vis_ell` with `bash policy/eval_contacts.sh <run>`):
+
+| runs | what |
+|---|---|
+| `L0_vis_rgbdt_490demos_nopair_hcg_cue`, `..._seed43`, `..._seed44` | arm `cue` with the cue of the method fitted on the 490 demos |
+| `L0_vis_rgbdt_490demos_nopair_hcg_cue_early`, `..._seed43`, `..._seed44` | arm `cue` with the cue of one network fitted on the 490 demos |
+| `L0_vis_rgbdt_490demos_nopair_imagenet` | the plain rgbdt baseline on the 490 demos, seed 42 |
+| `L0_vis_rgbdt_500demos_nofaint_hcg_cue`, `..._seed43`, `..._seed44` | as above on the 500 demos |
+| `L0_vis_rgbdt_500demos_nofaint_hcg_cue_early`, `..._seed43`, `..._seed44` | |
+| `L0_vis_rgbdt_500demos_nofaint_imagenet` | |
+
+Command: `GROUP=cue_gate TOPK=0 NTEST=55 NEVAL=660 TEST_SETS="j_cells11 k_cells11_heldout"
+ZARR=results/data/sim_demos_L0_vis_<n>_<set>.zarr TAG=<set>_<hcg_cue | hcg_cue_early | imagenet>[_seed<seed>]
+EXTRA="training.seed=<seed> task.env_runner.test_set=j_cells11 <task.hcue_dir=data/hcue/L0_vis_<n>_<set>[_early] |
+policy.obs_encoder.rgb_model.weights=IMAGENET1K_V1>" [TRAIN="policy/train_cuegate.sh cue"] bash
+scripts/run_experiment.sh L0_vis rgbdt <n> && bash policy/eval_contacts.sh <run>`. As in round 4 the seed changes
+the policy; the cue networks of a set are fitted once. A run that fails or is stopped is reported as such and not
+started again.
+
+**Step 3, evaluations on `L0_vis_ell`, nothing trained.** The 15 new combinations (`bash
+policy/eval_new_cells_ell.sh <run>`: `l_cells15_new` and `m_cells15_new_heldout`, 600 episodes each, the scenes and
+seeds of round 3a with the contact model of the place level; tried with four episodes before the listing, results
+discarded: the scenes and cells are those of `L0_vis`) for the runs that have them on `L0_vis`:
+`L0_vis_rgbdt_700demos_hcg_cue` and `..._hcg_cue_early` with seeds 42, 43 and 44; of seed 42 `..._hcg_full`,
+`..._hcg_cue_mapgate`, `..._hcg_cue_nogate`, `..._dp_aux`, the plain baseline `..._imagenet`, and the baselines from
+the literature `..._mulsa`, `..._dropout_imagenet`, `..._msbot` (the last in the fusion-vis worktree). 14 evaluations.
+And `bash policy/eval_contacts.sh L0_vis_rgbdt_400demos_nosingle_imagenet`, the plain baseline of round 3b on
+`L0_vis_ell`, which item 4 below needs.
+
+**Read-out, fixed now.** Same seed and same episodes, two-sided sign test, p < 0.05. The scripts were tested on the
+runs that exist (`readout_leaveout.py --seeds 42,43` on `nosingle`, the other two on round 3).
+
+1. *The training sets with cells left out* (`python policy/readout_leaveout.py > readout_leaveout.txt`): for
+   `nosingle`, `nopair` and `nofaint`, on `L0_vis` and on `L0_vis_ell`: `cue` against the one network in the cells
+   left out and in the cells of the training set, per seed and pooled, with the rule of round 4: the difference
+   **holds over the seeds** when the pooled test is significant and `cue` is above in each of the three seeds, **does
+   not hold** when the pooled test is not significant, and is **mixed** otherwise. Next to it: the cells left out one
+   by one; each arm against the same arm trained on all 700 demos (what leaving the cells out costs); each arm of
+   seed 42 against the plain baseline trained on the same demos.
+2. *The 15 new combinations on `L0_vis_ell`*: `cue` against the one network over the three seeds with `python
+   policy/readout_round4.py --root results/hard_scenario/contact_check > ../contact_check/readout_round4_ell.txt`
+   (its setting 2, which was not evaluated on `L0_vis_ell` until now; same rule), and the seed-42 runs against `cue`
+   and against the plain baseline with `python policy/readout_new_cells_ell.py >
+   ../contact_check/readout_new_cells_ell.txt` (run where the results of MS-Bot are present).
+3. *How they are read together.* The verdicts that count for the paper are those on `L0_vis_ell`. The statement
+   "the maps per sensor with the gate carry over to visibility conditions that are not in the training set better
+   than one network over all sensors" is made for the conditions in which the difference holds over the seeds, out
+   of four: the cells left out of `nosingle`, of `nopair` and of `nofaint`, and the 15 new combinations. Every
+   condition in which it does not hold, is mixed, or has the one network above is named with the statement.
+
+**Known when this is listed.** Round 3b and its seed 42 on `L0_vis_ell` (cells left out: 0.831 / 0.749). From the test
+of `readout_leaveout.py`: seeds 42 and 43 of `nosingle` in the cells left out are 0.676 / 0.554 on `L0_vis` and 0.831
+/ 0.745 on `L0_vis_ell`; its seed 44 is in training. The seeds of round 4 on the 700 demos have finished and are not
+read yet. Round 3a on `L0_vis` (seed 42: `cue` 0.849, one network 0.791). Nothing exists of `nopair` or `nofaint`: no
+subset, no cue, no run.
+
+**Not in this round.** Other left-out sets; the arm `full` and the other controls on the new sets; seeds of the plain
+baselines on the subsets; fitting the cue networks with several seeds (the seeds here change the policy only).
+
 ## Files
 
 - `policy/hindsight_cue.py` (cue, verifier, fusion; fit and report), `policy/check_cue_env.py` (the cue in the env),
@@ -874,3 +965,6 @@ demos, and the form `cue` or `full` (decided after the tasks are extended, as be
 - Round 3: `sim/configs/manifest.json` (test sets `l_cells15_new`, `m_cells15_new_heldout`),
   `policy/eval_new_cells.sh` (the policies on them), `policy/check_cue_env.py --save` (the cue per episode),
   `policy/readout_round3.py` (read-out), `policy/cue_error_bins.py` (success by the cue's error, rounds 2 and 3a).
+- Round 5: `policy/readout_leaveout_cue.py` (the cues of the left-out sets), `policy/readout_leaveout.py` (the
+  policies), `policy/eval_new_cells_ell.sh` and `policy/readout_new_cells_ell.py` (the new combinations on
+  `L0_vis_ell`).
