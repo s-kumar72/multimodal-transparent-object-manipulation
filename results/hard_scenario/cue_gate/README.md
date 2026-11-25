@@ -950,6 +950,40 @@ subset, no cue, no run.
 **Not in this round.** Other left-out sets; the arm `full` and the other controls on the new sets; seeds of the plain
 baselines on the subsets; fitting the cue networks with several seeds (the seeds here change the policy only).
 
+### Results of step 1 of round 5: the cue alone (11/26 02:07 KST; no policy involved)
+
+The two subsets were made and the four cues fitted and checked in the evaluation env (11/26 00:53 to 02:06 KST;
+`data/hcue/round5_prepare.log`). Records: [`perception/round5_cue_leaveout.txt`](perception/round5_cue_leaveout.txt)
+(`python policy/readout_leaveout_cue.py`, which prints `nosingle` again next to them), the fits in
+`perception/<nopair | nofaint>_<verified_gate | one_network>.txt`. Share of episodes with the cue within 1.5 cm of the
+glass, 120 episodes per cell; the method against the one network on the same episodes.
+
+| training set | cells | method | one network | only the method right / only the one network | p | |
+|---|---|---|---|---|---|---|
+| `nosingle` (round 3b) | left out (4 to 9) | 0.768 | 0.640 | 174 / 82 | 9e-09 | the method above |
+| | of the training set | 0.933 | 0.952 | 13 / 24 | 0.099 | |
+| `nopair` | left out (1, 2, 3) | 0.942 | 0.936 | 16 / 14 | 0.86 | |
+| | of the training set | 0.828 | 0.870 | 63 / 103 | 0.0024 | the one network above |
+| `nofaint` | left out (7 to 10) | 0.504 | 0.692 | 37 / 127 | 9.5e-13 | the one network above |
+| | of the training set | 0.931 | 0.954 | 21 / 40 | 0.02 | the one network above |
+
+What leaving the cells out costs the cue, in the cells left out (against the same cue fitted on all 700 demos):
+`nopair` 0.958 to 0.942 (method) and 0.950 to 0.936 (one network), neither significant; `nofaint` 0.840 to 0.504
+(method) and 0.790 to 0.692 (one network).
+
+- **`nopair`: no difference where it was looked for.** With one sensor blind and two showing the glass fully, both
+  cues are as good as when those cells are in the training set. In the cells of the training set the one network is
+  above (cells 4, 5 and 9: one sensor alone).
+- **`nofaint`: the one network is above, in all four cells left out** (7: 0.600 / 0.800, 8: 0.500 / 0.692, 9: 0.225 /
+  0.375, 10: 0.692 / 0.900). The gate of the method still turns to the sensor that shows the glass faintly in cells 7,
+  8 and 10 (median gate 1.00 for it on `j_cells11`) and finds the glass coarsely (within 4 cm in 0.93, 0.90 and 0.98
+  of the episodes) but not within 1.5 cm; in cell 9 the faint thermal image is trusted in few episodes (median gate
+  0.24, against 0.99 when the faint cells are in the training set). The one network, which sees all sensors at once,
+  loses less.
+- So on the cue alone the advantage of the maps per sensor with the gate is that of `nosingle` (two sensors blind
+  at once for the first time) and is not found in the two new sets; in the one with a signal weaker than any seen it
+  is the other way round. These are cues, not policies: step 2 runs as listed and says whether the success follows.
+
 ## Files
 
 - `policy/hindsight_cue.py` (cue, verifier, fusion; fit and report), `policy/check_cue_env.py` (the cue in the env),
