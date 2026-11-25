@@ -464,3 +464,17 @@ those fail on both levels.
 
 **What it does not say.** One seed each. The new combinations (setting 2) are not evaluated on `L0_vis_ell`. That the
 one network catches up is read from the cue's error after the fact; no run was made to test it.
+
+### Results of round 3, items 2 and 3 (11/26)
+
+**Item 2, the seeds of `cue` and of the one network on `L0_vis_ell`** ([`readout_round4_ell.txt`](readout_round4_ell.txt);
+reported with round 4 in [`../cue_gate/README.md`](../cue_gate/README.md), "Results of round 4"). Training cells: 0.915
+against 0.909 over the three seeds (239 / 213, p = 0.24): the difference **does not hold**. Trained without cells 4 to
+9, the cells left out: 0.829 against 0.740 (384 / 192, p = 9.5e-16), `cue` above in each seed: it **holds over the
+seeds**; in the cells of that training set 0.956 against 0.954, it does not hold. The new combinations (setting 2) are
+evaluated on `L0_vis_ell` in round 5 of that page.
+
+**Item 3, the baselines from the literature on `L0_vis_ell`** is reported in
+[`../lit_base/README.md`](../lit_base/README.md), "Results of the first reading" (seed 42: self-attention fusion 0.564
+and sensor dropout 0.556 against plain rgbdt 0.560, MS-Bot 0.273; `readout_ell.txt` there).
+
