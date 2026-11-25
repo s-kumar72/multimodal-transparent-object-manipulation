@@ -362,7 +362,7 @@ the run with the grasp cue only). A run that fails or is stopped is reported as 
 Not in this step: seeds 43 and 44, the controls of round 2 of the pick level (one network, gate on map numbers, no
 gate), the references. Results are reported as they come out, whatever they are.
 
-## Results of step 3: hindsight cue gating on `L0_vis_place` (11/25 11:15 KST; seed 42, 1320 test episodes per run, 120 per cell)
+## Results of step 3: hindsight cue gating on `L0_vis_place` (11/25 11:12 KST; seed 42, 1320 test episodes per run, 120 per cell)
 
 All four runs trained to epoch 100 and were evaluated; none failed or was stopped. They started at 02:33 to 02:37 KST;
 `hcg2_blind` was done at 06:18, the three with images at 11:06 to 11:09 KST. The read-out is
