@@ -226,6 +226,34 @@ The thermal values of the level file are those of `sensors.matching_temp`; the i
 (the blur of the 160x120 thermal image on a glass of about 50 pixels), which is why they are larger than the
 contrasts they give. "Shows" is drawn evenly over the range, so its median is above the real one (61 against 47).
 
+**Step 3, the pilot (listed 11/26 07:12 KST, before any demo of the two levels is collected, any cue fitted or any
+policy trained).** Task T1 on the two draft levels, seed 42, the protocol of `L0_vis_place` (700 demos of the scripted
+teacher, 101 epochs, last checkpoint, ImageNet encoders, episodes of at most 240 steps, 660 episodes on each of
+`j_cells11` and `k_cells11_heldout`).
+
+| run, for `<level>` = `V2_place` and `V2_place_warm` | what |
+|---|---|
+| `<level>_rgbdt_700demos_imagenet` | the plain rgbdt baseline |
+| `<level>_rgbd_700demos_imagenet` | the plain rgbd baseline |
+| `<level>_rgbdt_700demos_hcg2_cue` | the arm `cue` with the grasp cue and the place cue of the method, fitted on the level's demos |
+| `<level>_rgbdt_700demos_hcg2_cue_early` | the same with the grasp cue of one network on all sensors (the place cue is the method's: `hindsight_cue.py --event release` exists for the default fit only) |
+
+Before them, per level: `python sim/collect_demos.py --n 700 --workers 4 --config sim/configs/<level>.yaml --out
+results/data/sim_demos_<level>_700.zarr`, then `python policy/hindsight_cue.py <demos> --level <level> --out
+data/hcue/<level>_700` (the grasp cue), `... --mode early --out data/hcue/<level>_700_early` and `... --event release
+--out data/hcue/<level>_700_release`. Commands of the runs: those of steps 2 and 3 of
+[`../place_bench/README.md`](../place_bench/README.md) with `GROUP=bench_v2`, the level, and for the two runs with cues
+`CUES=2 TRAIN="policy/train_cuegate.sh cue"` and `task.hcue_dir=data/hcue/<level>_700[_early]
+task.hcue_dir2=data/hcue/<level>_700_release`. Eight runs through the queue of the fusion-vis worktree, after
+everything queued before them; a run that fails is reported and not started again.
+
+Read-out, fixed now (`python policy/readout_v2_pilot.py > readout_pilot.txt`): per level the success per cell of the
+four runs and the share of episodes with the glass picked; the two stops of step 3 (a cell in which every run is
+below 0.30; every cell of every run above 0.95); `cue` against plain rgbdt and against the one network on the same
+episodes (sign test); the two levels side by side. The pilot is one seed and decides two things only: whether the
+states are in a range that can be measured, and which thermal states the user takes. Nothing of it enters the tables
+of the frozen benchmark.
+
 ## Files
 
 `real_data/glass_visibility.py` (real sensors), `sim/measure_visibility.py` (the simulator, same functions),
