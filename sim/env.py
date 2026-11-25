@@ -15,6 +15,7 @@ SCENE = "sim/assets/gen3_lite/transparent_scene.xml"
 SCENE_DISTRACTORS = "sim/assets/gen3_lite/distractor_scene.xml" # SCENE + parked distractors (only when used)
 SCENE_PLACE = "sim/assets/gen3_lite/place_scene.xml" # SCENE_DISTRACTORS + the coaster (only for cfg.task "place")
 SCENE_ALIGN = "sim/assets/gen3_lite/align_scene.xml" # SCENE_DISTRACTORS + elongated glasses and a mat (cfg.task "align")
+SCENE_PLACE_UNSEEN = "sim/assets/gen3_lite/place_unseen_scene.xml" # SCENE_PLACE + the glass shapes of no training set
 
 # This position is arm above table, gripper down
 READY = np.array([-0.118, -0.575, 0.968, 1.571, 1.599, -1.689])
@@ -43,7 +44,17 @@ PARK = [(1.6 + 0.25 * i, -1.0, 0.002) for i in range(len(OBJECT_NAMES))] # on th
 ALIGN_OBJECTS = {"slab": 0.05, "bar": 0.045, "block": 0.065, "tile": 0.045}
 ALIGN_NAMES, ALIGN_UNSEEN = ["slab", "bar", "block"], ["tile"]
 ALIGN_PARK = {"slab": (3.2, -1.0, 0.002), "bar": (3.5, -1.0, 0.002), "block": (3.8, -1.0, 0.002), "tile": (4.1, -1.0, 0.002)}
-GRASP_HEIGHT = {**OBJECTS, **ALIGN_OBJECTS}
+# Glass shapes that are in no training set (place_unseen_scene.xml; cfg.objects "unseen", a test set): grasp heights.
+UNSEEN_OBJECTS = {"tallglass": 0.085, "carafe": 0.125}
+UNSEEN_PARK = {"tallglass": (4.4, -1.0, 0.002), "carafe": (4.7, -1.0, 0.002)}
+GRASP_HEIGHT = {**OBJECTS, **ALIGN_OBJECTS, **UNSEEN_OBJECTS}
+GLASS_IDS = list(GRASP_HEIGHT)   # the id of a glass in the episode records (the five first, as always)
+
+def glass_names(cfg):
+    """The glasses an episode of this config can have on the table."""
+    if cfg.task == "align":
+        return list(ALIGN_UNSEEN if cfg.objects == "unseen" else ALIGN_NAMES)
+    return list(UNSEEN_OBJECTS) if cfg.objects == "unseen" else OBJECT_NAMES
 
 # Table looks (materials in transparent_scene.xml); "xml" is main's plain brown table. The renderer uses the geom
 # rgba (times the texture), so each look sets the table rgba; bright looks are toned down so they do not saturate.
@@ -131,9 +142,15 @@ class GlassPickEnv:
         self.align = cfg.task == "align"     # T2: an elongated glass at an angle, a mat with a direction
         self.place = cfg.task in ("place", "align")   # the scene has a place target and success is placed()
         # objects an episode can have on the table / every glass body of the scene (ids of the episode records)
-        self.names = list(ALIGN_NAMES) if self.align else OBJECT_NAMES
-        self.all_names = OBJECT_NAMES + list(ALIGN_OBJECTS) if self.align else OBJECT_NAMES
-        scene = SCENE_ALIGN if self.align else SCENE_PLACE if self.place else SCENE_DISTRACTORS if self.uses_extras else SCENE
+        assert cfg.objects in (None, "unseen"), cfg.objects
+        unseen = cfg.objects == "unseen"
+        assert not unseen or self.place, "the unseen shapes are for the tasks with a place target"
+        self.names = glass_names(cfg)
+        # the glasses of this scene beyond the five, parked like them, and every glass body of the scene
+        self.extra_park = dict(ALIGN_PARK) if self.align else dict(UNSEEN_PARK) if unseen else {}
+        self.all_names = OBJECT_NAMES + list(self.extra_park)
+        scene = SCENE_ALIGN if self.align else SCENE_PLACE_UNSEEN if unseen else SCENE_PLACE if self.place else \
+            SCENE_DISTRACTORS if self.uses_extras else SCENE
         self.model = mujoco.MjModel.from_xml_path(scene)
         assert cfg.contacts in ("default", "elliptic"), cfg.contacts
         if cfg.contacts == "elliptic":       # the contact model of place_scene.xml on any scene
@@ -190,16 +207,15 @@ class GlassPickEnv:
             q = self.obj_q[name]
             pos = [r.uniform(*SPAWN_X), r.uniform(*SPAWN_Y), REST_Z] if name == self.obj else park
             d.qpos[q:q + 7] = [*pos, 1, 0, 0, 0]
-        self.obj_yaw = 0.0
-        if self.align:                       # the elongated glass lies at a random angle (its long side, 0 to 180 deg)
-            self.obj_yaw = float(factor_rng(seed, "align").uniform(0, np.pi))
-            for name, park in ALIGN_PARK.items():
-                q = self.obj_q[name]
-                if name == self.obj:
-                    d.qpos[q:q + 7] = [r.uniform(*SPAWN_X), r.uniform(*SPAWN_Y), REST_Z,
-                                       np.cos(self.obj_yaw / 2), 0, 0, np.sin(self.obj_yaw / 2)]
-                else:
-                    d.qpos[q:q + 7] = [*park, 1, 0, 0, 0]
+        # task "align": the elongated glass lies at a random angle (its long side, 0 to 180 deg)
+        self.obj_yaw = float(factor_rng(seed, "align").uniform(0, np.pi)) if self.align else 0.0
+        for name, park in self.extra_park.items():   # the glasses of this scene beyond the five (none before V2)
+            q = self.obj_q[name]
+            if name == self.obj:
+                d.qpos[q:q + 7] = [r.uniform(*SPAWN_X), r.uniform(*SPAWN_Y), REST_Z,
+                                   np.cos(self.obj_yaw / 2), 0, 0, np.sin(self.obj_yaw / 2)]
+            else:
+                d.qpos[q:q + 7] = [*park, 1, 0, 0, 0]
 
         # Thermal conditions (legacy RNG, main's order)
         self.t_env = r.uniform(*th.t_env)
@@ -231,7 +247,7 @@ class GlassPickEnv:
             gap, crossover = realistic_gap, False
             self.temps[self.obj] = self.t_env + gap
         info = dict(split=int(cfg.split == "test"), seed=-1 if seed is None else seed, level=cfg.level,
-                    object=self.all_names.index(self.obj), t_env=self.t_env, obj_temp=self.temps[self.obj],
+                    object=GLASS_IDS.index(self.obj), t_env=self.t_env, obj_temp=self.temps[self.obj],
                     thermal_gap=gap, is_crossover=int(crossover), realistic=int(realistic),
                     obj_emis=self.emis[self.obj])
         info.update(self._transparent(seed))
@@ -529,7 +545,7 @@ class GlassPickEnv:
                     and abs(b.xpos[2] - (self.obj_z0 + COASTER_H)) < PLACE_Z_TOL
                     and b.xmat[8] > PLACE_UPRIGHT
                     and np.linalg.norm(d.qvel[dof:dof + 3]) < PLACE_STILL
-                    and d.body("tool_frame").xpos[2] > b.xpos[2] + OBJECTS[self.obj] + PLACE_RELEASE)
+                    and d.body("tool_frame").xpos[2] > b.xpos[2] + GRASP_HEIGHT[self.obj] + PLACE_RELEASE)
 
     def lifted_extras(self, height=0.05):
         """Distractors lifted more than `height` (for the failure breakdown)."""
@@ -537,7 +553,7 @@ class GlassPickEnv:
 
     @property
     def obj_id(self):
-        return self.all_names.index(self.obj)
+        return GLASS_IDS.index(self.obj)
 
     def get_obs(self):
         th = self.cfg.thermal

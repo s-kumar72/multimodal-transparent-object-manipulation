@@ -1,0 +1,21 @@
+<!--place_scene.xml plus two glass shapes that are in no training set, for the test set of unseen objects of the second
+    version of the benchmark (results/hard_scenario/bench_v2/README.md; cfg.objects "unseen"). A separate file, so
+    that every other level loads the model it always did.
+    tallglass: a straight glass, 5.6 cm wide and 13 cm tall (narrower and taller than the tumbler).
+    carafe:    a 7 cm wide body with a 3.6 cm wide neck and a lip (wider and shorter than the bottle, wider neck).-->
+<mujoco model="gen3_lite transparent scene with distractors, a place target and the unseen glasses">
+    <include file="place_scene.xml"/>
+
+    <worldbody>
+        <body name="tallglass" pos="4.4 -1.0 0.002">
+            <freejoint/>
+            <geom type="cylinder" size="0.028 0.065" pos="0 0 0.065" rgba="0.8 0.9 1 0.2" mass="0.17" group="5"/>
+        </body>
+        <body name="carafe" pos="4.7 -1.0 0.002">
+            <freejoint/>
+            <geom type="cylinder" size="0.035 0.045" pos="0 0 0.045" rgba="0.8 0.9 1 0.2" mass="0.2" group="5"/>
+            <geom type="cylinder" size="0.018 0.03" pos="0 0 0.12" rgba="0.8 0.9 1 0.2" mass="0.03" group="5"/>
+            <geom type="cylinder" size="0.022 0.004" pos="0 0 0.154" rgba="0.8 0.9 1 0.2" mass="0.005" group="5"/>
+        </body>
+    </worldbody>
+</mujoco>

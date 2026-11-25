@@ -278,6 +278,13 @@ states of `V2_place`).
 Not done for T2: the cue of the method with the grasp angle (the gripper's angle at its first close, read in
 hindsight as the point is), a plain rgbdt run, the solvability check per cell. T3 has not been started.
 
+**Unseen objects (11/26; the test set `u` of section 5).** `objects: unseen` (`sim/config.py`) and the test set
+`u_cells11_unseen` (the eleven cells, the training scenes, glass shapes that are in no training set). For T1 two
+shapes in `sim/assets/gen3_lite/place_unseen_scene.xml`: `tallglass` (a straight glass, 5.6 cm wide and 13 cm tall) and
+`carafe` (a 7 cm wide body with a 3.6 cm wide neck and a lip); for T2 the `tile`. The scripted teacher on them through
+the evaluation env: 22 of 22 for each of the two shapes of T1, 44 of 44 for the tile. Object ids of the records: 8
+(tile), 9 and 10. Existing levels unchanged (regression test).
+
 ## Files
 
 `real_data/glass_visibility.py` (real sensors), `sim/measure_visibility.py` (the simulator, same functions),

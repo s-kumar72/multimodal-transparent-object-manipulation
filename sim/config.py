@@ -147,6 +147,9 @@ class SceneConfig:
     # "align" (second version of the benchmark, T2): an elongated glass lies at a random angle and is put down on a
     # rectangular mat in the mat's direction (sim/env.py: ALIGN_OBJECTS, _mat_target, placed).
     task: str = "pick"
+    # Second version of the benchmark: "unseen" puts glass shapes on the table that are in no training set (a test
+    # set; sim/env.py UNSEEN_OBJECTS for the place task, ALIGN_UNSEEN for "align"). None: the task's own shapes.
+    objects: str = None
     place_radius: float = 0.06
     # Contact model. "default": the scene file's own (pyramidal friction cones, impratio 1, for every pick level;
     # place_scene.xml sets elliptic cones with impratio 10 itself). "elliptic": elliptic cones with impratio 10 on

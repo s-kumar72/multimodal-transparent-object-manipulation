@@ -10,7 +10,7 @@ import numpy as np
 from gym import spaces
 
 from config import load_config
-from env import ALIGN_NAMES, ALIGN_POS_TOL, COASTER_H, PLACE_UPRIGHT, PLACE_Z_TOL, GlassPickEnv, OBJECT_NAMES
+from env import ALIGN_POS_TOL, COASTER_H, PLACE_UPRIGHT, PLACE_Z_TOL, GlassPickEnv, OBJECT_NAMES, glass_names
 from policy.obs_util import to_policy_obs
 from testsets import manifest, test_set
 
@@ -74,7 +74,7 @@ class GlassPickGymEnv(gym.Env):
                 cfg, objects = None, OBJECT_NAMES
             elif self._split == "train":
                 cfg = load_config(manifest()["levels"][self.level])
-                objects = ALIGN_NAMES if cfg.task == "align" else OBJECT_NAMES
+                objects = glass_names(cfg)
             else:
                 cfg, _, objects = test_set(self.level, self.test_set_name)
             self._envs[key] = (GlassPickEnv(max_steps=self.max_steps, config=cfg), objects)
