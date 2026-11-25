@@ -1,0 +1,18 @@
+## mju_glass: 2989 glass regions in 676 frames of 68 groups; depth sensor: Orbbec Gemini Pro (structured light)
+  rgb contrast (grey levels of 255): p10 10.0, p25 31.0, p50 79.3, p75 137.1, p90 175.1; below 3: 0.033, below 10: 0.100
+  depth missing: p10 0.78, p25 0.90, p50 1.00, p75 1.00, p90 1.00; hole-like regions (missing > 0.5): 0.984
+## trobi: 1960 glass regions in 660 frames of 12 groups; depth sensor: Ensenso (active stereo)
+  rgb contrast (grey levels of 255): p10 3.0, p25 7.0, p50 14.0, p75 19.0, p90 26.0; below 3: 0.086, below 10: 0.323
+  depth missing: p10 0.88, p25 0.91, p50 0.94, p75 0.95, p90 0.96; hole-like regions (missing > 0.5): 1.000
+  depth behind the glass by > 2 cm: p10 0.00, p25 0.00, p50 0.00, p75 0.02, p90 0.06; see-through regions (behind > 0.5): 0.000; right (within 2 cm): p10 0.02, p25 0.03, p50 0.05, p75 0.07, p90 0.09; regions mostly right (right > 0.5): 0.000
+## transpose: 1563 glass regions in 770 frames of 35 groups; depth sensor: RealSense L515 (lidar)
+  rgb contrast (grey levels of 255): p10 2.7, p25 7.6, p50 19.9, p75 43.6, p90 76.7; below 3: 0.109, below 10: 0.322
+  depth missing: p10 0.00, p25 0.00, p50 0.00, p75 0.07, p90 0.34; hole-like regions (missing > 0.5): 0.050
+  depth behind the glass by > 2 cm: p10 0.56, p25 0.73, p50 0.91, p75 0.98, p90 1.00; see-through regions (behind > 0.5): 0.924; right (within 2 cm): p10 0.00, p25 0.01, p50 0.02, p75 0.09, p90 0.22; regions mostly right (right > 0.5): 0.019
+  thermal contrast (noise std): p10 10.11, p25 25.84, p50 47.19, p75 67.42, p90 103.37; below 1: 0.009, 3: 0.032, 10: 0.096, 30: 0.287
+  the three together (1548 regions): depth see-through 0.927, thermal below 3 noise std 0.032, rgb contrast below 3 grey levels 0.109; depth see-through and thermal strong (>= 10 std) 0.849; all three weak 0.002
+## rgbt_glass: 2290 glass regions in 751 frames of 33 groups
+  rgb contrast (grey levels of 255): p10 8.1, p25 25.1, p50 54.4, p75 96.2, p90 137.7; below 3: 0.037, below 10: 0.120
+  thermal contrast (degC): p10 0.01, p25 0.05, p50 0.14, p75 0.37, p90 0.88; below 0.1: 0.413, 0.5: 0.813, 1: 0.912, 3: 0.986
+## rgbd_gsd: 3166 glass regions in 800 frames of 800 groups
+  rgb contrast (grey levels of 255): p10 14.2, p25 38.1, p50 82.0, p75 128.4, p90 167.9; below 3: 0.022, below 10: 0.075
