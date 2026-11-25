@@ -1,0 +1,55 @@
+## 1. Training cells (j_cells11, k_cells11_heldout)
+
+| seed | episodes | `cue` | one network | only `cue` / only the one network | p |
+|---|---|---|---|---|---|
+| 42 | 1320 | 0.914 | 0.911 | 75 / 70 | 0.74 |
+| 43 | 1320 | 0.914 | 0.902 | 86 / 70 | 0.23 |
+| 44 | 1320 | 0.917 | 0.914 | 78 / 73 | 0.74 |
+| mean (SD) and pooled | | 0.915 (0.002) | 0.909 (0.006) | 239 / 213 | 0.24 |
+
+Verdict: the difference does not hold.
+
+Per cell, pooled over the seeds (+ / - : `cue` above / below the one network at p < 0.05):
+
+| cell | `cue` | one network | only `cue` / only the one network | p |
+|---|---|---|---|---|
+| 0 | 0.989 | 0.956 | 15 / 3 | 0.0075 + |
+| 1 | 0.944 | 0.942 | 15 / 14 | 1 |
+| 2 | 0.981 | 0.958 | 15 / 7 | 0.13 |
+| 3 | 0.967 | 0.942 | 12 / 3 | 0.035 + |
+| 4 | 0.836 | 0.931 | 12 / 46 | 8.2e-06 - |
+| 5 | 0.900 | 0.936 | 18 / 31 | 0.085 |
+| 6 | 0.958 | 0.944 | 17 / 12 | 0.46 |
+| 7 | 0.961 | 0.900 | 27 / 5 | 0.00011 + |
+| 8 | 0.872 | 0.803 | 50 / 25 | 0.0052 + |
+| 9 | 0.714 | 0.747 | 45 / 57 | 0.28 |
+| 10 | 0.947 | 0.939 | 13 / 10 | 0.68 |
+
+## 2. New combinations (l_cells15_new, m_cells15_new_heldout)
+
+Seeds not finished, left out: [42, 43, 44]
+
+## 3. Trained without cells 4 to 9 (j_cells11, k_cells11_heldout)
+
+**the cells left out (4 to 9)**
+
+| seed | episodes | `cue` | one network | only `cue` / only the one network | p |
+|---|---|---|---|---|---|
+| 42 | 720 | 0.831 | 0.749 | 126 / 67 | 2.6e-05 |
+| 43 | 720 | 0.832 | 0.742 | 126 / 61 | 2.3e-06 |
+| 44 | 720 | 0.825 | 0.731 | 132 / 64 | 1.3e-06 |
+| mean (SD) and pooled | | 0.829 (0.004) | 0.740 (0.009) | 384 / 192 | 9.5e-16 |
+
+Verdict: the difference holds over the seeds.
+
+**the cells of the training set (0, 1, 2, 3, 10)**
+
+| seed | episodes | `cue` | one network | only `cue` / only the one network | p |
+|---|---|---|---|---|---|
+| 42 | 600 | 0.958 | 0.955 | 16 / 14 | 0.86 |
+| 43 | 600 | 0.957 | 0.957 | 16 / 16 | 1 |
+| 44 | 600 | 0.953 | 0.950 | 18 / 16 | 0.86 |
+| mean (SD) and pooled | | 0.956 (0.003) | 0.954 (0.003) | 50 / 46 | 0.76 |
+
+Verdict: the difference does not hold.
+

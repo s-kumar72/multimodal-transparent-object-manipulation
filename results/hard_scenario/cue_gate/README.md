@@ -859,6 +859,44 @@ the same seed of the other on the same episodes):
 Not in this round: seeds of the other controls (gate on map numbers, no gate, auxiliary loss), of `full` on the 400
 demos, and the form `cue` or `full` (decided after the tasks are extended, as before).
 
+### Results of round 4 (11/26 02:30 KST; seeds 42, 43 and 44 of `cue` and of the one network)
+
+The eight runs trained and were evaluated as listed (11/25 13:41 to 11/26 02:28 KST); none failed. The read-out is
+[`readout_round4.txt`](readout_round4.txt) (`python policy/readout_round4.py`); the same runs on `L0_vis_ell` are in
+[`../contact_check/readout_round4_ell.txt`](../contact_check/readout_round4_ell.txt) (`--root
+results/hard_scenario/contact_check`; item 2 of round 3 of [`../contact_check/README.md`](../contact_check/README.md)).
+`cue` / one network, mean over the three seeds (standard deviation), pooled pairs and the verdict of item 4:
+
+| setting | level | `cue` | one network | only `cue` / only the one network | p | the difference |
+|---|---|---|---|---|---|---|
+| 1. training cells | `L0_vis` | 0.797 (0.004) | 0.722 (0.006) | 690 / 393 | 1.4e-19 | holds over the seeds |
+| | `L0_vis_ell` | 0.915 (0.002) | 0.909 (0.006) | 239 / 213 | 0.24 | does not hold |
+| 2. new combinations | `L0_vis` | 0.854 (0.006) | 0.779 (0.011) | 539 / 270 | 1.9e-21 | holds over the seeds |
+| | `L0_vis_ell` | | | | | evaluated in round 5 |
+| 3. trained without cells 4 to 9: the cells left out | `L0_vis` | 0.675 (0.003) | 0.554 (0.004) | 522 / 261 | 6.6e-21 | holds over the seeds |
+| | `L0_vis_ell` | 0.829 (0.004) | 0.740 (0.009) | 384 / 192 | 9.5e-16 | holds over the seeds |
+| 3. the cells of that training set | `L0_vis` | 0.879 (0.004) | 0.872 (0.003) | 146 / 133 | 0.47 | does not hold |
+| | `L0_vis_ell` | 0.956 (0.003) | 0.954 (0.003) | 50 / 46 | 0.76 | does not hold |
+
+- **The seeds agree with seed 42 in every setting.** Each arm varies by 0.002 to 0.011 over the seeds; no verdict of
+  seed 42 changes.
+- **On `L0_vis` the difference holds in the three settings in which it was found.** Per cell on the training cells
+  `cue` is above the one network in nine cells and below in none (not separated: 4 and 9, thermal alone).
+- **On `L0_vis_ell` it holds where the cells were left out of training and not on the training cells.** There the
+  two are 0.915 and 0.909. Per cell `cue` is above in four (0, 3, 7, 8) and the one network in one (4, thermal alone:
+  0.836 against 0.931).
+- So on the level of the paper's table, one network over all sensors forms the cue as well as the maps per sensor
+  with the gate for the visibility conditions it was trained on; the maps per sensor with the gate are ahead (0.83
+  against 0.74) when two sensors are blind at once for the first time. What the two new training sets and the new
+  combinations on `L0_vis_ell` add to this is round 5.
+
+**Next to the read-out: `cue` with three seeds under rules 4 and 5 of Stage 6** (the script of the three-seed read-out
+of [`../lit_base/README.md`](../lit_base/README.md), with the plain baselines only: the seeds of the baselines from the
+literature have not finished). On `L0_vis`: 0.797 (lowest seed 0.794, highest 0.802), above its best baseline in all
+eleven cells. On `L0_vis_ell`: 0.915 (0.914 to 0.917) against 0.587 for the highest baseline; no cell below its best
+baseline, nine above, two not separated (1 and 5). "Better in nearly every case" holds for `cue` on both levels, as
+it does for `full` (0.792 and 0.904).
+
 ## Round 5: two more training sets with cells left out, and the new combinations on `L0_vis_ell` (decision of the user 11/26; listed 11/26 00:53 KST, before anything of it is fitted, trained or evaluated)
 
 **Why.** On `L0_vis_ell`, the level of the paper's table, `cue` and the one-network control are level in the cells

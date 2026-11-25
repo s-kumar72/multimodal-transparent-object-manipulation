@@ -1,0 +1,62 @@
+{
+ "runs": [
+  "results/hard_scenario/contact_check/L0_vis_rgbdt_400demos_nosingle_hcg_cue_early_seed44"
+ ],
+ "test_sets": [
+  "j_cells11",
+  "k_cells11_heldout"
+ ],
+ "macro": 0.8303030303030302,
+ "macro_ci": [
+  0.8121212121212121,
+  0.8492613636363637
+ ],
+ "cells": {
+  "0": {
+   "success": 118,
+   "n": 120
+  },
+  "1": {
+   "success": 112,
+   "n": 120
+  },
+  "2": {
+   "success": 114,
+   "n": 120
+  },
+  "3": {
+   "success": 118,
+   "n": 120
+  },
+  "4": {
+   "success": 113,
+   "n": 120
+  },
+  "5": {
+   "success": 104,
+   "n": 120
+  },
+  "6": {
+   "success": 95,
+   "n": 120
+  },
+  "7": {
+   "success": 87,
+   "n": 120
+  },
+  "8": {
+   "success": 70,
+   "n": 120
+  },
+  "9": {
+   "success": 57,
+   "n": 120
+  },
+  "10": {
+   "success": 108,
+   "n": 120
+  }
+ },
+ "success": 1096,
+ "n": 1320
+}
