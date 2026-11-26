@@ -1098,6 +1098,44 @@ the true point; next to them the policy trained on the labels with the true poin
 its own cue within 0.5 cm, `cue` succeeds in 0.93 (`L0_vis`) and 0.99 (`L0_vis_ell`) of the episodes. Nothing of 6a,
 6b or 6c exists beyond the two checks above.
 
+### Results of 6a (11/26 14:59 KST; 32 fits, no policy involved)
+
+[`perception/round6_cue_fitseeds.txt`](perception/round6_cue_fitseeds.txt). The cue within 1.5 cm of the glass, the
+method (a map and a gate per sensor) against the one network; five fits of each (fit 0 is the one the policies were
+trained with), the same episodes.
+
+| cues fitted on | cells | method / one network, mean over the fits (SD) | the method in the five fits | verdict |
+|---|---|---|---|---|
+| all 700 demos | all eleven cells | 0.888 (0.013) / 0.914 (0.018) | above in fit 0 only (0.907 against 0.883); below in fits 1 to 4 | mixed |
+| all 700 demos | the 15 new combinations | 0.941 (0.011) / 0.955 (0.013) | above in fit 0 only (0.956 against 0.934) | mixed |
+| `nosingle` | the cells left out (4 to 9) | **0.785 (0.021) / 0.643 (0.025)** | above in every fit | **holds over the fits, the method above** |
+| `nosingle` | the cells of the training set | 0.936 / 0.949 | below in every fit | holds, the one network above |
+| `nopair` | the cells left out (1 to 3) | 0.936 / 0.943 | | does not hold |
+| `nopair` | the cells of the training set | 0.817 / 0.870 | below in every fit | holds, the one network above |
+| `nofaint` | the cells left out (7 to 10) | 0.478 (0.044) / 0.671 (0.014) | below in every fit | holds, the one network above |
+| `nofaint` | the cells of the training set | 0.930 / 0.956 | below in every fit | holds, the one network above |
+
+- **The fit the policies were trained with is the one fit of five in which the method's cue is ahead on the cells it
+  was trained on.** In the other four the one network's cue is the more accurate (0.912 to 0.928 against 0.876 to
+  0.895), and so it is on average (0.914 against 0.888) and on the new combinations (0.955 against 0.941).
+- **What this does to round 4.** Its three seeds were seeds of the policy; every one of them used the cues of fit 0.
+  The verdicts "holds over the seeds" for `cue` against the one network on the training cells of `L0_vis` (0.797
+  against 0.722) and on the 15 new combinations (0.854 against 0.779) therefore hold for that fit of the cues and
+  cannot be claimed for the two designs: with another fit the cue of the one network is the better one. No policy was
+  trained on fits 1 to 4 (the listing excludes it), so how much of the policies' difference would remain is not
+  known.
+- **What holds for the design with a map and a gate per sensor: two sensors blind for the first time.** In the cells
+  left out of `nosingle` its cue is ahead in every fit (0.785 against 0.643; only it right in 852 episodes, only the
+  one network in 342), and the policies of round 4 show the same there on both levels (`L0_vis` 0.675 against 0.554,
+  `L0_vis_ell` 0.829 against 0.740).
+- **Everywhere else the one network's cue is as good or better over the fits**: by 0.01 to 0.05 on cells that were
+  in the training set, and by 0.19 on faint cues it never saw (`nofaint`).
+- The method's cue also varies more from fit to fit (SD up to 0.044 against 0.025).
+
+Both cues are far above what a plain policy reaches (the baselines of the level find the glass within 1.5 cm in
+about half of the episodes), so the result of the method against the baselines does not rest on this. What rests on
+it is which of the two is called the method and what is claimed for the gate.
+
 ## Files
 
 - `policy/hindsight_cue.py` (cue, verifier, fusion; fit and report), `policy/check_cue_env.py` (the cue in the env),

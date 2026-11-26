@@ -1,0 +1,124 @@
+## Cues fitted on all 700 demos
+
+**all eleven cells**
+
+| fit | method | one network | only the method right / only the one network | p |
+|---|---|---|---|---|
+| 0 (the fit of the policies) | 0.907 | 0.883 | 107 / 76 | 0.026 |
+| 1 | 0.876 | 0.928 | 41 / 110 | 1.8e-08 |
+| 2 | 0.895 | 0.912 | 68 / 90 | 0.094 |
+| 3 | 0.883 | 0.926 | 50 / 106 | 8.6e-06 |
+| 4 | 0.879 | 0.920 | 54 / 109 | 2e-05 |
+| mean (SD) and pooled | 0.888 (0.013) | 0.914 (0.018) | 320 / 491 | 2.1e-09 |
+
+Verdict: the difference mixed.
+
+**the 15 new combinations**
+
+| fit | method | one network | only the method right / only the one network | p |
+|---|---|---|---|---|
+| 0 (the fit of the policies) | 0.956 | 0.934 | 57 / 31 | 0.0073 |
+| 1 | 0.938 | 0.961 | 24 / 52 | 0.0018 |
+| 2 | 0.950 | 0.958 | 30 / 40 | 0.28 |
+| 3 | 0.932 | 0.968 | 15 / 57 | 6.5e-07 |
+| 4 | 0.930 | 0.956 | 31 / 62 | 0.0017 |
+| mean (SD) and pooled | 0.941 (0.011) | 0.955 (0.013) | 157 / 242 | 2.4e-05 |
+
+Verdict: the difference mixed.
+
+## Cues fitted on nosingle, without cells [4, 5, 6, 7, 8, 9]
+
+**the cells left out [4, 5, 6, 7, 8, 9]**
+
+| fit | method | one network | only the method right / only the one network | p |
+|---|---|---|---|---|
+| 0 (the fit of the policies) | 0.768 | 0.640 | 174 / 82 | 9e-09 |
+| 1 | 0.808 | 0.674 | 159 / 62 | 5.2e-11 |
+| 2 | 0.771 | 0.625 | 166 / 61 | 2.1e-12 |
+| 3 | 0.808 | 0.664 | 156 / 52 | 2.9e-13 |
+| 4 | 0.769 | 0.614 | 197 / 85 | 2.1e-11 |
+| mean (SD) and pooled | 0.785 (0.021) | 0.643 (0.025) | 852 / 342 | 1.2e-50 |
+
+Verdict: the difference holds over the fits (the method above).
+
+**the cells of the training set [0, 1, 2, 3, 10]**
+
+| fit | method | one network | only the method right / only the one network | p |
+|---|---|---|---|---|
+| 0 (the fit of the policies) | 0.933 | 0.952 | 13 / 24 | 0.099 |
+| 1 | 0.932 | 0.943 | 13 / 20 | 0.3 |
+| 2 | 0.938 | 0.948 | 13 / 19 | 0.38 |
+| 3 | 0.948 | 0.953 | 17 / 20 | 0.74 |
+| 4 | 0.928 | 0.947 | 15 / 26 | 0.12 |
+| mean (SD) and pooled | 0.936 (0.008) | 0.949 (0.004) | 71 / 109 | 0.0057 |
+
+Verdict: the difference holds over the fits (the one network above).
+
+## Cues fitted on nopair, without cells [1, 2, 3]
+
+**the cells left out [1, 2, 3]**
+
+| fit | method | one network | only the method right / only the one network | p |
+|---|---|---|---|---|
+| 0 (the fit of the policies) | 0.942 | 0.936 | 16 / 14 | 0.86 |
+| 1 | 0.939 | 0.939 | 15 / 15 | 1 |
+| 2 | 0.936 | 0.950 | 11 / 16 | 0.44 |
+| 3 | 0.928 | 0.944 | 14 / 20 | 0.39 |
+| 4 | 0.933 | 0.944 | 11 / 15 | 0.56 |
+| mean (SD) and pooled | 0.936 (0.005) | 0.943 (0.005) | 67 / 80 | 0.32 |
+
+Verdict: the difference does not hold.
+
+**the cells of the training set [0, 4, 5, 6, 7, 8, 9, 10]**
+
+| fit | method | one network | only the method right / only the one network | p |
+|---|---|---|---|---|
+| 0 (the fit of the policies) | 0.828 | 0.870 | 63 / 103 | 0.0024 |
+| 1 | 0.826 | 0.872 | 57 / 101 | 0.00058 |
+| 2 | 0.829 | 0.865 | 63 / 97 | 0.0089 |
+| 3 | 0.799 | 0.879 | 51 / 128 | 8e-09 |
+| 4 | 0.801 | 0.863 | 69 / 128 | 3.2e-05 |
+| mean (SD) and pooled | 0.817 (0.015) | 0.870 (0.007) | 303 / 557 | 3.6e-18 |
+
+Verdict: the difference holds over the fits (the one network above).
+
+## Cues fitted on nofaint, without cells [7, 8, 9, 10]
+
+**the cells left out [7, 8, 9, 10]**
+
+| fit | method | one network | only the method right / only the one network | p |
+|---|---|---|---|---|
+| 0 (the fit of the policies) | 0.504 | 0.692 | 37 / 127 | 9.5e-13 |
+| 1 | 0.417 | 0.658 | 24 / 140 | 4e-21 |
+| 2 | 0.460 | 0.677 | 38 / 142 | 2.5e-15 |
+| 3 | 0.479 | 0.665 | 31 / 120 | 1.5e-13 |
+| 4 | 0.531 | 0.662 | 36 / 99 | 5.5e-08 |
+| mean (SD) and pooled | 0.478 (0.044) | 0.671 (0.014) | 166 / 628 | 5.7e-64 |
+
+Verdict: the difference holds over the fits (the one network above).
+
+**the cells of the training set [0, 1, 2, 3, 4, 5, 6]**
+
+| fit | method | one network | only the method right / only the one network | p |
+|---|---|---|---|---|
+| 0 (the fit of the policies) | 0.931 | 0.954 | 21 / 40 | 0.02 |
+| 1 | 0.926 | 0.950 | 20 / 40 | 0.013 |
+| 2 | 0.913 | 0.958 | 17 / 55 | 8.1e-06 |
+| 3 | 0.940 | 0.963 | 14 / 33 | 0.0079 |
+| 4 | 0.938 | 0.954 | 24 / 37 | 0.12 |
+| mean (SD) and pooled | 0.930 (0.011) | 0.956 (0.005) | 96 / 205 | 3.1e-10 |
+
+Verdict: the difference holds over the fits (the one network above).
+
+## The verdicts side by side
+
+| cues fitted on | cells | method / one network, mean over the fits | the difference |
+|---|---|---|---|
+| all 700 demos | all eleven cells | 0.888 / 0.914 | mixed |
+| all 700 demos | the 15 new combinations | 0.941 / 0.955 | mixed |
+| nosingle | the cells left out [4, 5, 6, 7, 8, 9] | 0.785 / 0.643 | holds over the fits (the method above) |
+| nosingle | the cells of the training set [0, 1, 2, 3, 10] | 0.936 / 0.949 | holds over the fits (the one network above) |
+| nopair | the cells left out [1, 2, 3] | 0.936 / 0.943 | does not hold |
+| nopair | the cells of the training set [0, 4, 5, 6, 7, 8, 9, 10] | 0.817 / 0.870 | holds over the fits (the one network above) |
+| nofaint | the cells left out [7, 8, 9, 10] | 0.478 / 0.671 | holds over the fits (the one network above) |
+| nofaint | the cells of the training set [0, 1, 2, 3, 4, 5, 6] | 0.930 / 0.956 | holds over the fits (the one network above) |
