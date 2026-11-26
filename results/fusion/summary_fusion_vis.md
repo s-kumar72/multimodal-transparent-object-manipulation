@@ -5,6 +5,7 @@ IoU (%) / loc (% of images whose most confident pixel is on the glass), best che
 | run | train data | modalities | fusion | j_cells11 | k_cells11_heldout | mju_glass | rgbt_glass | transpose | trobi |
 |---|---|---|---|---|---|---|---|---|---|
 | mix_ws | real:mju_glass, real:rgbd_gsd, real:rgbt_glass, real:transpose, sim | rgbdt | learned/softmax+cues+sup ws | 82.1 / 100.0 | 80.5 / 99.8 | 82.8 / 97.9 | 76.9 / 96.4 | 70.6 / 95.8 | 42.3 / 60.3 |
+| mix_ws_stx_supst | real:mju_glass, real:rgbd_gsd, real:rgbt_glass, real:transpose, sim | rgbdt | learned/softmax+cues+sup ws | 82.8 / 100.0 | 81.7 / 99.8 | 82.1 / 98.0 | 77.2 / 96.8 | 69.7 / 94.4 | 43.2 / 62.3 |
 
 ## Robustness and gates on sim test set a (all levels)
 
