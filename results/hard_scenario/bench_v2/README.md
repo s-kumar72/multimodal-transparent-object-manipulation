@@ -98,6 +98,13 @@ Each state is a cause that exists, with its range from section 2.
 | colour | faint | low contrast | alpha 0.2 (median 13) | the same |
 | colour | blind | the glass is not in the colour image (corrected 11/26, section 10) | alpha 0.001 | the same |
 
+**What the colour states are and are not (11/26, after section 12).** They set how much of the glass's body shows
+in the colour image, at the contrast measured on real glass. They do not model how clear glass looks: the renderer
+blends a tinted solid over the scene and does not refract or reflect, and a network that learned real glass does not
+take the simulator's glass for glass (sections 11 and 12). "Colour shows" is therefore closest to a transparent
+object whose body is visible in colour (frosted or tinted glass, a plastic cup), not to clear glass with its
+highlights. This is stated in the paper as a limit of the benchmark; clear glass in colour is left to the real robot.
+
 **What this does to the difficulty, expected and not known.** Where depth shows the glass it gets easier (the glass
 is one large hole). Where only thermal shows it, it gets harder: "shows" of this version is about "faint" of the
 first, the cell in which the method is lowest today (0.71 on `L0_vis_ell`, baselines 0.17), and the new "faint" is two
