@@ -469,6 +469,15 @@ among the lines that have not started (the commands as listed, no line added or 
 `V2_place_rgbdt_700demos_hcg2_cue_early`, then the lines of the first version; the four runs on `V2_place_warm`
 (sensitivity only) stay at the end.
 
+*11/26 22:29 KST: the cues of `V2_place_warm` are fitted again too* (22:29 KST, all files later than its demos of
+10:45; the preparation is at its end). The same numbers for the warm variant, which only the sensitivity runs at the
+end of the queue use: the grasp cue at reset is within 1.5 cm of the glass in 0.89 of `j_cells11` and 0.84 of
+`k_cells11_heldout` (cell 9 0.68 and 0.60, cell 4 0.87 and 0.72, cell 8 0.63 and 0.57), the one network in 0.91 and
+0.89 (cell 9 0.75 and 0.68, cell 4 1.00 and 0.92, cell 8 0.68 and 0.73); the own peak of the thermal sensor is within
+1.5 px where it shows the glass / faintly / not in 0.93 / 0.75 / 0.07. With the warmer glass the cue finds it in cell
+9, and the one network is not behind the cue of the method in the cells with thermal alone. Fits only; what the
+policies do in those cells is read from the runs.
+
 **What a blind sensor still shows: the layout (11/26 19:51 KST; looked at when the fits of T2 were read, not a test fixed in
 advance).** In the report of the T2 cue the sensors' own maps are on the grasp pixel also where the sensor does not
 show the glass: within 1.5 px in 0.40 of the colour-blind demos, 0.29 of the depth-blind and 0.23 of the
