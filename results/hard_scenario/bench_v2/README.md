@@ -412,6 +412,12 @@ section 8: a task on which plain rgbdt is below 0.05 and no run reaches 0.30 in 
 and its runs are repeated. These runs decide that and, with the pilot, the numbers of demos of T2 and T3 and the
 pairs of T3; nothing of them enters the tables of the frozen benchmark.
 
+**Order in the queue (11/26 14:12 KST; the user wants the benchmark confirmed first).** The runs that decide the freeze
+go before the remaining runs of the first version: the two plain runs of `V2_place` and the plain runs of T2 and T3
+now, and the method's runs on `V2_place` (`hcg2_cue`, `hcg2_cue_early`) and on T2 as soon as their fits exist. The
+four runs of `V2_place_warm` are a sensitivity analysis and stay at the end. The order changes when a run starts and
+nothing else; the listings and read-outs above are as they were.
+
 **Still open for the freeze.** T2 has three training shapes, so a number of demos that is a multiple of 210 keeps the
 cell weights exact (630 or 840; 700 gives 76 / 70 / 68 demos in cells 1 to 3). T3: the cue of the method for two
 targets. The plain runs of T2 and T3 and the solvability checks.
