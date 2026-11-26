@@ -1,0 +1,9 @@
+# Second version of the visibility benchmark, task T1, with the optical colour model of the glass (sim/glass_optics.py;
+# section 12 of results/hard_scenario/bench_v2/README.md). A draft for the check against real images, not frozen:
+# everything else as V2_place. The colour states are strengths of the optical effect: shows 1, faint 0.3, blind 0.
+# meta/ep_level id 42.
+base: V2_place.yaml
+name: V2_place_opt
+level: 42
+rgb_glass: optical
+faint_strength: 0.3

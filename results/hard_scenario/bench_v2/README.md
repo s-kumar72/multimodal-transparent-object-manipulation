@@ -622,10 +622,97 @@ If it says "no" after the three rounds, the result is reported as it is, the col
 user decides otherwise, and the limit is stated in the paper. Images of the glass under both models are shown with
 the result either way.
 
+**Result (11/26 13:07 KST): the optical model does not pass the held-out judge. By the rule above the colour image stays
+as it is unless the user decides otherwise.** Files in [`real_check/`](real_check/): `look_as_listed.txt`, `look.txt`,
+`look_round3.txt` (the numbers from real images), `judgeA_round1.txt` to `judgeA_round3.txt` (the development
+rounds), `readout3.txt` (the final read-out), `glass_alpha_and_optical.png` (the same twelve scenes under the two
+models: eight "shows", four "faint"; alpha above, optical below). The model is `sim/glass_optics.py`, off unless a
+level sets `rgb_glass: optical` (draft level `sim/configs/V2_place_opt.yaml`); `sim/regression_test.py` gives 190 of
+190 arrays identical for the default scene, `L0_vis`, `L0_vis_place` and `L0_vis_ell` with the final code.
+
+*What was done, in order, with what departed from the listing.*
+1. **The numbers from real images, as listed: could not be met.** Real colour pairs: 4079 from all frames of
+   TRansPose. On the 139 windows with plain surroundings real glass is brighter than its surroundings (median of
+   the glass minus the others +18 grey levels, 95th percentile +41); the model as listed darkens the glass's area
+   (-10, +1 at the best grid point). Also the simulator's windows are mostly not plain (the coaster's ring, the
+   gripper), which the listing had assumed.
+2. **Revision 0, before any judge was looked at.** (a) The plainness limit is applied to the simulator's windows
+   too. (b) The three numbers are replaced by quantities that do not depend on what else is in the window: the
+   regression of the glass's median luminance on its surroundings' (2376 real windows: 0.68 x surroundings + 43,
+   r 0.79) for the veil, and the spread inside the glass in excess of the spread around it for highlights (p95 -
+   median: real +18.7) and edge (p5 - median: real -3.0). (c) Read as "the glass pulls its area 0.32 of the way to
+   the average around it", the regression gave F0 = 0.30 with T0 = 1; with it k_s = 1.2 and w_rim = 0 matched the
+   two spreads (19.9, -2.2).
+3. **A bug, found by the floor.** In the first run of round 1 the colour-blind pairs differed (judge's AUC 0.58):
+   the segmentation image carries stray single pixels with the ids of the parked glasses along edges, and the model
+   drew them as glass. Fixed: only the glasses a scene names are drawn, and parts of a mask smaller than 6 pixels
+   are dropped. The blind pairs are then the same image (1 pixel by 1 grey level in some, the renderer's own).
+4. **Round 1 (judge A, one network as listed):** shows 0.53 against the 0.62 it needed, the window with the glass
+   higher in 0.61 of the pairs; faint 0.47. Two trainings of the same judge on the same pairs differed by 0.07 on
+   the alpha model, so from round 2 on a judge is the mean of five networks (seeds 0 to 4); a departure from the
+   listing, made for both judges before judge B was run.
+5. **Round 2 (judge A): which part moves the judge.** 1200 episodes per variant; the judge passes a state at 0.58.
+
+   | "shows" under | judge A's AUC | window with the glass scored higher |
+   |---|---|---|
+   | the alpha model | 0.30 | 0.07 |
+   | the veil alone (F0 0.30, no highlights) | 0.33 | 0.03 |
+   | revision 0 (veil 0.30 and highlights) | 0.54 | 0.64 |
+   | the edge line alone | 0.61 | 1.00 |
+   | highlights alone | 0.68 | 0.99 |
+   | highlights twice as strong | 0.69 | 0.99 |
+   | highlights and edge line | 0.70 | 1.00 |
+   | T0 0.92 and F0 0.08 as first listed, with highlights | 0.70 | 1.00 |
+
+   A smooth veil over the glass's area is counted against glass, as the alpha model's tinted solid is; highlights
+   and the edge line are counted for it.
+6. **Round 3, the final model:** T0 0.92 and F0 0.08 as first listed (the veil of revision 0 is withdrawn: at the
+   simulator's table, luminance 166, the same regression says the glass's area is 10 grey levels darker than its
+   surroundings, and these constants give -9; that is beyond the real windows' range, whose surroundings end at
+   137), and with them from real images k_s = 1.0 and w_rim = 0.1 (spreads 19.0 and -2.3 against 18.7 and -3.0).
+   Judge A: shows 0.71 (needs 0.59), the window with the glass higher in 1.00 of the pairs; faint 0.56.
+
+*The final read-out (`readout3.txt`), judge B once.*
+
+| | optical model | alpha model |
+|---|---|---|
+| rule 1, floor: the simulator's own network on the colour-blind pairs | 0.50 | (0.50, section 11) |
+| the simulator's own network: shows / faint | 1.00 / 0.92 | 1.00 / 1.00 |
+| **rule 2, judge B on "shows"** (its own AUC 0.78, passes at 0.64) | **0.50, the glass higher in 0.42 of the pairs: no** | 0.33, in 0.03: no |
+| judge B on "faint" | 0.50, in 0.35: no | 0.47, in 0.26: no |
+| judge A on "shows", for comparison (the judge the model was developed with; its own AUC 0.67) | 0.71, in 1.00 | 0.33, in 0.10 |
+| **rule 3, the simulator's network on all real pairs** (the real network's own 0.84, passes at 0.67) | **0.49: does not transfer** | 0.64: does not transfer |
+
+- **Rule 2: no.** The judge that was kept aside does not respond to the optical model's glass at all; the judge
+  the model was developed with responds in every pair. The two judges learned real glass from different halves of
+  the sequences and do not agree on what the simulator's highlights are. This is what the second judge was for:
+  three rounds were enough to fit one judge.
+- **Both judges agree on one thing: the alpha model is counted against glass** (0.33 and 0.33, the window with the
+  glass lower in nine pairs of ten). The optical model takes that away (0.50 for judge B) and no more.
+- **Rule 3: no for both**, and the alpha model's network is the less far (0.64 against 0.49).
+- **What the optical model does have:** its highlights, its edge and the darkening of its area are set to the
+  statistics of real glass, and the alpha model's are not (it puts a tint over the area that real glass does not
+  have). That is by construction and is not a test.
+
+**What this check can and cannot decide.** The real colour images at hand are close-up views from above of vessels
+on patterned cloth in one laboratory; the simulator's camera sees a small glass on a plain table from the side. A
+network trained on one half of those sequences is at 0.67 or 0.78 on the other half, and two such networks disagree
+about the simulator. For depth and thermal the check of section 11 had signals that carry over (a hole, a patch of
+another temperature); for the colour image of glass it does not have the data to decide. That needs colour images of
+glass from the robot's own camera, i.e. choice (c) of section 11.
+
+**What follows, fixed by the listing:** the colour image of the second version stays the alpha model unless the user
+decides otherwise, and the paper states the limit with these numbers. The optical model stays in the code as an
+option that is off. Open for the user: keep alpha (the rule's default), or take the optical model without the
+check's support (it is closer to real glass in its image statistics and to the eye, it is not counted against glass
+by either judge, and "faint" is harder under it; whether "colour shows" is still enough for a policy at 96 x 96 would
+have to be measured first).
+
 ## Files
 
 `real_data/glass_visibility.py` (real sensors), `sim/measure_visibility.py` (the simulator, same functions),
-`real_data/findability.py` (section 11: the check against real images, both designs), `real_check/` (its read-outs).
+`real_data/findability.py` (sections 11 and 12: the checks against real images), `real_check/` (their read-outs).
+`sim/glass_optics.py` (section 12: the optical colour model of the glass, off by default), `sim/configs/V2_place_opt.yaml`.
 `measurements/` (their outputs of 11/26). `sim/configs/V2_place.yaml`, `sim/configs/V2_place_warm.yaml` (draft levels).
 T2: `sim/assets/gen3_lite/align_scene.xml`, `sim/configs/V2_align.yaml`, `sim/env.py` (`ALIGN_OBJECTS`, `_mat_target`,
 `placed`), `sim/teacher.py` (`_plan_align`).

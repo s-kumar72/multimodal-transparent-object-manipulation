@@ -159,6 +159,14 @@ class SceneConfig:
     # any scene, i.e. the contacts of the pick-and-place level on a pick level (L0_vis_ell, a check of what the
     # contact model does to the pick; results/hard_scenario/contact_check/).
     contacts: str = "default"
+    # Colour image of the glass. "alpha": the renderer's own, a tinted solid blended at the glass's alpha (every level
+    # of the first version). "optical": sim/glass_optics.py, the scene behind the glass seen through it with an edge
+    # line and highlights; a cell's colour state is then a strength (shows 1, faint faint_strength, blind 0: the image
+    # without the glass, pixel for pixel) and the alpha of the glass plays no part in the colour image. `optical`
+    # overrides entries of glass_optics.PARAMS.
+    rgb_glass: str = "alpha"
+    faint_strength: float = 0.3
+    optical: dict = None
 
     def pool(self, factor):
         """Value pool of a factor for this config's split."""

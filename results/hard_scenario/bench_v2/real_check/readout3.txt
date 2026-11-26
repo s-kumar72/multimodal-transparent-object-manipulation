@@ -1,0 +1,43 @@
+# The optical colour model of the glass against real images (section 12)
+
+Real: 4079 colour pairs of 29 TRansPose sequences. Simulator: 3000 paired windows of `V2_place_opt` (the same window with and without the glass); for comparison the alpha model, `simpair`.
+
+## 1. The simulator's own network, out of fold
+
+| state | pairs | AUC (95%) |
+|---|---|---|
+| shows | 1413 | 1.00 (1.00 to 1.00) |
+| faint | 425 | 0.92 (0.90 to 0.93) |
+| blind | 1162 | 0.50 (0.50 to 0.50) |
+
+Floor (rule 1): 0.50 in the colour-blind pairs: within 0.45 to 0.55.
+
+## 2. Does a network that learned real glass respond? (judge B)
+
+Judge B: its own AUC on the real pairs of the other half 0.78 (0.68 to 0.91); a state passes at 0.64 (0.5 + half of the margin).
+
+| simulator's pairs | state | pairs | judge's AUC, with against without the glass (95%) | share of pairs with the glass scored higher | responds? |
+|---|---|---|---|---|---|
+| simpair_opt | shows | 1413 | 0.50 (0.50 to 0.50) | 0.42 | no |
+| simpair_opt | faint | 425 | 0.50 (0.50 to 0.50) | 0.35 | no |
+| simpair_opt | blind | 1162 | 0.50 (0.50 to 0.50) | 0.01 | - |
+| simpair | shows | 1413 | 0.33 (0.32 to 0.33) | 0.03 | no |
+| simpair | faint | 425 | 0.47 (0.47 to 0.48) | 0.26 | no |
+| simpair | blind | 1162 | 0.50 (0.50 to 0.50) | 0.01 | - |
+
+Per contrast bin (grey levels between the glass and a ring around it), the optical model:
+
+| bin | pairs | judge B's AUC | share with the glass scored higher |
+|---|---|---|---|
+| below 3 | 1602 | 0.50 | 0.10 |
+| 3 to 10 | 1394 | 0.50 | 0.42 |
+| 10 to 20 | 4 | 0.69 | 1.00 |
+
+## 3. Does a network that learned the simulator's glass find real glass?
+
+The real network's own AUC out of fold: 0.84 (0.75 to 0.94); the simulator's network passes at 0.67.
+
+| simulator's network trained on | AUC on all real pairs (95%) | transfers? |
+|---|---|---|
+| simpair_opt | 0.49 (0.42 to 0.54) | does not transfer |
+| simpair | 0.64 (0.55 to 0.72) | does not transfer |

@@ -1,0 +1,20 @@
+veil: over 2376 real windows of 25 sequences (std of the other pixels below 40) the glass's median luminance = 0.68 * surroundings + 43 (r 0.79): the glass pulls its area 0.32 of the way to a level of 136 (the surroundings' median is 105). F0 = 0.30, T0 = 1.
+spread: 139 real windows of 6 sequences with plain surroundings (std below 15); their surroundings' median luminance 111
+  p95 - median, glass minus surroundings: p10 2.2, p25 6.9, median 18.7, p75 36.7, p90 46.8
+  p5 - median, glass minus surroundings: p10 -14.8, p25 -8.0, median -3.0, p75 4.1, p90 6.6
+  glass median minus surroundings' median there: +17.8
+
+simulator: 400 episodes of sim/configs/V2_place_opt.yaml in which colour shows the glass and the window's surroundings are plain (3071 others left out); rho 0.6; grid of 72 points; the eight closest:
+| distance | k_s | w_rim | p95 - median, glass minus surroundings | p5 - median, glass minus surroundings | glass median minus surroundings |
+|---|---|---|---|---|---|
+| 0.006 | 1.2 | 0.0 | 19.9 | -2.2 | +10.7 |
+| 0.006 | 1.0 | 0.0 | 17.5 | -2.2 | +10.7 |
+| 0.025 | 0.8 | 0.0 | 14.5 | -2.1 | +10.7 |
+| 0.038 | 1.2 | 0.1 | 19.2 | -5.3 | +9.6 |
+| 0.039 | 1.0 | 0.1 | 17.0 | -5.3 | +9.6 |
+| 0.041 | 1.6 | 0.0 | 24.3 | -2.2 | +10.7 |
+| 0.057 | 0.8 | 0.1 | 14.3 | -5.2 | +9.6 |
+| 0.068 | 0.6 | 0.0 | 11.3 | -2.1 | +10.7 |
+| real, plain surroundings | | | 18.7 | -3.0 | |
+
+chosen: F0 0.30, T0 1.0, k_s 1.2, w_rim 0.0 (rho 0.6). "Faint" (strength 0.3) with them: 5.2, -0.6, +3.3.
