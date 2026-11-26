@@ -200,7 +200,8 @@ whose runs are finishing now.
 chosen now: the pilot runs T1 with the states of section 3 (`V2_place`) and with the thermal states of the first
 version (`V2_place_warm`: 5 to 35 degC, about 3 degC, 0.1 degC) side by side, and the user chooses with the two
 tables; (2) glass with warm or cold content is outside the cells; (3) the tuning budget is kept; (4) T3 has two
-coasters and a free order. All four can still be changed until the freeze.
+coasters and a free order. All four can still be changed until the freeze. Point (1) is replaced by the rule of 11/26 below
+("The thermal states are fixed by a rule").
 
 **Step 2, the states and the level of T1 (11/26).** New settings in `sim/config.py` and `sim/env.py`: `show_holes`
 (depth shows, a range), ranges for `faint_holes` and `clear_alpha`, `thermal.show_contrast` (thermal shows, a contrast
@@ -254,6 +255,31 @@ episodes (sign test); the two levels side by side. The pilot is one seed and dec
 states are in a range that can be measured, and which thermal states the user takes. Nothing of it enters the tables
 of the frozen benchmark.
 
+**The thermal states are fixed by a rule (11/26 11:21 KST; decision of the user; none of the eight pilot runs has
+started, no policy has been trained on either level).** Choosing between `V2_place` and `V2_place_warm` with the two
+tables of the pilot in hand would leave a choice open that the method's numbers could steer. It is closed now:
+
+1. The thermal states of the benchmark are those of section 3, the ranges measured on real glass at rest
+   (`V2_place`). `V2_place_warm` is not a candidate for the benchmark's level. Its four pilot runs stay and are
+   reported as a sensitivity analysis: what the same runs give when the thermal contrast is about ten times the real
+   one.
+2. The only ground for changing a thermal state is that a cell cannot be solved, and the evidence is a reference
+   policy, not the method. If on `V2_place` a cell is below 0.30 in all four pilot runs, one run is added:
+   `V2_place_rgbt_430demos_thermal_imagenet`, the plain rgbt baseline trained on the 430 demos of the cells in which
+   thermal shows the glass fully or faintly (cells 0, 1, 2, 4, 9, 10; `policy/subset_demos.py`), seed 42, the protocol
+   of the pilot. It uses the cells to choose its demos, so it is a reference and not a baseline (as stage 1 of
+   [`../grid_bench/README.md`](../grid_bench/README.md)). A cell counts as not solvable if this reference is below
+   0.30 in it as well. A cell that a run or the reference solves stays as it is, however low the other runs are.
+3. What is changed then is fixed too, and stays inside the measured range. If the cells that are not solvable are
+   cells in which thermal is faint (9, 10): thermal "faint" becomes the real p10 to p25 (10 to 26 noise units) and
+   "shows" the real p25 to p90 (26 to 103), the level file is fitted to these with `sim/measure_visibility.py`, and
+   the pilot runs of `V2_place` are repeated once. If a cell in which thermal shows the glass fully is not solvable,
+   or a cell whose thermal state is blind, the stop of section 8 applies as written: the states are changed with the
+   user, and `V2_place_warm` is not the replacement by itself.
+
+The read-out script of the pilot is unchanged; its side-by-side table of the two levels is the sensitivity analysis
+of point 1. The user can still overrule any of this until the freeze.
+
 **Step 4, task T2 `align` in the simulator (11/26 08:39 KST; no demo collected, no policy).** `task: align`
 (`sim/config.py`), scene `sim/assets/gen3_lite/align_scene.xml`, level `sim/configs/V2_align.yaml` (a draft, id 40; the
 states of `V2_place`).
@@ -306,7 +332,10 @@ the evaluation env: 22 of 22 for each of the two shapes of T1, 44 of 44 for the 
   plane, since the arm goes on to the other glass). The record of an episode has `n_placed`, `picked`, `picked2`; an
   episode that fails is labelled `placed_0` or `placed_1`.
 - *Teacher*: the pick-and-place of T1 twice. `python sim/task_check.py V2_two -n 240`: 240 of 240, every pair and
-  every shape; 226 steps in the median, 256 at most, of the 480 allowed.
+  every shape; 226 steps in the median, 256 at most, of the 480 allowed. With the final distance rule (11/26 10:57
+  KST): 600 training scenes all have a plan (583 as drawn, 17 after the distractors are removed); the teacher
+  succeeds in 240 of 240 training scenes and in 180 of 180 episodes of each test set, `j_pairs12` and
+  `k_pairs12_heldout` (every pair 15 of 15, every shape 36 of 36).
 - Existing levels unchanged (`sim/regression_test.py`, 190 of 190 arrays identical for the four configs).
 
 Not done for T3: the cue of the method for two targets (four cues: which glass first, then the second), a plain rgbdt
@@ -353,9 +382,184 @@ of twice the angle at the grasp and at the place; `policy/config/task/glass_pick
 cell weights exact (630 or 840; 700 gives 76 / 70 / 68 demos in cells 1 to 3). T3: the cue of the method for two
 targets. The plain runs of T2 and T3 and the solvability checks.
 
+## 11. Check against real sensor images: is the glass as hard to find at the same visibility?
+
+**Why.** Section 2 matched how much of the glass a sensor shows (a contrast, a share of holes). It did not look at
+what the glass looks like: the renderer does not refract or reflect, the holes of the depth model are single pixels
+drawn at random, the thermal model reflects one uniform room. If glass of a given contrast is much easier to find in
+the simulator than in real images, the cells are easier than their numbers say. This can be measured without a robot.
+
+**Listed 11/26 11:21 KST, before any patch is cut or any classifier trained.** Only the sizes of the glass regions
+and how many of them get a pair of windows were looked at (to fix the geometry below).
+
+*Unit.* A glass region of a frame (a connected part of the glass mask, `real_data/glass_visibility.py`) and its
+visibility number per sensor, as in section 2. Around it a square window of 1.5 times the longer side of its bounding
+box, and a background window of the same size in the same frame, its centre 1.0 to 2.5 window sides away, with at
+most 5% glass in it (60 draws; a region without such a pair is left out and counted). Both are resized to 32 x 32.
+A nearby background keeps the surroundings alike, so that what tells the two windows apart is the glass.
+
+*Images.* Real, object-like glass only: TRansPose (colour, lidar depth, thermal; 126 frames drawn from each of its 35
+sequences, seed 0) and T-ROBI (hole-type depth; all 660 frames). The panes of the other three datasets are not
+objects on a table and are left out. Simulator: the first frames of 3000 episodes of `V2_place` (seeds 0 to 2999) at
+the sensors' own resolution, with the true glass mask.
+
+*Inputs, the same for both.* Colour: three channels in 0 to 1. Depth: (reading - median reading of the window) / 10
+cm, clipped to +-1, zero where there is no reading, and a second channel that marks the pixels without a reading.
+Thermal: (raw count - median of the window) / the camera's noise (0.89 counts), divided by 100 and clipped to +-1.
+
+*Classifier.* Per sensor and per domain one small network (three 3 x 3 convolutions of 32, 64, 64 channels with
+batch norm and pooling, a linear layer), Adam 1e-3, 30 epochs, batch 256, flips and shifts of 2 pixels, seed 0. Scores
+out of fold: five folds over the sequences (real) or over the episodes (simulator). For the transfer, one network
+trained on all pairs of one domain scores all pairs of the other.
+
+*Bins, by the region's visibility number (the ranges of section 3).* Thermal, noise units: below 3, 3 to 10, 10 to
+30, 30 to 103, above 103. Colour, grey levels: below 3, 3 to 10, 10 to 20, 20 to 45, above 45. Depth: hole (0.5 or
+more of the pixels missing), partial (0.05 to 0.5), see-through (below 0.05).
+
+**Read-out, fixed now** (`python real_data/findability.py readout > results/hard_scenario/bench_v2/real_check/readout.txt`).
+Per sensor and bin: the number of pairs and the AUC (glass window against its background window) in real images and
+in the simulator, each with a 95% interval (1000 resamples of the sequences or episodes), and their difference.
+
+1. *The floor of the test.* In the simulator's blind states the glass is not in the image at all (colour blind, depth
+   see-through, thermal below 3), so the AUC there should be 0.5. Whatever it is, it is what the windows give away
+   without the glass, and the other numbers are read against it.
+2. *Same difficulty.* A bin with at least 50 pairs in both domains is "the same" if the difference is within 0.05 or
+   its interval contains 0; "easier in the simulator" or "harder in the simulator" otherwise.
+3. *Does the look transfer?* The network trained in the simulator scores the real pairs (and the reverse). In a bin
+   in which the real network reaches at least 0.60, the look "transfers" if the simulator's network keeps at least
+   half of the real network's margin over 0.5.
+
+**What it can and cannot say, stated before the numbers.** Real backgrounds are more varied than the simulator's
+table, so a lower AUC in real images is not the sensor model's fault alone; a transfer that fails does not say why.
+The regions that get a pair are the smaller, free-standing ones. Objects of TRansPose recur across its sequences. It
+is one real camera per kind of sensor. Finding a window is not a policy's success: this check does not replace a
+real robot. A bin that is easier in the simulator is reported with what could be changed in the sensor model, as a
+proposal to the user before the freeze; nothing is changed by the read-out itself.
+
+**Result of the check as listed (11/26 11:30 KST): it fails its own control, and nothing is concluded from it.**
+[`real_check/readout.txt`](real_check/readout.txt). Real: 3050 pairs (TRansPose 1888 of 8699 regions, T-ROBI 1162 of
+1960; the others have no window that fits or no background window). Simulator: 3000 pairs. The first start stopped at
+the import of a package that is not installed, before any classifier was trained; the folds are made by a few lines
+of the script instead (the groups, largest first, each to the fold with the fewest pairs).
+
+| the floor (rule 1): the simulator's blind state, the glass is not in the image | pairs | AUC |
+|---|---|---|
+| colour, contrast below 3 grey levels | 1162 | 0.99 |
+| depth, see-through | 1165 | 0.99 |
+| thermal, below 3 noise units | 1015 | 0.95 |
+
+The classifier tells the glass window from the background window where there is no glass to see: in the simulator
+the windows give the answer away. Looked at afterwards (next to the read-out, not a test): in the colour-blind pairs
+the glass window is the busier one (standard deviation of its pixels 0.148 against 0.074 in the median; that number
+alone gives an AUC of 0.74). The glass stands in the part of the scene where the coaster, the distractors and the arm
+are, and a window one to two sides away is plainer. So the simulator's AUC is 0.95 to 1.00 in every bin whatever the
+visibility, and the verdicts of rule 2 ("easier in the simulator" for colour, "the same" for depth and thermal) say
+nothing about the sensor model. They are in the file and are not read.
+
+What the run does show: (a) a network that learned the simulator's windows scores real windows at 0.91 where the
+depth is a hole and near or below chance elsewhere (0.14 on real see-through depth, 0.12 on real thermal above 103
+units): it learned the simulator's surroundings, which are the other way round in the real scenes; (b) in real images
+the same small network reaches 0.72 to 0.91 per colour bin (0.84 overall), 0.97 to 0.99 for depth and 0.93 to 1.00
+for thermal, each an upper bound, since real windows may give something away as well.
+
+**The check, second design: in the simulator the same window with and without the glass (listed 11/26 11:33 KST,
+before any of it is run).** The surroundings must be the same in the two windows. In the simulator that can be had
+exactly: the first frame is rendered twice, as drawn and with the glass moved out of the scene (10 m away; nothing
+else changes; the sensor noise is drawn anew), and the pair is the window around the glass in the first render and
+the same window in the second. Real images have no such pair, so the real pairs stay as they are (already cut), and
+the two domains are no longer compared by their own AUC: a paired task in one and an unpaired one in the other are
+not the same task. What is read is whether the look carries over between the domains.
+
+*Runs.* `python real_data/findability.py simpair` (3000 episodes of `V2_place`, seeds 0 to 2999, the windows, inputs
+and bins of the first design), `... fit --sim simpair`, `... readout2 > real_check/readout2.txt`. Networks and
+training as in the first design; the simulator's network is trained on the paired windows.
+
+**Read-out, fixed now.** Per sensor and bin: the simulator's own AUC out of fold (with against without the glass);
+the real network on the simulator's pairs, as an AUC and as the share of pairs in which the window with the glass
+scores higher; the simulator's network on the real pairs; the real network's own AUC out of fold (from the first
+design's real pairs).
+
+1. *Floor.* Colour-blind (below 3 grey levels) and depth see-through pairs of the simulator are the same image twice
+   up to the sensor noise: the simulator's own AUC must be within 0.45 to 0.55 there. If it is not, nothing else is
+   read. Thermal "blind" is not part of the floor: it is a contrast of up to 0.1 degC (below 3 noise units per pixel),
+   which a network that averages over the glass may see; what the simulator's network reaches there is a result
+   (is thermal blind blind to a network?).
+2. *Does a network that learned real glass respond to the simulator's glass?* In a bin with at least 50 pairs in
+   both domains in which the real network's own AUC is at least 0.60: "yes" if the real network's AUC on the
+   simulator's pairs is at least 0.5 + half of the real network's own margin over 0.5; "no" otherwise.
+3. *Does a network that learned the simulator's glass find real glass?* The same bins and the same threshold for the
+   simulator's network on the real pairs: "transfers" or "does not transfer".
+4. The simulator's own AUC next to the real one is printed for orientation and is not a verdict, for the reason
+   above.
+
+**What it can and cannot say.** A "yes" in 2 says that the simulator's glass moves a real-glass network's score the
+right way, not that it looks like real glass in every respect; a "no" in 2 or 3 can also come from the scenes around
+the glass, which differ. The limits listed with the first design hold. It does not replace a real robot.
+
+**Result of the second design (11/26 11:41 KST).** [`real_check/readout2.txt`](real_check/readout2.txt); 3000 pairs of
+the simulator, the 3050 real pairs of the first design.
+
+*Rule 1, the floor: holds.* Colour blind 0.50 (1162 pairs), depth see-through 0.50 (1166 pairs): with the same window
+rendered with and without the glass, nothing but the glass tells the two apart.
+
+| sensor, bin | simulator's own AUC | real network's own AUC (an upper bound) | real network on the simulator's pairs: AUC; share of pairs with the glass scored higher | rule 2: does a real-glass network respond? | simulator's network on real pairs | rule 3 |
+|---|---|---|---|---|---|---|
+| depth, hole | 1.00 | 0.99 | 0.92; 1.00 | **yes** | 0.83 | **transfers** |
+| depth, partial (42 real pairs) | 1.00 | 0.83 | 0.47; 0.39 | not judged | 0.81 | not judged |
+| depth, see-through | 0.50 | 0.97 | 0.50; 0.03 | no | 0.34 | does not transfer |
+| thermal, below 3 units (35 real pairs) | 0.66 | 0.92 | 0.50; 0.48 | not judged | 0.45 | not judged |
+| thermal, 3 to 10 | 0.93 | 0.92 | 0.51; 0.59 | no | 0.55 | does not transfer |
+| thermal, 10 to 30 | 0.99 | 0.98 | 0.59; 0.87 | no | 0.29 | does not transfer |
+| thermal, 30 to 103 | 1.00 | 0.99 | 0.80; 0.98 | **yes** | 0.36 | does not transfer |
+| thermal, above 103 (42 simulator pairs) | 1.00 | 1.00 | 0.88; 1.00 | not judged | 0.54 | not judged |
+| colour, below 3 grey levels | 0.50 | 0.74 | 0.50; 0.00 | no | 0.59 | does not transfer |
+| colour, 3 to 10 | 1.00 | 0.72 | 0.48; 0.38 | no | 0.49 | does not transfer |
+| colour, 10 to 20 | 1.00 | 0.83 | 0.51; 0.53 | no | 0.48 | does not transfer |
+| colour, 20 to 45 | 1.00 | 0.78 | 0.46; 0.24 | no | 0.52 | does not transfer |
+| colour, above 45 | 1.00 | 0.91 | 0.43; 0.09 | no | 0.64 | does not transfer |
+
+- **Depth, the hole: the look carries over both ways.** A network that learned real holes scores the simulator's
+  window with the glass higher in every pair, and the simulator's network finds real holes (0.83). The state "depth
+  shows" of the second version is supported.
+- **Thermal: a network that learned real glass responds to the simulator's glass at the contrast of "shows"** (30 to
+  103 units: 0.80, the window with the glass higher in 0.98 of the pairs). At 10 to 30 units the rule says no (0.59
+  against the 0.74 it asks for); next to the read-out: the window with the glass is still the higher one in 0.87 of
+  the pairs. The AUC ranks windows of different episodes against each other, and the real network's score differs
+  more between scenes than a weak glass moves it. At 3 to 10 units ("faint") it does not respond (0.51; 0.59 of the
+  pairs). The other way round nothing transfers, and at 10 to 103 units the simulator's network scores real glass
+  below the real background (0.29, 0.36): it learned "a patch that differs from the table", and real scenes have more
+  of those next to the glass than on it. That is a difference of the scenes, and this test cannot take it apart from
+  the look of the glass.
+- **Colour: no in every bin, both ways.** A network that learned real glass does not respond to the simulator's
+  glass; at a contrast of 20 grey levels and more it scores the window with the simulated glass lower than the same
+  window without it (the glass higher in 0.24 and 0.09 of the pairs). The simulator's network does not find real
+  glass (0.48 to 0.64). Section 2 said the renderer does not refract or reflect, so that glass does not look like
+  glass where its contrast is right; this is that limit with a number. The real colour network is also the weakest of
+  the three (0.72 to 0.91 on its own pairs), so part of the "no" may be that it learned the surroundings.
+- **Inside the simulator, a state that is not blind is always found in the pair**: 1.00 for colour and depth from
+  the faint states on, 0.93 for thermal faint. The cells' difficulty for a policy does not come from the pair being
+  hard to tell apart; it comes from finding the glass in one image.
+- **Thermal "blind" is not blind in the pair: 0.66** (0.64 to 0.67, 1031 pairs). The glass at up to 0.1 degC from
+  the table, averaged over its pixels, and the glass in front of something warmer or colder leave a trace. Whether a
+  network that has to find the glass uses it: on `L0_vis`, which has the same blind contrast, the thermal network of
+  the cue has its peak on the glass in 0.08 of the thermal-blind frames, as the colour and depth networks in their
+  blind frames (0.10, 0.13), so there is no sign of it. The same number is read from the cue reports of `V2_place`
+  when they are fitted.
+- **Open, and this test cannot settle it: is real "blind" blind?** On real pairs the real networks reach 0.97 where
+  the lidar sees through the glass, 0.92 below 3 thermal units (35 pairs) and 0.74 below 3 grey levels. These are
+  upper bounds (real pairs have no floor: the surroundings of the two windows differ), but if a part of them is the
+  glass, the simulator's blind states are more blind than real sensors are.
+
+**What follows, as a proposal; nothing is changed by this.** Depth "shows" is supported. Thermal "shows" is supported
+one way; thermal "faint" is not shown either way. The colour image of the glass is not supported. For the colour
+image the choices are: (a) leave it and state it, as now; (b) before the freeze, try a colour model of glass in the
+sensor (the background seen through it shifted as by refraction, highlights, a darker rim) and repeat this check,
+which now exists and takes ten minutes; (c) leave the answer to the real robot. The user decides.
+
 ## Files
 
 `real_data/glass_visibility.py` (real sensors), `sim/measure_visibility.py` (the simulator, same functions),
+`real_data/findability.py` (section 11: the check against real images, both designs), `real_check/` (its read-outs).
 `measurements/` (their outputs of 11/26). `sim/configs/V2_place.yaml`, `sim/configs/V2_place_warm.yaml` (draft levels).
 T2: `sim/assets/gen3_lite/align_scene.xml`, `sim/configs/V2_align.yaml`, `sim/env.py` (`ALIGN_OBJECTS`, `_mat_target`,
 `placed`), `sim/teacher.py` (`_plan_align`).
