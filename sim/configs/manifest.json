@@ -41,7 +41,8 @@
     "L0_vis_ell": "sim/configs/L0_vis_ell.yaml",
     "V2_place": "sim/configs/V2_place.yaml",
     "V2_place_warm": "sim/configs/V2_place_warm.yaml",
-    "V2_align": "sim/configs/V2_align.yaml"
+    "V2_align": "sim/configs/V2_align.yaml",
+    "V2_two": "sim/configs/V2_two.yaml"
   },
   "test_sets": {
     "a_in_distribution": {
@@ -460,6 +461,8 @@
         ]
       }
     },
+    "j_pairs12": {"split": "test", "heldout": [], "overrides": {"cells": [[1, 0, 0, 0, 0, 0, 0], [1, 1, 0, 1, 1, 0, 1], [1, 1, 1, 0, 1, 1, 0], [1, 0, 1, 1, 0, 1, 1], [1, 1, 0, 1, 1, 1, 0], [1, 1, 0, 1, 0, 1, 1], [1, 1, 1, 0, 0, 1, 1], [1, 1, 0, 0, 0, 1, 1], [1, 0, 1, 0, 1, 0, 1], [1, 0, 0, 1, 1, 1, 0], [1, 2, 2, 2, 2, 2, 2], [1, 0, 0, 0, 2, 2, 2]]}},
+    "k_pairs12_heldout": {"split": "test", "heldout": ["background", "lighting", "distractors"], "overrides": {"cells": [[1, 0, 0, 0, 0, 0, 0], [1, 1, 0, 1, 1, 0, 1], [1, 1, 1, 0, 1, 1, 0], [1, 0, 1, 1, 0, 1, 1], [1, 1, 0, 1, 1, 1, 0], [1, 1, 0, 1, 0, 1, 1], [1, 1, 1, 0, 0, 1, 1], [1, 1, 0, 0, 0, 1, 1], [1, 0, 1, 0, 1, 0, 1], [1, 0, 0, 1, 1, 1, 0], [1, 2, 2, 2, 2, 2, 2], [1, 0, 0, 0, 2, 2, 2]]}},
     "u_cells11_unseen": {"split": "test", "heldout": [], "overrides": {"cells": [[1, 0, 0, 0], [1, 1, 0, 0], [1, 0, 1, 0], [1, 0, 0, 1], [1, 1, 1, 0], [1, 1, 0, 1], [1, 0, 1, 1], [1, 2, 1, 1], [1, 1, 2, 1], [1, 1, 1, 2], [1, 2, 2, 2]], "objects": "unseen"}},
     "m_cells15_new_heldout": {
       "split": "test",

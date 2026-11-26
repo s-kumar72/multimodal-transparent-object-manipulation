@@ -52,6 +52,9 @@ class ScriptedTeacher:
         def segment(a, b, n, grip):
             plan.extend((a + (b - a) * k / n, grip) for k in range(1, n+1))
 
+        if getattr(env, "two", False):       # T3: pick and place twice, in the order the scene was made for
+            self._plan_two(env, rng, tool)
+            return
         if getattr(env, "align", False):     # T2: the same moves with the tool turned to the glass, then to the mat
             self._plan_align(env, rng, obj, tool, grasp, pre)
             return
@@ -69,6 +72,32 @@ class ScriptedTeacher:
             segment(over, put, int(rng.integers(12, 18)), CLOSED)
             segment(put, put, 6, OPEN)
             segment(put, over, 12, OPEN)
+        self.plan, self.t = plan, 0
+
+    def _plan_two(self, env, rng, tool):
+        """Task "two": for each (glass, coaster) of env.plan_two the moves of the pick-and-place, one after the other."""
+        plan, at = [], tool
+
+        def segment(a, b, n, grip):
+            plan.extend((a + (b - a) * k / n, grip) for k in range(1, n + 1))
+
+        for name, i in env.plan_two:
+            obj = env.data.body(name).xpos.copy()
+            grasp = obj + [0, 0, env.grasp_height(name)]
+            pre = grasp + [0, 0, min(LIFT, PRE_Z_MAX - grasp[2])]
+            segment(at, pre, int(rng.integers(20, 30)), OPEN)
+            segment(pre, grasp, int(rng.integers(12, 18)), OPEN)
+            segment(grasp, grasp, 8, CLOSED)
+            segment(grasp, pre, 15, CLOSED)
+            top = env.coaster_top(i)
+            put = np.array([top[0], top[1], grasp[2] + (top[2] - obj[2]) + PLACE_DROP])
+            over = np.array([top[0], top[1], pre[2]])
+            n = int(np.ceil(np.linalg.norm(over - pre) / CARRY_STEP)) + int(rng.integers(0, 6))
+            segment(pre, over, n, CLOSED)
+            segment(over, put, int(rng.integers(12, 18)), CLOSED)
+            segment(put, put, 6, OPEN)
+            segment(put, over, 12, OPEN)
+            at = over
         self.plan, self.t = plan, 0
 
     def _plan_align(self, env, rng, obj, tool, grasp, pre):

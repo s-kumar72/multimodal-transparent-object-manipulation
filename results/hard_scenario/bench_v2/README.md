@@ -285,9 +285,42 @@ shapes in `sim/assets/gen3_lite/place_unseen_scene.xml`: `tallglass` (a straight
 the evaluation env: 22 of 22 for each of the two shapes of T1, 44 of 44 for the tile. Object ids of the records: 8
 (tile), 9 and 10. Existing levels unchanged (regression test).
 
+**Step 4, task T3 `two` in the simulator (11/26 09:44 KST; no demo collected, no policy).** `task: two`, scene
+`sim/assets/gen3_lite/two_scene.xml` (a second coaster), level `sim/configs/V2_two.yaml` (a draft, id 41), test sets
+`j_pairs12` and `k_pairs12_heldout`.
+
+- *Two glasses* of different shapes from the five; the second stands at least 7 cm (edge to edge) from the first. At
+  5 cm the open gripper, which is 14 cm wide, knocked the neighbour over in 2 of 120 teacher episodes.
+- *A cell is a pair*: the colour, depth and thermal state of the first glass and of the second. Each glass has its
+  own alpha, its own depth dropout or see-through, its own temperature. Twelve pairs to start with: both shown by all
+  three; both by depth alone, by thermal alone, by colour alone; six pairs in which the two are shown by different
+  sensors; both faintly; one fully and one faintly. Weights 20, 3 x 8, 6 x 12, 2 x 12 of 140.
+- *Two coasters*, each clear of both glasses, of the distractors and of the other coaster. The scene is made so that
+  it can be done in an order that is visible in it: the glass nearer to the gripper first, to the coaster nearer to
+  that glass if the straight way there passes over nothing and else to the other coaster; then the second glass to
+  the coaster that is left. That is the teacher's plan; a policy may use any order.
+- *Room on the table*: 0 to 2 distractors (1 to 3 in the other tasks), and where even then no such plan exists the
+  distractors are taken off the table. Of 600 scenes 592 have a plan as drawn and 8 after the distractors are
+  removed; none is left without one. With 1 to 3 distractors one scene in ten had no free spot for the coasters.
+- *Success*: each glass upright on a coaster of its own, at rest, let go (the tool above it or 8 cm away in the
+  plane, since the arm goes on to the other glass). The record of an episode has `n_placed`, `picked`, `picked2`; an
+  episode that fails is labelled `placed_0` or `placed_1`.
+- *Teacher*: the pick-and-place of T1 twice. `python sim/task_check.py V2_two -n 240`: 240 of 240, every pair and
+  every shape; 226 steps in the median, 256 at most, of the 480 allowed.
+- Existing levels unchanged (`sim/regression_test.py`, 190 of 190 arrays identical for the four configs).
+
+Not done for T3: the cue of the method for two targets (four cues: which glass first, then the second), a plain rgbdt
+run, the solvability check per pair. The pairs and the number of demos are fixed after the first runs.
+
+**Checking a task** (`python sim/task_check.py LEVEL [-n N] [--test_set SET]`): the teacher on consecutive seeds of the
+training scenes or of a test set; success per shape and per cell, steps, every failure.
+
 ## Files
 
 `real_data/glass_visibility.py` (real sensors), `sim/measure_visibility.py` (the simulator, same functions),
 `measurements/` (their outputs of 11/26). `sim/configs/V2_place.yaml`, `sim/configs/V2_place_warm.yaml` (draft levels).
 T2: `sim/assets/gen3_lite/align_scene.xml`, `sim/configs/V2_align.yaml`, `sim/env.py` (`ALIGN_OBJECTS`, `_mat_target`,
 `placed`), `sim/teacher.py` (`_plan_align`).
+Unseen objects: `sim/assets/gen3_lite/place_unseen_scene.xml`, test set `u_cells11_unseen`. T3:
+`sim/assets/gen3_lite/two_scene.xml`, `sim/configs/V2_two.yaml`, `sim/env.py` (`_second_glass`, `_two_targets`,
+`on_coaster`), `sim/sensors.py` (the second glass's depth), `sim/teacher.py` (`_plan_two`). `sim/task_check.py`.

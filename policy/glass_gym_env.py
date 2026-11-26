@@ -41,6 +41,7 @@ class GlassPickGymEnv(gym.Env):
         self._frame = None
         self._log = None
         self._hcue_model = self._hcue = None
+        self._hang_model = self._hang = None
 
     def _with_hcue(self, raw, reset=False):
         """Adds the hindsight cue (policy/hindsight_cue.py) when the policy has the `hcue` observation: computed from
@@ -57,7 +58,17 @@ class GlassPickGymEnv(gym.Env):
                 torch.set_num_threads(1)      # env workers are forked processes; one thread each, like DataLoader workers
                 ckpt = self.obs_meta["hcue"]["ckpt"]
                 self._hcue_model = [HindsightCue(p) for p in ([ckpt] if isinstance(ckpt, str) else list(ckpt))]
-            self._hcue = np.concatenate([m(raw) for m in self._hcue_model])
+            cues = [m(raw) for m in self._hcue_model]
+            self._hcue = np.concatenate(cues)
+            if "hang" in self.obs_meta:     # the hindsight angle of every cue (policy/hindsight_angle.py), from the same frame
+                if self._hang_model is None:
+                    from policy.hindsight_angle import HindsightAngle
+                    ckpt = self.obs_meta["hang"]["ckpt"]
+                    self._hang_model = [HindsightAngle(p) for p in ([ckpt] if isinstance(ckpt, str) else list(ckpt))]
+                assert len(self._hang_model) == len(cues), "one angle per cue"
+                self._hang = np.concatenate([m(raw, c) for m, c in zip(self._hang_model, cues)])
+        if "hang" in self.obs_meta:
+            return dict(raw, hcue=self._hcue, hang=self._hang)
         return dict(raw, hcue=self._hcue)
 
     def seed(self, seed=None):
@@ -87,6 +98,8 @@ class GlassPickGymEnv(gym.Env):
         raw = self._env.reset(self._seed, obj=obj)
         e = self._env
         self._log = dict(max_lift=0.0, closes=[], z0=e.obj_z0, target0=e.data.body(e.obj).xpos.copy())
+        if getattr(e, "two", False):         # T3: the second glass is followed too
+            self._log.update(max_lift2=0.0, target2=e.data.body(e.obj2).xpos.copy())
         self._frame = raw["rgb"]
         return to_policy_obs(self._with_hcue(raw, reset=True), self.obs_meta)
 
@@ -96,12 +109,18 @@ class GlassPickGymEnv(gym.Env):
         raw, done = e.step(action)
         if action[6] > CLOSED and not was_closed:   # a grasp attempt: where the tool was when closing started
             tool, target = e.data.body("tool_frame").xpos, e.data.body(e.obj).xpos
+            name = e.obj
+            if getattr(e, "two", False):     # T3: the glass the tool is nearer to
+                name = min(e.glasses(), key=lambda n: np.linalg.norm(e.data.body(n).xpos[:2] - tool[:2]))
+                target = e.data.body(name).xpos
             extras = {n: np.linalg.norm(e.data.body(n).xpos[:2] - tool[:2]) for n in e.extra_z0}
             self._log["closes"].append(dict(
                 d_target=float(np.linalg.norm(target[:2] - tool[:2])),
-                dz=float(tool[2] - (self._log["z0"] + e.grasp_height())),   # vs. the right height for this object
+                dz=float(tool[2] - (e.z0[name] + e.grasp_height(name))),   # vs. the right height for this object
                 d_extra=float(min(extras.values())) if extras else None))
         self._log["max_lift"] = max(self._log["max_lift"], float(e.data.body(e.obj).xpos[2] - self._log["z0"]))
+        if "max_lift2" in self._log:
+            self._log["max_lift2"] = max(self._log["max_lift2"], float(e.data.body(e.obj2).xpos[2] - e.z0[e.obj2]))
         self._frame = raw["rgb"]
         reward = float(e.success())
         return to_policy_obs(self._with_hcue(raw), self.obs_meta), reward, done, {}
@@ -129,6 +148,8 @@ class GlassPickGymEnv(gym.Env):
             return None
         if e.success():
             return "success"
+        if getattr(e, "two", False):         # T3: how many of the two glasses stand on a coaster at the end
+            return f"placed_{e.placed_count()}"
         if e.place and log["max_lift"] >= PICKED:
             b = e.data.body(e.obj)
             if b.xmat[8] <= PLACE_UPRIGHT:
@@ -166,10 +187,16 @@ class GlassPickGymEnv(gym.Env):
         if self._env.place:             # pick-and-place: was the glass picked, and how far from the coaster it ended
             rec.update(picked=bool(self._log["max_lift"] >= PICKED), place_offset=self._env.place_offset(),
                        coaster_xy=[float(v) for v in self._env.place_xy])
+        if getattr(self._env, "two", False):     # T3: the second glass, and how many stand on a coaster at the end
+            rec.update(obj2_name=self._env.obj2, picked2=bool(self._log["max_lift2"] >= PICKED),
+                       n_placed=self._env.placed_count(), coaster2_xy=[float(v) for v in self._env.place_xy2[1]],
+                       target2_xyz=[float(v) for v in self._log["target2"]])
         if getattr(self._env, "align", False):   # T2: how far the glass is turned from the mat at the end (deg)
             rec.update(yaw_error=self._env.yaw_error())
         if self._hcue is not None:      # the cue the policy was given, and where the glass really was (for the analysis)
             rec.update(hcue=[float(v) for v in self._hcue], target_xyz=[float(v) for v in self._log["target0"]])
+        if self._hang is not None:      # the angles the policy was given (cos 2a, sin 2a per cue)
+            rec.update(hang=[float(v) for v in self._hang])
         return rec
 
     def render(self, mode="rgb_array"):
