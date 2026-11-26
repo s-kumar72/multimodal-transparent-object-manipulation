@@ -1,0 +1,31 @@
+## peaks
+V2_align: 700 demos, first frame; grasp pixel u 36.5 to 52.2, v 34.5 to 49.8; the mean grasp pixel is within 1.5 px of the grasp pixel in 0.08 of the demos
+  rgb blind (272 demos): own peak within 1.5 px 0.40, within 3 px 0.79; paired with the grasp pixels of other demos 0.07; correlation of the peak with the grasp pixel u 0.87, v 0.84
+  depth blind (270 demos): own peak within 1.5 px 0.29, within 3 px 0.71; paired with the grasp pixels of other demos 0.07; correlation of the peak with the grasp pixel u 0.78, v 0.80
+  thermal blind (266 demos): own peak within 1.5 px 0.23, within 3 px 0.54; paired with the grasp pixels of other demos 0.07; correlation of the peak with the grasp pixel u 0.50, v 0.45
+L0_vis: 700 demos, first frame; grasp pixel u 36.0 to 52.5, v 30.7 to 49.5; the mean grasp pixel is within 1.5 px of the grasp pixel in 0.06 of the demos
+  rgb blind (270 demos): own peak within 1.5 px 0.10, within 3 px 0.39; paired with the grasp pixels of other demos 0.06; correlation of the peak with the grasp pixel u 0.52, v 0.37
+  depth blind (270 demos): own peak within 1.5 px 0.13, within 3 px 0.38; paired with the grasp pixels of other demos 0.06; correlation of the peak with the grasp pixel u 0.60, v 0.39
+  thermal blind (270 demos): own peak within 1.5 px 0.08, within 3 px 0.29; paired with the grasp pixels of other demos 0.05; correlation of the peak with the grasp pixel u 0.21, v 0.08
+
+## frames
+V2_align, colour blind, 130 scenes of seeds 0 to 329, 96 x 96 frame with and without the glass: any pixel differs in 0.05 of the scenes (in those: 1 pixels, by at most 1 of 255); a pixel within 3 px of the glass differs in 0.00
+V2_align, depth blind, 128 scenes of seeds 0 to 329, 96 x 96 frame with and without the glass: any pixel differs in 0.06 of the scenes (in those: 2 pixels, by at most 3 of 255); a pixel within 3 px of the glass differs in 0.05
+V2_place, colour blind, 129 scenes of seeds 0 to 329, 96 x 96 frame with and without the glass: any pixel differs in 0.09 of the scenes (in those: 1 pixels, by at most 2 of 255); a pixel within 3 px of the glass differs in 0.02
+V2_place, depth blind, 125 scenes of seeds 0 to 329, 96 x 96 frame with and without the glass: any pixel differs in 0.01 of the scenes (in those: 3 pixels, by at most 1 of 255); a pixel within 3 px of the glass differs in 0.01
+L0_vis, colour blind, 129 scenes of seeds 0 to 329, 96 x 96 frame with and without the glass: any pixel differs in 0.08 of the scenes (in those: 2 pixels, by at most 4 of 255); a pixel within 3 px of the glass differs in 0.04
+L0_vis, depth blind, 125 scenes of seeds 0 to 329, 96 x 96 frame with and without the glass: any pixel differs in 0.01 of the scenes (in those: 3 pixels, by at most 1 of 255); a pixel within 3 px of the glass differs in 0.01
+
+## layout
+V2_align, seeds 0 to 699: spawn region 12 x 30 cm; distractors on the table: median 2 (1 to 3); share of the spawn region the glass can be in given the distractors: median 0.32, given the place target too: 0.13
+  guess from the centre of the spawn region (no layout): median error 8.5 cm, within 1.5 cm 0.03, within 3 cm 0.08, within 5 cm 0.20
+  guess from the distractors: median error 4.0 cm, within 1.5 cm 0.11, within 3 cm 0.35, within 5 cm 0.66
+  guess from the distractors and the place target: median error 3.1 cm, within 1.5 cm 0.20, within 3 cm 0.49, within 5 cm 0.80
+V2_place, seeds 0 to 699: spawn region 12 x 30 cm; distractors on the table: median 2 (1 to 3); share of the spawn region the glass can be in given the distractors: median 0.38, given the place target too: 0.25
+  guess from the centre of the spawn region (no layout): median error 8.5 cm, within 1.5 cm 0.03, within 3 cm 0.08, within 5 cm 0.20
+  guess from the distractors: median error 4.6 cm, within 1.5 cm 0.10, within 3 cm 0.27, within 5 cm 0.56
+  guess from the distractors and the place target: median error 3.8 cm, within 1.5 cm 0.14, within 3 cm 0.37, within 5 cm 0.67
+L0_vis, seeds 0 to 699: spawn region 12 x 30 cm; distractors on the table: median 2 (1 to 3); share of the spawn region the glass can be in given the distractors: median 0.38, given the place target too: 0.38
+  guess from the centre of the spawn region (no layout): median error 8.5 cm, within 1.5 cm 0.03, within 3 cm 0.08, within 5 cm 0.20
+  guess from the distractors: median error 4.6 cm, within 1.5 cm 0.10, within 3 cm 0.27, within 5 cm 0.56
+  guess from the distractors and the place target: median error 4.6 cm, within 1.5 cm 0.10, within 3 cm 0.27, within 5 cm 0.56

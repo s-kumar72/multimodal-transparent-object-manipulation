@@ -421,6 +421,67 @@ nothing else; the listings and read-outs above are as they were.
 *11/26 17:51 KST:* the plain run of T3 is moved before that of T2 (neither has started). Its demos and its episodes are
 twice as long, so it is the longest of the runs that decide the freeze and should not be the last to end.
 
+*11/26 19:36 KST: the method's run on T2 is in the queue*, after the plain run of T2 (`V2_align_rgbdt_700demos_hcg2a_cue`,
+the command as listed). Its fits exist since 19:25 KST (700 demos, out of fold, the rule `consensus`):
+
+- grasp cue: within 1.5 cm of the hindsight grasp point in 0.81 of the demos. At reset on the 660 scenes of
+  `j_cells11` it is within 1.5 cm of the glass in 0.79: cells 0 to 3 and 10 0.92 to 1.00, cells 5 to 7 0.83 to 0.85,
+  cell 8 (depth faint alone) 0.67, cell 4 (thermal alone) 0.58, cell 9 (thermal faint alone) 0.08;
+- place cue: within 1.5 cm in 0.89 of the demos, 0.82 to 0.94 by cell;
+- hindsight angle of the grasp: within 15 degrees in 0.94 of the demos (cell 9 0.61, cell 8 0.85, the others 0.90 to
+  1.00); of the place: 1.00.
+
+In cell 9 the cue does not find the glass (thermal alone, in its faint range of 3 to 10 noise units). Whether that
+cell can be solved at all is what the rule of the thermal states above decides, on `V2_place` and by the pilot;
+nothing is decided from these fits. A start test in the debug mode of Diffusion Policy with the four folders (six
+training steps, two rollouts of 11 episodes, the final evaluation on 11 episodes of each test set; the episode
+records carry the cue, the angles, `picked` and `yaw_error`) ran through. Its files are deleted.
+
+**A cache that was out of date (11/26 19:42 KST).** The fits of `V2_place` that the preparation started at 19:25 ended
+within three minutes. `policy/hindsight_cue.py` keeps the maps of its networks in `maps.pt` and reads them again when
+the path of the demo set and the settings are the same, and the maps in `data/hcue/V2_place_700`, `..._release` and
+those of `V2_place_warm` were of this morning (08:00 to 10:04 KST): made from the demos that were collected before
+the correction of colour blind and collected again at 10:27 and 10:36. Those cues came from networks trained on the
+earlier images; their report showed the 0.37 of the correction again, which is how it was seen. The folders are
+removed and fitted again from the current demos (from 19:42 KST). Not affected: `V2_align` (maps of 18:24 and 19:01
+KST, demos of 10:45) and `V2_place_700_early` (the one network keeps no maps; fitted 19:28 to 19:40). No policy run
+has used a cue of `V2_place`: the method's pilot lines have not started. The cache does not look at the demo set
+itself. The code is not changed while runs execute from this worktree; until then a cue folder is removed whenever
+its demo set is collected again, and the preparation checks the dates.
+
+**What a blind sensor still shows: the layout (11/26 19:51 KST; looked at when the fits of T2 were read, not a test fixed in
+advance).** In the report of the T2 cue the sensors' own maps are on the grasp pixel also where the sensor does not
+show the glass: within 1.5 px in 0.40 of the colour-blind demos, 0.29 of the depth-blind and 0.23 of the
+thermal-blind ones. On `L0_vis` these are 0.10, 0.13 and 0.08, and the same peaks paired with the grasp pixels of
+other demos give 0.07. Two checks (`policy/check_blind_layout.py`, output in [`blind_layout.txt`](blind_layout.txt)):
+
+1. *The frames.* At the policy's 96 x 96 the colour-blind frame of `V2_align` with the glass and with the glass
+   taken out of the scene differ in 0.05 of 130 scenes, by one pixel and one grey level, never within 3 px of the
+   glass; the depth-blind frames in 0.06 of 128 scenes (two pixels, at most 3 of 255). `V2_place` and `L0_vis` are
+   the same. The glass is not in these images.
+2. *The layout.* The generator keeps every distractor 9 cm (edge to edge) away from the glass and the place target
+   clear of it, and the glass spawns in a region of 12 x 30 cm. With one to three things on the table besides the
+   place target, that leaves little: the spawn points at which the glass can be are a median 0.13 of the region on
+   `V2_align`, 0.25 on `V2_place` and 0.38 on `L0_vis`. Their centroid, computed from the positions of the
+   distractors and the place target and from no image, is a median 3.1 cm from the glass on `V2_align` (within 3 cm
+   in 0.49 of 700 scenes), 3.8 cm on `V2_place` (0.37) and 4.6 cm on `L0_vis` (0.27). The centre of the spawn region
+   is 8.5 cm away (0.08).
+
+So a sensor that is blind to the glass still shows where the glass is not, and a network turns that into a position
+a few centimetres off. Consistent with it, the three sensors are in the order of how much of the layout each shows
+(colour all of it, depth less of the flat mat, thermal only what differs in temperature). It is a property of the
+scenes in both versions of the benchmark, weaker in the first (0.07 to 0.15 on `L0_vis` and `L0_vis_place`) and
+strongest on T2, where the mat and the glass are large. It is open to every policy alike, baseline or method, and it
+is not information from the simulator: a camera sees the same in a real scene that is laid out this way. What it
+changes is how a cell is read. "Colour is blind" means that the glass is not in the colour image, not that the
+colour image says nothing about where to grasp; and in the cells whose only sensor is faint (7, 8, 9) part of a
+policy's success can come from the layout.
+
+Nothing is changed. A clearance of this order is what the open gripper (14 cm wide) needs to come down around the
+glass; how small it could be was not tested, and a larger spawn region or more distractors would change the scenes of
+every level, the frozen ones included. Open, for the user: whether the scenes stay as they are (the proposal), with a
+reference per task that gets no glass in any image, so that the share of the layout is a number in the tables.
+
 **Still open for the freeze.** T2 has three training shapes, so a number of demos that is a multiple of 210 keeps the
 cell weights exact (630 or 840; 700 gives 76 / 70 / 68 demos in cells 1 to 3). T3: the cue of the method for two
 targets. The plain runs of T2 and T3 and the solvability checks.
