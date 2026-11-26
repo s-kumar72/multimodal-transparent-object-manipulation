@@ -478,6 +478,24 @@ end of the queue use: the grasp cue at reset is within 1.5 cm of the glass in 0.
 9, and the one network is not behind the cue of the method in the cells with thermal alone. Fits only; what the
 policies do in those cells is read from the runs.
 
+*11/27 08:54 KST: the reference run of the thermal rule is queued before the fourth pilot run has ended.* Three of the
+four pilot runs of `V2_place` have ended: plain rgbdt 0.514, plain rgbd 0.505, `cue` 0.784 (macro average of the 11
+cells, 1320 episodes each; `readout_pilot.txt` is written when the fourth has ended). Cell 9 (thermal faint alone) is
+below 0.30 in all three, 0.092, 0.067 and 0.158; no other cell is below 0.30 in all three (cell 4, thermal alone:
+0.058, 0.067, 0.458). The fourth run, the one network, has not started: it waits for two GPUs that are lent out and
+ends at about 20:00 today. The rule above adds `V2_place_rgbt_430demos_thermal_imagenet` when a cell is below 0.30 in
+all four runs. The run is queued now instead, behind the runs that decide the freeze and before the remaining runs
+of the first version, so that it ends at about 17:30 today and not in the night after the fourth run. The rule itself
+is as written: the reference decides something only if the one network is below 0.30 in cell 9 as well; if that run
+solves the cell, the reference is reported and nothing follows from it. What follows from the reference is fixed in
+point 3 above and is not chosen after its result. Demos: `results/data/sim_demos_V2_place_430_thermal.zarr`, the 430
+demos of cells 0, 1, 2, 4, 9, 10 of the 700 (`python policy/subset_demos.py results/data/sim_demos_V2_place_700.zarr
+results/data/sim_demos_V2_place_430_thermal.zarr --cells 0 --cells 1 --cells 2 --cells 4 --cells 9 --cells 10`: 140,
+70, 70, 50, 50, 50). Command: that of the plain runs of the pilot with `ZARR=` this set, `TAG=thermal_imagenet` and
+`bash scripts/run_experiment.sh V2_place rgbt 430`; the configuration of the run was printed and checked (colour and
+thermal images, no depth), no start test was run because four jobs were running. Not fixed in advance: the time at
+which the run is queued. A run that fails is reported and not started again.
+
 **What a blind sensor still shows: the layout (11/26 19:51 KST; looked at when the fits of T2 were read, not a test fixed in
 advance).** In the report of the T2 cue the sensors' own maps are on the grasp pixel also where the sensor does not
 show the glass: within 1.5 px in 0.40 of the colour-blind demos, 0.29 of the depth-blind and 0.23 of the
