@@ -1,0 +1,22 @@
+# glass_pick_hcue2 for task "align" of the second version of the benchmark: the two hindsight cues (grasp, place) and the
+# hindsight angle of each (policy/hindsight_angle.py): the direction the gripper is turned to at the grasp (the glass's
+# long side) and where it lets go (the mat's), as (cos 2a, sin 2a), learned from the demos alone like the cues.
+# hang_dir, hang_dir2: output folders of `python policy/hindsight_angle.py <the same demo set> --cue <hcue_dir> --out
+# <hang_dir>` and `... --event release --cue <hcue_dir2> --out <hang_dir2>`.
+defaults:
+  - glass_pick_hcue2
+  - _self_
+
+name: glass_pick_hcue2a
+hcue_dir: data/hcue/V2_align_700
+hcue_dir2: data/hcue/V2_align_700_release
+hang_dir: data/hang/V2_align_700
+hang_dir2: data/hang/V2_align_700_release
+
+shape_meta:
+  obs:
+    hang:
+      shape: [4]           # (cos 2a, sin 2a) of the grasp, then of the place
+      type: low_dim
+      file: ["${task.hang_dir}/train_ang.npy", "${task.hang_dir2}/train_ang.npy"]
+      ckpt: ["${task.hang_dir}/ang.pt", "${task.hang_dir2}/ang.pt"]

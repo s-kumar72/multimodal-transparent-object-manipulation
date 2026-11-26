@@ -560,6 +560,10 @@ class GlassPickEnv:
 
         def plan(c):
             for i in sorted((0, 1), key=lambda i: np.linalg.norm(c[i] - pos[first])):
+                # the first glass, standing on its coaster, is as far from the second as the two are from each other
+                # at the start: the open gripper comes down on the second next to it (it knocked it over in 1 of 120)
+                if np.linalg.norm(c[i] - pos[second]) - rad[first] - rad[second] < TWO_GAP:
+                    continue
                 if clear(first, pos[first], c[i], [(pos[second], rad[second])] + others) and \
                         clear(second, pos[second], c[1 - i], [(c[i], rad[first])] + others):
                     return [(first, i), (second, 1 - i)]

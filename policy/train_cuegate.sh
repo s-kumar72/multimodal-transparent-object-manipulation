@@ -13,6 +13,8 @@
 # mods  rgb | rgbd | rgbt | rgbdt (joint angles always included)
 # The cue of the demo set must exist (python policy/hindsight_cue.py <zarr> --out <dir>; task.hcue_dir=<dir>, default
 # data/hcue/L0_vis_700). Image encoders start from ImageNet as the baselines of L0_vis do.
+# ANGLE=1 with CUES=2 (task "align"): the task glass_pick_hcue2a, the two cues and the hindsight angle of each
+#   (policy/hindsight_angle.py; task.hang_dir, task.hang_dir2).
 # CUES=2 (pick-and-place): the task glass_pick_hcue2, the grasp cue and the place cue (task.hcue_dir, task.hcue_dir2);
 # every arm then has both cues, and a sensor's gate is the larger of its two r.
 set -e
@@ -48,5 +50,6 @@ export SDL_VIDEODRIVER=dummy
 export WANDB_MODE=${WANDB_MODE:-offline}
 
 [ "${CUES:-1}" = 2 ] && TASK="task=glass_pick_hcue2" || TASK=""
+[ "${CUES:-1}" = 2 ] && [ "${ANGLE:-0}" = 1 ] && TASK="task=glass_pick_hcue2a"
 python $DP_ROOT/train.py --config-dir=policy/config --config-name=train_glass_cuegate_unet_image $TASK \
     task.zarr_path=$ZARR exp_name=${ARM}_${MODS} policy.obs_encoder.rgb_model.weights=IMAGENET1K_V1 $DROP $ARM_OVR "$@"
