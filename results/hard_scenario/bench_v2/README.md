@@ -496,9 +496,70 @@ design's real pairs).
 right way, not that it looks like real glass in every respect; a "no" in 2 or 3 can also come from the scenes around
 the glass, which differ. The limits listed with the first design hold. It does not replace a real robot.
 
+**Result of the second design (11/26 11:41 KST).** [`real_check/readout2.txt`](real_check/readout2.txt); 3000 pairs of
+the simulator, the 3050 real pairs of the first design.
+
+*Rule 1, the floor: holds.* Colour blind 0.50 (1162 pairs), depth see-through 0.50 (1166 pairs): with the same window
+rendered with and without the glass, nothing but the glass tells the two apart.
+
+| sensor, bin | simulator's own AUC | real network's own AUC (an upper bound) | real network on the simulator's pairs: AUC; share of pairs with the glass scored higher | rule 2: does a real-glass network respond? | simulator's network on real pairs | rule 3 |
+|---|---|---|---|---|---|---|
+| depth, hole | 1.00 | 0.99 | 0.92; 1.00 | **yes** | 0.83 | **transfers** |
+| depth, partial (42 real pairs) | 1.00 | 0.83 | 0.47; 0.39 | not judged | 0.81 | not judged |
+| depth, see-through | 0.50 | 0.97 | 0.50; 0.03 | no | 0.34 | does not transfer |
+| thermal, below 3 units (35 real pairs) | 0.66 | 0.92 | 0.50; 0.48 | not judged | 0.45 | not judged |
+| thermal, 3 to 10 | 0.93 | 0.92 | 0.51; 0.59 | no | 0.55 | does not transfer |
+| thermal, 10 to 30 | 0.99 | 0.98 | 0.59; 0.87 | no | 0.29 | does not transfer |
+| thermal, 30 to 103 | 1.00 | 0.99 | 0.80; 0.98 | **yes** | 0.36 | does not transfer |
+| thermal, above 103 (42 simulator pairs) | 1.00 | 1.00 | 0.88; 1.00 | not judged | 0.54 | not judged |
+| colour, below 3 grey levels | 0.50 | 0.74 | 0.50; 0.00 | no | 0.59 | does not transfer |
+| colour, 3 to 10 | 1.00 | 0.72 | 0.48; 0.38 | no | 0.49 | does not transfer |
+| colour, 10 to 20 | 1.00 | 0.83 | 0.51; 0.53 | no | 0.48 | does not transfer |
+| colour, 20 to 45 | 1.00 | 0.78 | 0.46; 0.24 | no | 0.52 | does not transfer |
+| colour, above 45 | 1.00 | 0.91 | 0.43; 0.09 | no | 0.64 | does not transfer |
+
+- **Depth, the hole: the look carries over both ways.** A network that learned real holes scores the simulator's
+  window with the glass higher in every pair, and the simulator's network finds real holes (0.83). The state "depth
+  shows" of the second version is supported.
+- **Thermal: a network that learned real glass responds to the simulator's glass at the contrast of "shows"** (30 to
+  103 units: 0.80, the window with the glass higher in 0.98 of the pairs). At 10 to 30 units the rule says no (0.59
+  against the 0.74 it asks for); next to the read-out: the window with the glass is still the higher one in 0.87 of
+  the pairs. The AUC ranks windows of different episodes against each other, and the real network's score differs
+  more between scenes than a weak glass moves it. At 3 to 10 units ("faint") it does not respond (0.51; 0.59 of the
+  pairs). The other way round nothing transfers, and at 10 to 103 units the simulator's network scores real glass
+  below the real background (0.29, 0.36): it learned "a patch that differs from the table", and real scenes have more
+  of those next to the glass than on it. That is a difference of the scenes, and this test cannot take it apart from
+  the look of the glass.
+- **Colour: no in every bin, both ways.** A network that learned real glass does not respond to the simulator's
+  glass; at a contrast of 20 grey levels and more it scores the window with the simulated glass lower than the same
+  window without it (the glass higher in 0.24 and 0.09 of the pairs). The simulator's network does not find real
+  glass (0.48 to 0.64). Section 2 said the renderer does not refract or reflect, so that glass does not look like
+  glass where its contrast is right; this is that limit with a number. The real colour network is also the weakest of
+  the three (0.72 to 0.91 on its own pairs), so part of the "no" may be that it learned the surroundings.
+- **Inside the simulator, a state that is not blind is always found in the pair**: 1.00 for colour and depth from
+  the faint states on, 0.93 for thermal faint. The cells' difficulty for a policy does not come from the pair being
+  hard to tell apart; it comes from finding the glass in one image.
+- **Thermal "blind" is not blind in the pair: 0.66** (0.64 to 0.67, 1031 pairs). The glass at up to 0.1 degC from
+  the table, averaged over its pixels, and the glass in front of something warmer or colder leave a trace. Whether a
+  network that has to find the glass uses it: on `L0_vis`, which has the same blind contrast, the thermal network of
+  the cue has its peak on the glass in 0.08 of the thermal-blind frames, as the colour and depth networks in their
+  blind frames (0.10, 0.13), so there is no sign of it. The same number is read from the cue reports of `V2_place`
+  when they are fitted.
+- **Open, and this test cannot settle it: is real "blind" blind?** On real pairs the real networks reach 0.97 where
+  the lidar sees through the glass, 0.92 below 3 thermal units (35 pairs) and 0.74 below 3 grey levels. These are
+  upper bounds (real pairs have no floor: the surroundings of the two windows differ), but if a part of them is the
+  glass, the simulator's blind states are more blind than real sensors are.
+
+**What follows, as a proposal; nothing is changed by this.** Depth "shows" is supported. Thermal "shows" is supported
+one way; thermal "faint" is not shown either way. The colour image of the glass is not supported. For the colour
+image the choices are: (a) leave it and state it, as now; (b) before the freeze, try a colour model of glass in the
+sensor (the background seen through it shifted as by refraction, highlights, a darker rim) and repeat this check,
+which now exists and takes ten minutes; (c) leave the answer to the real robot. The user decides.
+
 ## Files
 
 `real_data/glass_visibility.py` (real sensors), `sim/measure_visibility.py` (the simulator, same functions),
+`real_data/findability.py` (section 11: the check against real images, both designs), `real_check/` (its read-outs).
 `measurements/` (their outputs of 11/26). `sim/configs/V2_place.yaml`, `sim/configs/V2_place_warm.yaml` (draft levels).
 T2: `sim/assets/gen3_lite/align_scene.xml`, `sim/configs/V2_align.yaml`, `sim/env.py` (`ALIGN_OBJECTS`, `_mat_target`,
 `placed`), `sim/teacher.py` (`_plan_align`).

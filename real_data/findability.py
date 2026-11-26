@@ -7,6 +7,13 @@ Is glass of a given visibility as hard to find in the simulator as in real senso
   python real_data/findability.py fit     [--device cuda]                           classifiers: out of fold and across the domains
   python real_data/findability.py readout                                           the tables
 
+Second design (section 11, after the first failed its control: in the simulator the surroundings of the two windows
+differ and give the answer away). In the simulator the pair is the same window with the glass and with the glass
+moved out of the scene:
+  python real_data/findability.py simpair [--level V2_place] [-n 3000]
+  python real_data/findability.py fit --sim simpair
+  python real_data/findability.py readout2
+
 Unit: a glass region of a frame, a square window of 1.5 times the longer side of its bounding box around it and a
 background window of the same size in the same frame (centre 1.0 to 2.5 window sides away, at most 5% glass), both at
 32 x 32. Per sensor a small network tells the two apart; the AUC is read per bin of the region's visibility number
@@ -229,6 +236,71 @@ def sim(level, n, out):
     _save(out, recs, {level: c}, dict(level=level, episodes=n, cells=cells))
 
 
+@cli.command()
+@click.option("--level", default="V2_place", show_default=True)
+@click.option("-n", default=3000, show_default=True, help="episodes (consecutive seeds from 0)")
+@click.option("--out", default="data/real_check/simpair.npz", show_default=True)
+def simpair(level, n, out):
+    """The window around the glass, and the same window of the same scene rendered with the glass 10 m away."""
+    import mujoco
+    sys.path.insert(0, "sim")
+    from env import GlassPickEnv
+    from testsets import manifest
+    env = GlassPickEnv(config=manifest()["levels"][level])
+    s_ = env.sensors
+
+    def frame(rng):
+        return s_.render(env.data, env.temps, env.emis, env.t_env, rng, env.sensor_scene)
+
+    recs, c, cells = [], dict(pair=0, nofit=0, noregion=0), []
+    for seed in range(n):
+        env.reset(seed)
+        rgb, depth, _, raw = frame(np.random.default_rng([2, seed, 0]))
+        r = s_.r
+        r.enable_depth_rendering()
+        r.update_scene(env.data, camera=s_.camera, scene_option=s_.show_all)
+        true = r.render().copy()
+        r.disable_depth_rendering()
+        r.enable_segmentation_rendering()
+        r.update_scene(env.data, camera=s_.camera, scene_option=s_.show_all)
+        seg = r.render()[..., 0].copy()
+        r.disable_segmentation_rendering()
+        glass = np.isin(seg, [g for g in s_.transparent_geoms if env.model.geom_bodyid[g] == env.model.body(env.obj).id])
+        regs = glass_regions(glass)
+        if not regs:
+            c["noregion"] += 1
+            continue
+        reg, ring = max(regs, key=lambda x: x[0].sum())
+        h, w = reg.shape
+        ys, xs = np.nonzero(reg)
+        s = int(round(K * max(ys.max() - ys.min() + 1, xs.max() - xs.min() + 1)))
+        y0, x0 = int(round((ys.max() + ys.min()) / 2 - s / 2)), int(round((xs.max() + xs.min()) / 2 - s / 2))
+        if s > min(h, w) or y0 < 0 or x0 < 0 or y0 + s > h or x0 + s > w:
+            c["nofit"] += 1
+            continue
+        c["pair"] += 1
+        q = env.obj_q[env.obj]
+        env.data.qpos[q] += 10.0                      # the glass out of the scene; nothing else changes
+        mujoco.mj_forward(env.model, env.data)
+        rgb0, depth0, _, raw0 = frame(np.random.default_rng([2, seed, 1]))
+        d, t = depth[reg], true[reg]
+        rec = dict(group=str(seed), v_rgb=rgb_contrast(luminance(rgb), reg, ring), v_missing=float((d == 0).mean()),
+                   v_behind=float(((d - t > BEHIND_MM / 1000) & (d > 0)).mean()),
+                   rgb=np.stack([rgb_win(rgb, y0, x0, s), rgb_win(rgb0, y0, x0, s)]),
+                   depth=np.stack([depth_win(depth, y0, x0, s), depth_win(depth0, y0, x0, s)]))
+        f = glass.shape[0] // raw.shape[0]
+        reg_t, ring_t = reg[::f, ::f], ring[::f, ::f]
+        if reg_t.sum() >= 20 and ring_t.sum() >= 20:
+            st = max(2, int(round(s / f)))
+            a = [min(int(round(v / f)), lim - st) for v, lim in zip((y0, x0), raw.shape)]
+            rec.update(v_thermal=abs(float(np.median(raw[reg_t]) - np.median(raw[ring_t]))) / TRANSPOSE_NOISE,
+                       thermal=np.stack([thermal_win(raw, a[0], a[1], st), thermal_win(raw0, a[0], a[1], st)]))
+        recs.append(rec)
+        cells.append(int(env.episode_info["cell"]))
+    env.close()
+    _save(out, recs, {level: c}, dict(level=level, episodes=n, cells=cells))
+
+
 # ------------------------------------------------------------------------------------------------ classifiers
 def _net(c):
     import torch.nn as nn
@@ -290,8 +362,9 @@ def _folds(groups, k=5):
 @cli.command()
 @click.option("--dir", "d", default="data/real_check", show_default=True)
 @click.option("--device", default="cuda", show_default=True)
-def fit(d, device):
-    dom = {k: np.load(Path(d) / f"{k}.npz") for k in ("real", "sim")}
+@click.option("--sim", "simname", default="sim", show_default=True, help="sim (first design) or simpair (second)")
+def fit(d, device, simname):
+    dom = {"real": np.load(Path(d) / "real.npz"), "sim": np.load(Path(d) / f"{simname}.npz")}
     out = {}
     for sensor in SENSORS:
         x, grp = {}, {}
@@ -310,9 +383,10 @@ def fit(d, device):
             full = np.full((len(has), 2), np.nan, np.float32)
             full[has] = _score(_train(x[a], device), x[b], device)
             out[f"{a}2{b}_{sensor}"] = full
-    tmp = Path(d) / "scores.tmp.npz"
+    name = "scores" if simname == "sim" else f"scores_{simname}"
+    tmp = Path(d) / f"{name}.tmp.npz"
     np.savez_compressed(tmp, **out)
-    os.replace(tmp, Path(d) / "scores.npz")
+    os.replace(tmp, Path(d) / f"{name}.npz")
 
 
 # ------------------------------------------------------------------------------------------------ read-out
@@ -389,6 +463,54 @@ def readout(d):
                   + f" | {same} | " + (f"{cross['real']:.2f}" if nr >= 2 else "-") + " | " + (f"{cross['sim']:.2f}" if ns >= 2 else "-") + f" | {tr} |")
         if floor:
             print(f"\nThe floor of the test (the simulator's blind state, bin \"{BLIND[sensor]}\"): AUC {floor[1]:.2f} ({floor[2]}) on {floor[0]} pairs; 0.5 if the windows give nothing away without the glass.\n")
+
+
+@cli.command()
+@click.option("--dir", "d", default="data/real_check", show_default=True)
+def readout2(d):
+    """Second design: the simulator's pairs are the same window with and without the glass."""
+    d = Path(d)
+    dom = {"real": np.load(d / "real.npz"), "sim": np.load(d / "simpair.npz")}
+    meta = {"real": json.load(open(d / "real.json")), "sim": json.load(open(d / "simpair.json"))}
+    sc = np.load(d / "scores_simpair.npz")
+    print("# Check against real sensor images, second design: in the simulator the same window with and without the glass\n")
+    print(f"Real: {meta['real']['pairs']} pairs (glass window, background window of the same frame). Simulator: {meta['sim']['pairs']} pairs "
+          f"of {meta['sim']['episodes']} episodes of `{meta['sim']['level']}`, regions {meta['sim']['regions']}.\n")
+    for sensor, (key, unit, bins) in BINS.items():
+        print(f"## {sensor} (bins: {unit})\n")
+        print("| bin | simulator: pairs | simulator's own AUC, with against without the glass (95%) | real: pairs | real network's own AUC (95%) "
+              "| real network on the simulator's pairs: AUC | share of pairs in which the window with the glass scores higher "
+              "| does a real-glass network respond to the simulator's glass? | simulator's network on real pairs: AUC | does it find real glass? |")
+        print("|---|---|---|---|---|---|---|---|---|---|")
+        notes = []
+        for lo, hi, label in bins + [(-np.inf, np.inf, "all")]:
+            sel, own, bs = {}, {}, {}
+            for k in ("real", "sim"):
+                v, s = dom[k][key], sc[f"{k}_{sensor}"]
+                sel[k] = np.isfinite(s[:, 0]) & np.isfinite(v) & (v >= lo) & (v < hi)
+                own[k] = auc(s[sel[k], 0], s[sel[k], 1])
+                bs[k] = boot(s[sel[k]], dom[k]["group"][sel[k]], seed=1 if k == "sim" else 0) if sel[k].sum() >= 2 else np.full(1000, np.nan)
+            nr, ns = int(sel["real"].sum()), int(sel["sim"].sum())
+            r2s, s2r = sc[f"real2sim_{sensor}"][sel["sim"]], sc[f"sim2real_{sensor}"][sel["real"]]
+            a_r2s, share, a_s2r = auc(r2s[:, 0], r2s[:, 1]), (float(np.mean(r2s[:, 0] > r2s[:, 1])) if ns else np.nan), auc(s2r[:, 0], s2r[:, 1])
+            judged = label != "all" and min(nr, ns) >= 50 and np.isfinite(own["real"]) and own["real"] >= 0.60
+            need = 0.5 + 0.5 * (own["real"] - 0.5) if judged else np.nan
+            v2 = ("yes" if a_r2s >= need else "no") if judged else ("-" if label == "all" else "not judged")
+            v3 = ("transfers" if a_s2r >= need else "does not transfer") if judged else ("-" if label == "all" else "not judged")
+            f = lambda n_, a_, b_: f"{a_:.2f} ({ci(b_)})" if n_ >= 2 else "-"
+            print(f"| {label} | {ns} | {f(ns, own['sim'], bs['sim'])} | {nr} | {f(nr, own['real'], bs['real'])} | "
+                  + (f"{a_r2s:.2f}" if ns >= 2 else "-") + " | " + (f"{share:.2f}" if ns >= 2 else "-") + f" | {v2} | "
+                  + (f"{a_s2r:.2f}" if nr >= 2 else "-") + f" | {v3} |")
+            if label == BLIND[sensor]:
+                lo_b, hi_b = np.nanquantile(bs["sim"], [0.025, 0.975])
+                if sensor == "thermal":
+                    notes.append(f"Thermal blind (below 3 noise units): the simulator's network reaches {own['sim']:.2f} ({lo_b:.2f} to {hi_b:.2f}) "
+                                 f"on {ns} pairs; 0.5 would be blind to a network.")
+                else:
+                    ok = 0.45 <= own["sim"] <= 0.55
+                    notes.append(f"Floor (rule 1): the simulator's own AUC in its blind state is {own['sim']:.2f} ({lo_b:.2f} to {hi_b:.2f}) on {ns} pairs: "
+                                 + ("within 0.45 to 0.55, the paired test gives nothing away." if ok else "OUTSIDE 0.45 to 0.55: nothing else of this sensor is read."))
+        print("\n" + "\n".join(notes) + "\n")
 
 
 if __name__ == "__main__":
