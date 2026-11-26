@@ -1,0 +1,29 @@
+(the mean of 5 networks, each trained on 1638 real pairs; on the 617 pairs of the other half whose surroundings are plain (std below 25) its AUC is 0.76, on the other 1824 0.62)
+Judge A: its own AUC on the real pairs of the other half 0.66 (0.59 to 0.82); a state passes at 0.58 (0.5 + half of the margin).
+
+| simulator's pairs | state | pairs | judge's AUC, with against without the glass (95%) | share of pairs with the glass scored higher | responds? |
+|---|---|---|---|---|---|
+| simpair_opt | shows | 1413 | 0.54 (0.54 to 0.55) | 0.64 | no |
+| simpair_opt | faint | 425 | 0.50 (0.50 to 0.51) | 0.53 | no |
+| simpair_opt | blind | 1162 | 0.50 (0.50 to 0.50) | 0.00 | - |
+| var_hi | shows | 565 | 0.68 (0.67 to 0.70) | 0.99 | yes |
+| var_hi | faint | 167 | 0.55 (0.55 to 0.56) | 0.99 | no |
+| var_hi | blind | 468 | 0.50 (0.50 to 0.50) | 0.00 | - |
+| var_veil | shows | 565 | 0.33 (0.31 to 0.34) | 0.03 | no |
+| var_veil | faint | 167 | 0.46 (0.45 to 0.47) | 0.15 | no |
+| var_veil | blind | 468 | 0.50 (0.50 to 0.50) | 0.00 | - |
+| var_rim | shows | 565 | 0.61 (0.61 to 0.62) | 1.00 | yes |
+| var_rim | faint | 167 | 0.54 (0.54 to 0.55) | 1.00 | no |
+| var_rim | blind | 468 | 0.50 (0.50 to 0.50) | 0.00 | - |
+| var_hi2 | shows | 565 | 0.69 (0.68 to 0.70) | 0.99 | yes |
+| var_hi2 | faint | 167 | 0.55 (0.55 to 0.56) | 0.99 | no |
+| var_hi2 | blind | 468 | 0.50 (0.50 to 0.50) | 0.00 | - |
+| var_hirim | shows | 565 | 0.70 (0.69 to 0.72) | 1.00 | yes |
+| var_hirim | faint | 167 | 0.56 (0.56 to 0.57) | 0.99 | no |
+| var_hirim | blind | 468 | 0.50 (0.50 to 0.50) | 0.00 | - |
+| var_phys | shows | 565 | 0.70 (0.68 to 0.71) | 1.00 | yes |
+| var_phys | faint | 167 | 0.55 (0.55 to 0.56) | 0.99 | no |
+| var_phys | blind | 468 | 0.50 (0.50 to 0.50) | 0.00 | - |
+| simpair | shows | 1413 | 0.30 (0.29 to 0.31) | 0.07 | no |
+| simpair | faint | 425 | 0.36 (0.35 to 0.37) | 0.06 | no |
+| simpair | blind | 1162 | 0.50 (0.50 to 0.50) | 0.00 | - |

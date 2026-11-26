@@ -14,6 +14,13 @@ moved out of the scene:
   python real_data/findability.py fit --sim simpair
   python real_data/findability.py readout2
 
+Section 12, the optical colour model of the glass (sim/glass_optics.py):
+  python real_data/findability.py realrgb                      real colour pairs of all TRansPose frames, with the region's mask
+  python real_data/findability.py look                         k_s, w_rim, rho of the model from real images (not from a judge)
+  python real_data/findability.py simpair --config sim/configs/V2_place_opt.yaml --out data/real_check/simpair_opt.npz
+  python real_data/findability.py judge --which A --sims simpair_opt     the judge of the development rounds
+  python real_data/findability.py readout3                     the final read-out (judge B, once)
+
 Unit: a glass region of a frame, a square window of 1.5 times the longer side of its bounding box around it and a
 background window of the same size in the same frame (centre 1.0 to 2.5 window sides away, at most 5% glass), both at
 32 x 32. Per sensor a small network tells the two apart; the AUC is read per bin of the region's visibility number
@@ -240,13 +247,19 @@ def sim(level, n, out):
 @click.option("--level", default="V2_place", show_default=True)
 @click.option("-n", default=3000, show_default=True, help="episodes (consecutive seeds from 0)")
 @click.option("--out", default="data/real_check/simpair.npz", show_default=True)
-def simpair(level, n, out):
+@click.option("--config", default=None, help="a level file in place of --level (a draft that is not in the manifest)")
+@click.option("--optical", default=None, help='JSON overrides of glass_optics.PARAMS, e.g. \'{"F0": 0, "k_s": 1.2}\' (a variant)')
+def simpair(level, n, out, config, optical):
     """The window around the glass, and the same window of the same scene rendered with the glass 10 m away."""
     import mujoco
     sys.path.insert(0, "sim")
     from env import GlassPickEnv
     from testsets import manifest
-    env = GlassPickEnv(config=manifest()["levels"][level])
+    env = GlassPickEnv(config=config or manifest()["levels"][level])
+    level = env.cfg.name if config else level
+    if optical:
+        env.cfg.optical = env.sensors.cfg.optical = dict(env.cfg.optical or {}, **json.loads(optical))
+        level += " " + optical
     s_ = env.sensors
 
     def frame(rng):
@@ -297,8 +310,310 @@ def simpair(level, n, out):
                        thermal=np.stack([thermal_win(raw, a[0], a[1], st), thermal_win(raw0, a[0], a[1], st)]))
         recs.append(rec)
         cells.append(int(env.episode_info["cell"]))
+    states = [int(env.cfg.cells[c][1]) for c in cells]          # colour state of the pair: 0 shows, 1 blind, 2 faint
     env.close()
-    _save(out, recs, {level: c}, dict(level=level, episodes=n, cells=cells))
+    _save(out, recs, {level: c}, dict(level=level, episodes=n, cells=cells, rgb_state=states))
+
+
+# ------------------------------------------------------------------------------------------------ section 12
+def _lum(x):
+    """(3, h, w) in 0..1 -> luminance in grey levels of 255."""
+    return 255.0 * (0.299 * x[0] + 0.587 * x[1] + 0.114 * x[2])
+
+
+def look_stats(win, mask):
+    """Glass pixels against the other pixels of a 32 x 32 window: differences of the median, the 95th and the 5th
+    percentile of the luminance, and the standard deviation of the other pixels (how plain the surroundings are)."""
+    lum = _lum(np.asarray(win, np.float32))
+    a, b = lum[mask], lum[~mask]
+    if a.size < 20 or b.size < 20:
+        return None
+    qa, qb = np.percentile(a, [50, 95, 5]), np.percentile(b, [50, 95, 5])
+    return dict(dmed=float(qa[0] - qb[0]), dp95=float(qa[1] - qb[1]), dp5=float(qa[2] - qb[2]), ring_std=float(b.std()))
+
+
+LOOK = ("dmed", "dp95", "dp5")
+
+
+@cli.command()
+@click.option("--root", default=os.path.expanduser("~/datasets/transparent/unified"), show_default=True)
+@click.option("--out", default="data/real_check/real_rgb.npz", show_default=True)
+def realrgb(root, out):
+    """Colour pairs (glass window, background window) of every TRansPose frame, the region's mask at 32 x 32 and the
+    look statistics of the glass window."""
+    import pandas as pd
+    from PIL import Image
+    root = Path(root)
+    man = pd.read_parquet(root / "manifest.parquet")
+    rows = man[(man.dataset == "transpose") & man.mask_path.notna() & (man.glass_frac > 0)].sort_values("sample_id")
+    recs, c = [], dict(pair=0, nofit=0, noneg=0)
+    for fi, r in enumerate(rows.itertuples()):
+        mk = np.asarray(Image.open(root / r.mask_path))
+        mk = (mk[..., 0] if mk.ndim == 3 else mk) == 1
+        regs = glass_regions(mk)
+        if not regs:
+            continue
+        rgb = lum = None
+        for ri, (reg, ring) in enumerate(regs):
+            w, why = windows(mk, reg, np.random.default_rng([3, fi, ri]))
+            c[why] += 1
+            if w is None:
+                continue
+            if rgb is None:
+                rgb = np.asarray(Image.open(root / r.rgb_path))
+                lum = luminance(rgb)
+            y0, x0, ny, nx, s = w
+            x = np.stack([rgb_win(rgb, y0, x0, s), rgb_win(rgb, ny, nx, s)])
+            mask = fit32(reg[y0:y0 + s, x0:x0 + s].astype(np.float32))[0] > 0.5
+            st = look_stats(x[0], mask) or dict(dmed=np.nan, dp95=np.nan, dp5=np.nan, ring_std=np.nan)
+            recs.append(dict(x=x, mask=mask, group=str(r.group), v_rgb=rgb_contrast(lum, reg, ring), **st))
+    out = Path(out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    arr = dict(x_rgb=np.stack([r["x"] for r in recs]).astype(np.float16), mask=np.stack([r["mask"] for r in recs]),
+               group=np.array([r["group"] for r in recs]),
+               **{k: np.array([r[k] for r in recs], np.float32) for k in ("v_rgb", "ring_std") + LOOK})
+    tmp = out.with_suffix(".tmp.npz")
+    np.savez_compressed(tmp, **arr)
+    os.replace(tmp, out)
+    json.dump(dict(pairs=len(recs), frames=len(rows), regions=c), open(out.with_suffix(".json"), "w"), indent=1)
+    print(f"{len(recs)} pairs of {len(rows)} frames -> {out}; regions: {c}")
+
+
+GRID = dict(k_s=(0.1, 0.2, 0.3, 0.4, 0.6, 0.8, 1.0, 1.2, 1.6), w_rim=(0.0, 0.1, 0.2, 0.3, 0.4, 0.6, 0.8, 1.0))
+
+
+def _medians(x, mask):
+    """Median luminance of the glass pixels and of the other pixels of every window."""
+    lum = np.stack([_lum(w) for w in np.asarray(x, np.float32)])
+    return np.array([np.median(a[k]) for a, k in zip(lum, mask)]), np.array([np.median(a[~k]) for a, k in zip(lum, mask)])
+
+
+@cli.command()
+@click.option("--dir", "d", default="data/real_check", show_default=True)
+@click.option("--config", default="sim/configs/V2_place_opt.yaml", show_default=True)
+@click.option("-n", default=400, show_default=True, help="episodes of the simulator in which colour shows the glass")
+@click.option("--veil", type=click.Choice(["regression", "physical"]), default="physical", show_default=True,
+              help="regression: T0 1 and F0 from the real regression (revision 0); physical: T0 0.92, F0 0.08 (as first listed; round 3)")
+def look(d, config, n, veil):
+    """The optical model's numbers from real images (revision 0 of section 12, before any judge was looked at).
+    Veil: the regression of the glass's median luminance on its surroundings' over real windows gives how far the
+    glass pulls its area towards the surroundings' average (F0). Highlights and rim: k_s and w_rim at which the
+    spread inside the glass in excess of the spread around it (95th and 5th percentile, each minus the median)
+    matches real glass on plain surroundings; the same plainness limit on the simulator's windows."""
+    import itertools
+    sys.path.insert(0, "sim")
+    from env import GlassPickEnv
+    from glass_optics import PARAMS, compose, terms
+    d = Path(d)
+    z = np.load(d / "real_rgb.npz")
+    ok = np.isfinite(z["dmed"])
+    gl, bg = _medians(z["x_rgb"][:, 0], z["mask"])
+    wide = ok & (z["ring_std"] < 40)
+    slope, icpt = np.linalg.lstsq(np.stack([bg[wide], np.ones(wide.sum())], 1), gl[wide], rcond=None)[0]
+    f0 = float(np.clip(round((1 - slope) / 0.05) * 0.05, 0.05, 0.9))
+    print(f"veil: over {int(wide.sum())} real windows of {len(np.unique(z['group'][wide]))} sequences (std of the other pixels below 40) the glass's median "
+          f"luminance = {slope:.2f} * surroundings + {icpt:.0f} (r {np.corrcoef(bg[wide], gl[wide])[0, 1]:.2f}): the glass pulls its area "
+          f"{1 - slope:.2f} of the way to a level of {icpt / (1 - slope):.0f} (the surroundings' median is {np.median(bg[wide]):.0f}). F0 = {f0:.2f}, T0 = 1.")
+    limit = 15 if (ok & (z["ring_std"] < 15)).sum() >= 100 else 25
+    plain = ok & (z["ring_std"] < limit)
+    ex = dict(hi=z["dp95"] - z["dmed"], lo=z["dp5"] - z["dmed"])
+    target, iqr = {}, {}
+    print(f"spread: {int(plain.sum())} real windows of {len(np.unique(z['group'][plain]))} sequences with plain surroundings (std below {limit}); "
+          f"their surroundings' median luminance {np.median(bg[plain]):.0f}")
+    for k, name in (("hi", "p95 - median, glass minus surroundings"), ("lo", "p5 - median, glass minus surroundings")):
+        q = np.percentile(ex[k][plain], [10, 25, 50, 75, 90])
+        target[k], iqr[k] = float(q[2]), float(q[3] - q[1])
+        print(f"  {name}: p10 {q[0]:.1f}, p25 {q[1]:.1f}, median {q[2]:.1f}, p75 {q[3]:.1f}, p90 {q[4]:.1f}")
+    print(f"  glass median minus surroundings' median there: {np.median((gl - bg)[plain]):+.1f}")
+    env = GlassPickEnv(config=config)
+    s_ = env.sensors
+    params = dict(PARAMS, **(env.cfg.optical or {}), **(dict(T0=1.0, F0=f0) if veil == "regression" else dict(T0=0.92, F0=0.08)))
+    f0 = params["F0"]
+    cache, seed, dropped = [], 0, 0
+    while len(cache) < n:
+        env.reset(seed)
+        seed += 1
+        if env.cfg.cells[int(env.episode_info["cell"])][1] != 0:
+            continue
+        r = s_.r
+        r.enable_depth_rendering()
+        r.update_scene(env.data, camera=s_.camera, scene_option=s_.show_all)
+        depth_true = r.render().copy()
+        r.disable_depth_rendering()
+        r.enable_segmentation_rendering()
+        r.update_scene(env.data, camera=s_.camera, scene_option=s_.show_all)
+        seg = r.render()[..., 0].copy()
+        r.disable_segmentation_rendering()
+        behind, glasses = s_._optical_inputs(env.data, depth_true, seg)
+        body = int(env.model.body(env.obj).id)
+        g = [x for x in glasses if x[0] == body]
+        regs = glass_regions(g[0][1]) if g else []
+        if not regs:
+            continue
+        reg = max(regs, key=lambda x: x[0].sum())[0]
+        ys, xs = np.nonzero(reg)
+        s = int(round(K * max(ys.max() - ys.min() + 1, xs.max() - xs.min() + 1)))
+        y0, x0 = int(round((ys.max() + ys.min()) / 2 - s / 2)), int(round((xs.max() + xs.min()) / 2 - s / 2))
+        if s > min(reg.shape) or y0 < 0 or x0 < 0 or y0 + s > reg.shape[0] or x0 + s > reg.shape[1]:
+            continue
+        mask = fit32(reg[y0:y0 + s, x0:x0 + s].astype(np.float32))[0] > 0.5
+        st = look_stats(fit32(behind[y0:y0 + s, x0:x0 + s].astype(np.float32) / 255.0), mask)
+        if st is None or st["ring_std"] >= limit:          # the same plainness limit as for the real windows
+            dropped += 1
+            continue
+        cache.append((behind, terms(behind, depth_true, g[0][1], s_.focal, g[0][2], params), (y0, x0, s), mask, st["ring_std"]))
+    env.close()
+    sim_bg = float(np.median([np.median(_lum(fit32(b[y0:y0 + s, x0:x0 + s].astype(np.float32) / 255.0))[~mk]) for b, _, (y0, x0, s), mk, _ in cache]))
+    print(f"\nveil \"{veil}\": T0 {params['T0']}, F0 {params['F0']}. The simulator's plain surroundings have a median luminance of {sim_bg:.0f}; "
+          f"the real regression gives a glass median of {slope * sim_bg + icpt:.0f} there, {slope * sim_bg + icpt - sim_bg:+.0f} against the surroundings "
+          f"(real windows reach a surroundings' luminance of {np.percentile(bg[wide], 99):.0f} at their 99th percentile, so this is beyond their range).")
+
+    def spread(k_s, w_rim, strength=1.0):
+        rows = []
+        for behind, t, (y0, x0, s), mask, _ in cache:
+            img = behind.astype(np.float32)
+            img[t["box"]] = compose(behind, t, k_s, w_rim, params["rho"], strength)
+            st = look_stats(fit32(img[y0:y0 + s, x0:x0 + s] / 255.0), mask)
+            rows.append([st["dp95"] - st["dmed"], st["dp5"] - st["dmed"], st["dmed"]])
+        return np.median(np.array(rows), 0)
+
+    res = []
+    for k_s, w_rim in itertools.product(*GRID.values()):
+        med = spread(k_s, w_rim)
+        res.append((float(((med[0] - target["hi"]) / iqr["hi"]) ** 2 + ((med[1] - target["lo"]) / iqr["lo"]) ** 2), k_s, w_rim, med))
+    res.sort(key=lambda x: x[0])
+    print(f"\nsimulator: {len(cache)} episodes of {config} in which colour shows the glass and the window's surroundings are plain "
+          f"({dropped} others left out); rho {params['rho']}; grid of {len(res)} points; the eight closest:")
+    print("| distance | k_s | w_rim | p95 - median, glass minus surroundings | p5 - median, glass minus surroundings | glass median minus surroundings |\n|---|---|---|---|---|---|")
+    for dist, k_s, w_rim, med in res[:8]:
+        print(f"| {dist:.3f} | {k_s} | {w_rim} | {med[0]:.1f} | {med[1]:.1f} | {med[2]:+.1f} |")
+    print(f"| real, plain surroundings | | | {target['hi']:.1f} | {target['lo']:.1f} | |")
+    dist, k_s, w_rim, med = res[0]
+    med_f = spread(k_s, w_rim, 0.3)
+    print(f"\nchosen: F0 {f0:.2f}, T0 {params['T0']}, k_s {k_s}, w_rim {w_rim} (rho {params['rho']}). \"Faint\" (strength 0.3) with them: {med_f[0]:.1f}, {med_f[1]:.1f}, {med_f[2]:+.1f}.")
+    json.dump(dict(veil=veil, T0=params["T0"], F0=f0, k_s=k_s, w_rim=w_rim, rho=params["rho"], distance=dist, limit=limit, plain=int(plain.sum()),
+                   regression=dict(slope=float(slope), intercept=float(icpt), windows=int(wide.sum())), target=target, iqr=iqr,
+                   sim=[float(v) for v in med], faint=[float(v) for v in med_f]), open(d / "optical_fit.json", "w"), indent=1)
+
+
+def _halves(groups):
+    """The sequences in their order, split by even and odd position: boolean masks of the pairs of half A and half B."""
+    ug = np.array(sorted(np.unique(groups)))
+    even = set(ug[0::2])
+    a = np.array([g in even for g in groups])
+    return a, ~a
+
+
+class _Mean:
+    """The mean score of several networks (one network's verdict moved by 0.07 between two trainings on the same pairs)."""
+    def __init__(self, nets):
+        self.nets = nets
+
+
+N_JUDGE = 5
+
+
+def _judge(d, which, device):
+    """Judge A is trained on the real colour pairs of the even sequences, judge B on the odd ones: the mean of
+    N_JUDGE networks (seeds 0 to 4). Returns it, its scores on the other half, that half's groups, the number of
+    pairs it was trained on and which pairs of the other half have plain surroundings."""
+    z = np.load(Path(d) / "real_rgb.npz")
+    a, b = _halves(z["group"])
+    own, other = (a, b) if which == "A" else (b, a)
+    x = z["x_rgb"]
+    net = _Mean([_train(x[own], device, seed=k) for k in range(N_JUDGE)])
+    return net, _score(net, x[other], device), z["group"][other], int(own.sum()), z["ring_std"][other] < 25
+
+
+def _judge_table(net, own_scores, own_groups, d, sims, device, which):
+    a_own = auc(own_scores[:, 0], own_scores[:, 1])
+    need = 0.5 + 0.5 * (a_own - 0.5)
+    print(f"Judge {which}: its own AUC on the real pairs of the other half {a_own:.2f} ({ci(boot(own_scores, own_groups))}); "
+          f"a state passes at {need:.2f} (0.5 + half of the margin).\n")
+    print("| simulator's pairs | state | pairs | judge's AUC, with against without the glass (95%) | share of pairs with the glass scored higher | responds? |")
+    print("|---|---|---|---|---|---|")
+    out = {}
+    for name in sims:
+        z, meta = np.load(Path(d) / f"{name}.npz"), json.load(open(Path(d) / f"{name}.json"))
+        sc = _score(net, z["x_rgb"], device)
+        state = np.array(meta["rgb_state"]) if "rgb_state" in meta else np.array([_STATE_OF_CELL[c] for c in meta["cells"]])
+        out[name] = (sc, state, z["v_rgb"], z["group"])
+        for st, label in ((0, "shows"), (2, "faint"), (1, "blind")):
+            m = state == st
+            if not m.any():
+                continue
+            a_s = auc(sc[m, 0], sc[m, 1])
+            verdict = "-" if st == 1 else ("yes" if a_s >= need else "no")
+            print(f"| {name} | {label} | {int(m.sum())} | {a_s:.2f} ({ci(boot(sc[m], z['group'][m], seed=1))}) | {np.mean(sc[m, 0] > sc[m, 1]):.2f} | {verdict} |")
+    return a_own, need, out
+
+
+_STATE_OF_CELL = {0: 0, 1: 1, 2: 0, 3: 0, 4: 1, 5: 1, 6: 0, 7: 2, 8: 1, 9: 1, 10: 2}   # colour state of the eleven cells
+
+
+@cli.command()
+@click.option("--dir", "d", default="data/real_check", show_default=True)
+@click.option("--which", type=click.Choice(["A", "B"]), default="A", show_default=True)
+@click.option("--sims", multiple=True, default=("simpair_opt",), show_default=True)
+@click.option("--device", default="cuda", show_default=True)
+def judge(d, which, sims, device):
+    """A judge that learned real glass on one half of the sequences, on the simulator's paired windows, per state."""
+    net, own, groups, n_own, plain = _judge(d, which, device)
+    print(f"(the mean of {N_JUDGE} networks, each trained on {n_own} real pairs; on the {int(plain.sum())} pairs of the other half whose "
+          f"surroundings are plain (std below 25) its AUC is {auc(own[plain, 0], own[plain, 1]):.2f}, on the other {int((~plain).sum())} {auc(own[~plain, 0], own[~plain, 1]):.2f})")
+    _judge_table(net, own, groups, d, sims, device, which)
+
+
+@cli.command()
+@click.option("--dir", "d", default="data/real_check", show_default=True)
+@click.option("--optical", default="simpair_opt", show_default=True)
+@click.option("--alpha", default="simpair", show_default=True)
+@click.option("--device", default="cuda", show_default=True)
+def readout3(d, optical, alpha, device):
+    """The final read-out of section 12: judge B once, the floor, the simulator's network on real pairs."""
+    d = Path(d)
+    real = np.load(d / "real_rgb.npz")
+    zo, mo = np.load(d / f"{optical}.npz"), json.load(open(d / f"{optical}.json"))
+    print("# The optical colour model of the glass against real images (section 12)\n")
+    print(f"Real: {len(real['group'])} colour pairs of {len(np.unique(real['group']))} TRansPose sequences. Simulator: {mo['pairs']} paired windows "
+          f"of `{mo['level']}` (the same window with and without the glass); for comparison the alpha model, `{alpha}`.\n")
+    # 1. the floor and the simulator's own difficulty
+    xo, go, state = zo["x_rgb"], zo["group"], np.array(mo["rgb_state"])
+    oof = np.full((len(xo), 2), np.nan, np.float32)
+    for tr, te in _folds(go):
+        oof[te] = _score(_train(xo[tr], device), xo[te], device)
+    print("## 1. The simulator's own network, out of fold\n\n| state | pairs | AUC (95%) |\n|---|---|---|")
+    for st, label in ((0, "shows"), (2, "faint"), (1, "blind")):
+        m = state == st
+        print(f"| {label} | {int(m.sum())} | {auc(oof[m, 0], oof[m, 1]):.2f} ({ci(boot(oof[m], go[m], seed=1))}) |")
+    fl = auc(oof[state == 1, 0], oof[state == 1, 1])
+    print(f"\nFloor (rule 1): {fl:.2f} in the colour-blind pairs: " + ("within 0.45 to 0.55." if 0.45 <= fl <= 0.55 else "OUTSIDE 0.45 to 0.55: nothing else is read.") + "\n")
+    # 2. judge B, once
+    print("## 2. Does a network that learned real glass respond? (judge B)\n")
+    net, own, groups, n_own, _ = _judge(d, "B", device)
+    a_own, need, out = _judge_table(net, own, groups, d, (optical, alpha), device, "B")
+    print("\nPer contrast bin (grey levels between the glass and a ring around it), the optical model:\n")
+    print("| bin | pairs | judge B's AUC | share with the glass scored higher |\n|---|---|---|---|")
+    sc, _, v, _ = out[optical]
+    for lo, hi, label in BINS["rgb"][2]:
+        m = (v >= lo) & (v < hi)
+        if m.sum() >= 2:
+            print(f"| {label} | {int(m.sum())} | {auc(sc[m, 0], sc[m, 1]):.2f} | {np.mean(sc[m, 0] > sc[m, 1]):.2f} |")
+    # 3. the simulator's network on real pairs
+    xr, gr = real["x_rgb"], real["group"]
+    own_r = np.full((len(xr), 2), np.nan, np.float32)
+    for tr, te in _folds(gr):
+        own_r[te] = _score(_train(xr[tr], device), xr[te], device)
+    a_r = auc(own_r[:, 0], own_r[:, 1])
+    need_r = 0.5 + 0.5 * (a_r - 0.5)
+    print(f"\n## 3. Does a network that learned the simulator's glass find real glass?\n")
+    print(f"The real network's own AUC out of fold: {a_r:.2f} ({ci(boot(own_r, gr))}); the simulator's network passes at {need_r:.2f}.\n")
+    print("| simulator's network trained on | AUC on all real pairs (95%) | transfers? |\n|---|---|---|")
+    for name in (optical, alpha):
+        zs = np.load(d / f"{name}.npz")
+        s2r = _score(_train(zs["x_rgb"], device), xr, device)
+        a = auc(s2r[:, 0], s2r[:, 1])
+        print(f"| {name} | {a:.2f} ({ci(boot(s2r, gr))}) | {'transfers' if a >= need_r else 'does not transfer'} |")
 
 
 # ------------------------------------------------------------------------------------------------ classifiers
@@ -341,6 +656,8 @@ def _train(x, device, seed=0, epochs=30, batch=256):
 
 def _score(net, x, device):
     import torch
+    if isinstance(net, _Mean):
+        return np.mean([_score(k, x, device) for k in net.nets], 0)
     with torch.no_grad():
         flat = torch.from_numpy(x.reshape(-1, *x.shape[2:]).astype(np.float32)).to(device)
         out = torch.cat([net(flat[i:i + 2048])[:, 0] for i in range(0, len(flat), 2048)])

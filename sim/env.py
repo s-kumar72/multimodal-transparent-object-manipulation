@@ -300,6 +300,11 @@ class GlassPickEnv:
                                                  force_seethrough=None if cell is None else cell[2] == 1,
                                                  glass_holes=self._cell_holes(seed, cell),
                                                  second=self._second_depth(seed) if self.two else None)
+        if cfg.rgb_glass == "optical":       # the colour state of each glass as a strength of the optical model
+            st = {0: 1.0, 1: 0.0, 2: cfg.faint_strength}
+            self.sensor_scene["rgb_strength"] = {int(self.model.body(self.obj).id): 1.0 if cell is None else st[cell[1]]}
+            if self.two:
+                self.sensor_scene["rgb_strength"][int(self.model.body(self.obj2).id)] = st[self.cell2[0]]
         info["n_table_blobs"] = len(self.sensor_scene["blobs"])
         info["glass_seethrough"] = self.sensor_scene["seethrough"]   # 1 in a see-through episode (dots or blobs)
         if cell is not None:
