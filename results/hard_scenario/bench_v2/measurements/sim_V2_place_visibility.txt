@@ -1,6 +1,6 @@
 V2_place: 440 episodes with the glass in view; glass region median 197 px of 320x240
   rgb shows (202 episodes): rgb: p10 9.07, median 26.70, p90 44.11
-  rgb blind (177 episodes): rgb: p10 0.00, median 0.77, p90 2.99
+  rgb blind (177 episodes): rgb: p10 0.00, median 0.00, p90 0.30
   rgb faint (61 episodes): rgb: p10 4.11, median 12.82, p90 23.25
   depth shows (204 episodes): missing: p10 0.80, median 0.88, p90 0.97; behind: p10 0.02, median 0.11, p90 0.17
   depth blind (178 episodes): missing: p10 0.00, median 0.00, p90 0.00; behind: p10 0.69, median 0.90, p90 0.93

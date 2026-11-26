@@ -96,7 +96,7 @@ Each state is a cause that exists, with its range from section 2.
 | thermal | blind | glass and background in equilibrium | below 3 noise units | below about 5 |
 | colour | shows | usual contrast against the table | alpha 0.5 (median contrast 27) | the same |
 | colour | faint | low contrast | alpha 0.2 (median 13) | the same |
-| colour | blind | contrast below 3 grey levels | alpha 0 to 0.03 | alpha 0.001 |
+| colour | blind | the glass is not in the colour image (corrected 11/26, section 10) | alpha 0.001 | the same |
 
 **What this does to the difficulty, expected and not known.** Where depth shows the glass it gets easier (the glass
 is one large hole). Where only thermal shows it, it gets harder: "shows" of this version is about "faint" of the
@@ -220,7 +220,7 @@ next to the real ranges of section 2:
 | thermal blind, noise units | 0.4 / 1.5 / 3.4 | below 3: 3% |
 | colour shows, grey levels | 9 / 27 / 44 | 2.7 / 20 / 77 |
 | colour faint | 4 / 13 / 23 | the lower quarter: 7.6 and below |
-| colour blind | 0.0 / 0.8 / 3.0 | below 3: 11% |
+| colour blind (after the correction below) | 0.0 / 0.0 / 0.3 | below 3: 11% |
 
 The thermal values of the level file are those of `sensors.matching_temp`; the image shows about 0.6 of them
 (the blur of the 160x120 thermal image on a glass of about 50 pixels), which is why they are larger than the
@@ -278,9 +278,89 @@ states of `V2_place`).
 Not done for T2: the cue of the method with the grasp angle (the gripper's angle at its first close, read in
 hindsight as the point is), a plain rgbdt run, the solvability check per cell. T3 has not been started.
 
+**Unseen objects (11/26; the test set `u` of section 5).** `objects: unseen` (`sim/config.py`) and the test set
+`u_cells11_unseen` (the eleven cells, the training scenes, glass shapes that are in no training set). For T1 two
+shapes in `sim/assets/gen3_lite/place_unseen_scene.xml`: `tallglass` (a straight glass, 5.6 cm wide and 13 cm tall) and
+`carafe` (a 7 cm wide body with a 3.6 cm wide neck and a lip); for T2 the `tile`. The scripted teacher on them through
+the evaluation env: 22 of 22 for each of the two shapes of T1, 44 of 44 for the tile. Object ids of the records: 8
+(tile), 9 and 10. Existing levels unchanged (regression test).
+
+**Step 4, task T3 `two` in the simulator (11/26 09:44 KST; no demo collected, no policy).** `task: two`, scene
+`sim/assets/gen3_lite/two_scene.xml` (a second coaster), level `sim/configs/V2_two.yaml` (a draft, id 41), test sets
+`j_pairs12` and `k_pairs12_heldout`.
+
+- *Two glasses* of different shapes from the five; the second stands at least 7 cm (edge to edge) from the first. At
+  5 cm the open gripper, which is 14 cm wide, knocked the neighbour over in 2 of 120 teacher episodes.
+- *A cell is a pair*: the colour, depth and thermal state of the first glass and of the second. Each glass has its
+  own alpha, its own depth dropout or see-through, its own temperature. Twelve pairs to start with: both shown by all
+  three; both by depth alone, by thermal alone, by colour alone; six pairs in which the two are shown by different
+  sensors; both faintly; one fully and one faintly. Weights 20, 3 x 8, 6 x 12, 2 x 12 of 140.
+- *Two coasters*, each clear of both glasses, of the distractors and of the other coaster. The scene is made so that
+  it can be done in an order that is visible in it: the glass nearer to the gripper first, to the coaster nearer to
+  that glass if the straight way there passes over nothing and else to the other coaster; then the second glass to
+  the coaster that is left. That is the teacher's plan; a policy may use any order.
+- *Room on the table*: 0 to 2 distractors (1 to 3 in the other tasks), and where even then no such plan exists the
+  distractors are taken off the table. Of 600 scenes 592 have a plan as drawn and 8 after the distractors are
+  removed; none is left without one. With 1 to 3 distractors one scene in ten had no free spot for the coasters.
+- *Success*: each glass upright on a coaster of its own, at rest, let go (the tool above it or 8 cm away in the
+  plane, since the arm goes on to the other glass). The record of an episode has `n_placed`, `picked`, `picked2`; an
+  episode that fails is labelled `placed_0` or `placed_1`.
+- *Teacher*: the pick-and-place of T1 twice. `python sim/task_check.py V2_two -n 240`: 240 of 240, every pair and
+  every shape; 226 steps in the median, 256 at most, of the 480 allowed.
+- Existing levels unchanged (`sim/regression_test.py`, 190 of 190 arrays identical for the four configs).
+
+Not done for T3: the cue of the method for two targets (four cues: which glass first, then the second), a plain rgbdt
+run, the solvability check per pair. The pairs and the number of demos are fixed after the first runs.
+
+**Checking a task** (`python sim/task_check.py LEVEL [-n N] [--test_set SET]`): the teacher on consecutive seeds of the
+training scenes or of a test set; success per shape and per cell, steps, every failure.
+
+**Correction: colour blind (11/26 10:27 KST).** The draft set "colour blind" to an alpha of 0 to 0.03, the contrast of
+the weakest tenth of real tabletop glass (below 3 grey levels). In the simulator's colour image, which has no noise,
+that is not blind: against the same scene without the glass about 30 pixels of the 96 x 96 image differ, by 4 grey
+levels in the median and up to 15, and only one episode in ten is unchanged. Networks find that: the colour network of
+the cue has its peak on the glass in 0.37 of the colour-blind frames of `V2_place` (0.15 on `L0_vis_place`, which is
+chance) and its gate is at 0.54 there, and a network reading the glass's direction from the colour patch is within 15
+degrees in four of five colour-blind episodes. It was the test of the angle networks below that showed it, before any
+policy was trained. So colour blind is alpha 0.001 again, as in the first version: no pixel differs. The demos of
+`V2_place`, `V2_place_warm` and `V2_align` collected before the correction and the cues fitted on them are discarded
+and made again (`data/hcue/v2_prepare.log`); the eight pilot runs had not started.
+
+**The cue of the method for T2: the hindsight angle (11/26; `policy/hindsight_angle.py`, in work).** A demo of T2 says
+in hindsight how the tool was turned when the gripper closed and when it opened again; these angles are the glass's
+and the mat's direction within 2 degrees (700 demos, against the simulator, checked once). Per sensor a small network
+reads the direction in the image from the patch around the cue's point, and the sensors are added with the cue's gate
+entries. What the first fits showed (700 demos of `V2_align` collected before the correction above; out of fold; the
+error of the tool's angle; the cells of the simulator stood in for the gates, since the cue was not fitted yet):
+
+| patch, training | colour, where it shows the glass | depth | thermal |
+|---|---|---|---|
+| 33 x 33, not turned | 34 degrees in the median (1 degree on its own training patches) | 2.5 | 19 |
+| 33 x 33, every patch turned by a random angle with its label | 46 (chance) | 3.4 | 44 |
+| 17 x 17, turned | 1.3, within 15 degrees in 1.00 | 4.1, in 0.89 | 20.9, in 0.39 |
+| 17 x 17, turned, squared error on a vector that is not normalized | 1.6 to 1.7, in 1.00 | 2.2 to 2.6, in 1.00 | 4.7 to 6.3, in 0.83 to 0.90 |
+
+In the large patch the mat, the distractors and the arm are what a network sees; in the small one the glass. With
+the squared error the length of a network's vector says how sure it is, and adding the sensors' vectors lets a sure
+sensor outweigh an unsure one: the estimate is within 15 degrees in 0.96 of the demos (0.86 to 1.00 per cell). The
+last row was fitted with every sensor trusted everywhere and before the correction, so its colour network also read
+the trace of the "blind" glass; the numbers with the real cue and the corrected level follow
+(`data/hang/V2_align_700/report.txt`). The policy gets the two angles as a further observation (`hang`: cos and sin
+of twice the angle at the grasp and at the place; `policy/config/task/glass_pick_hcue2a.yaml`, `ANGLE=1` of
+`policy/train_cuegate.sh`).
+
+**Still open for the freeze.** T2 has three training shapes, so a number of demos that is a multiple of 210 keeps the
+cell weights exact (630 or 840; 700 gives 76 / 70 / 68 demos in cells 1 to 3). T3: the cue of the method for two
+targets. The plain runs of T2 and T3 and the solvability checks.
+
 ## Files
 
 `real_data/glass_visibility.py` (real sensors), `sim/measure_visibility.py` (the simulator, same functions),
 `measurements/` (their outputs of 11/26). `sim/configs/V2_place.yaml`, `sim/configs/V2_place_warm.yaml` (draft levels).
 T2: `sim/assets/gen3_lite/align_scene.xml`, `sim/configs/V2_align.yaml`, `sim/env.py` (`ALIGN_OBJECTS`, `_mat_target`,
 `placed`), `sim/teacher.py` (`_plan_align`).
+Unseen objects: `sim/assets/gen3_lite/place_unseen_scene.xml`, test set `u_cells11_unseen`. T3:
+`sim/assets/gen3_lite/two_scene.xml`, `sim/configs/V2_two.yaml`, `sim/env.py` (`_second_glass`, `_two_targets`,
+`on_coaster`), `sim/sensors.py` (the second glass's depth), `sim/teacher.py` (`_plan_two`). `sim/task_check.py`.
+The angle of T2: `policy/hindsight_angle.py`, `policy/config/task/glass_pick_hcue2a.yaml`, `policy/glass_dataset.py` and
+`policy/glass_gym_env.py` (the observation `hang`), `policy/train_cuegate.sh` (`ANGLE=1`).

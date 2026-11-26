@@ -1,0 +1,14 @@
+<!--Scene of task T3 of the second version of the benchmark (results/hard_scenario/bench_v2/README.md): two glasses
+    on the table, two coasters, one glass on each. place_scene.xml plus a second coaster, in a file of its own so
+    that every other level loads the model it always did. env.py puts two of the five glasses on the table (the
+    others stay parked) and sets the position, size and temperature of both coasters on every reset.-->
+<mujoco model="gen3_lite transparent scene with distractors and two place targets">
+    <include file="place_scene.xml"/>
+
+    <worldbody>
+        <body name="coaster2" pos="1.6 -3.3 0.02">
+            <geom name="coaster2" type="cylinder" size="0.06 0.003" pos="0 0 0.003" rgba="0.12 0.12 0.14 1"/>
+            <geom name="coaster2_top" type="cylinder" size="0.045 0.0002" pos="0 0 0.0061" rgba="0.93 0.93 0.9 1" contype="0" conaffinity="0"/>
+        </body>
+    </worldbody>
+</mujoco>

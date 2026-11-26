@@ -18,7 +18,7 @@ import yaml
 CONFIG_DIR = Path(__file__).parent / "configs"
 # Fixed ids of the per-factor RNG streams (np.random.default_rng([seed, id])); never renumber
 FACTORS = {"background": 1, "lighting": 2, "transparent": 3, "liquid": 4, "distractors": 5,
-           "thermal": 6, "sensor": 7, "cell": 8, "place": 9, "align": 10}
+           "thermal": 6, "sensor": 7, "cell": 8, "place": 9, "align": 10, "two": 11}
 HELDOUT_ALL = ["background", "lighting", "distractors"]
 # Thermal config names stored as ids in meta/ep_thermal_config (append only)
 THERMAL_NAMES = ["v0", "calibrated_v1", "calibrated_v1_narrow", "calibrated_v1_fixed"]
@@ -147,6 +147,12 @@ class SceneConfig:
     # "align" (second version of the benchmark, T2): an elongated glass lies at a random angle and is put down on a
     # rectangular mat in the mat's direction (sim/env.py: ALIGN_OBJECTS, _mat_target, placed).
     task: str = "pick"
+    # Second version of the benchmark: "unseen" puts glass shapes on the table that are in no training set (a test
+    # set; sim/env.py UNSEEN_OBJECTS for the place task, ALIGN_UNSEEN for "align"). None: the task's own shapes.
+    objects: str = None
+    # Task "two" (second version of the benchmark, T3): two of the glasses stand on the table and there are two
+    # coasters; one glass is to be put on each, in any order. A cell then has seven numbers: [weight, rgb, depth,
+    # thermal of the first glass, rgb, depth, thermal of the second], so the two can be shown by different sensors.
     place_radius: float = 0.06
     # Contact model. "default": the scene file's own (pyramidal friction cones, impratio 1, for every pick level;
     # place_scene.xml sets elliptic cones with impratio 10 itself). "elliptic": elliptic cones with impratio 10 on
@@ -166,7 +172,7 @@ def cell_pattern(cells, n_objects=5):
     the seeds with the same k % n_objects (the same object, see SceneConfig.cells) hold every cell exactly weight
     times, in a fixed shuffled order of their own."""
     w = [int(c[0]) for c in cells]
-    assert all(x > 0 for x in w) and all(len(c) == 4 for c in cells), cells
+    assert all(x > 0 for x in w) and all(len(c) in (4, 7) for c in cells), cells   # 7: a pair of glasses (task "two")
     rng = np.random.default_rng(20261119)
     base = np.repeat(np.arange(len(w)), w)
     pat = np.empty(n_objects * len(base), int)

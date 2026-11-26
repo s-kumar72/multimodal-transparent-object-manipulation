@@ -16,14 +16,13 @@ import os
 
 import numpy as np
 
-from env import OBJECTS
 from policy.glass_gym_env import GlassPickGymEnv
 from policy.hindsight_cue import S, project
 
 
 def true_grasp_point(env):
     """(x, y, z) of the grasp point of the scene of a sim/env.py GlassPickEnv right after reset."""
-    return np.array([*env.data.body(env.obj).xpos[:2], env.obj_z0 + OBJECTS[env.obj]], np.float64)
+    return np.array([*env.data.body(env.obj).xpos[:2], env.obj_z0 + env.grasp_height()], np.float64)
 
 
 class OracleCueGymEnv(GlassPickGymEnv):

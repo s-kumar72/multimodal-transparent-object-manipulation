@@ -67,7 +67,7 @@ class Sensors:
         self.scene = None
 
     def episode(self, seed, target, liquid, extras, data, region=((0.24, 0.56), (-0.24, 0.24)), force_seethrough=None,
-                glass_holes=None):
+                glass_holes=None, second=None):
         """Per-episode sensor effects: liquid in the target, absorber holes and table hole patches (lever C).
         region: (x range, y range) on the table where the hole patches may go."""
         cfg, m = self.cfg, self.model
@@ -100,6 +100,8 @@ class Sensors:
                           seethrough=int(seethrough))
         if glass_holes is not None:          # visibility cells, depth faint: this share of the glass pixels are holes
             self.scene["glass_holes"] = glass_holes
+        if second is not None:               # task "two": dict(geoms, holes, seethrough) of the second glass
+            self.scene["second"] = second
         return self.scene
 
     def _defect_params(self, rng):
@@ -165,10 +167,18 @@ class Sensors:
         on_glass = np.isin(seg, self.transparent_geoms)
         depth = depth_true.copy()
         depth[on_glass] = depth_behind[on_glass]
-        dots = rng.random(depth.shape) < scene.get("glass_holes", cfg.glass_holes)   # drawn in either mode, so the later draws stay the same
+        u = rng.random(depth.shape)                                  # drawn in either mode, so the later draws stay the same
+        dots = u < scene.get("glass_holes", cfg.glass_holes)
         defects = scene.get("defects", {})
         if "glass" in defects:
             self._blob_defects(depth, on_glass, depth_behind, defects["glass"], scene["rng"])
+        elif scene.get("second") is not None:    # task "two": the second glass has its own dropout and see-through
+            second = scene["second"]
+            on_second = np.isin(seg, second["geoms"])
+            if not scene.get("seethrough", 0):
+                depth[on_glass & ~on_second & dots] = 0.0
+            if not second["seethrough"]:
+                depth[on_second & (u < second["holes"])] = 0.0
         elif not scene.get("seethrough", 0):
             depth[on_glass & dots] = 0.0
 
