@@ -1,0 +1,104 @@
+## 1. Success per cell (seed 42, 120 episodes per cell)
+
+| cell | sensors that show the glass | warm (P3 on P9) | anchor (P4 on P9) | gatesup (P6 on P9) | aug (P7 on P9) | global (P8) | stx (P11 on P9) | P9, seed 42 | P9, lowest to highest of three seeds | rgbdt ImageNet, seed 42 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.633 | 0.400 | 0.258 | 0.792 | 0.583 | 0.608 | 0.692 | 0.608 to 0.825 | 0.775 |
+| 1 | depth+thermal | 0.575 | 0.258 | 0.108 | 0.650 | 0.517 | 0.417 | 0.625 | 0.517 to 0.625 | 0.750 |
+| 2 | rgb+thermal | 0.533 | 0.308 | 0.333 | 0.592 | 0.075 | 0.667 | 0.550 | 0.442 to 0.567 | 0.225 |
+| 3 | rgb+depth | 0.500 | 0.367 | 0.258 | 0.642 | 0.583 | 0.575 | 0.667 | 0.583 to 0.667 | 0.650 |
+| 4 | thermal | 0.458 | 0.142 | 0.217 | 0.517 | 0.058 | 0.350 | 0.492 | 0.350 to 0.642 | 0.192 |
+| 5 | depth | 0.517 | 0.342 | 0.133 | 0.608 | 0.467 | 0.425 | 0.583 | 0.533 to 0.650 | 0.650 |
+| 6 | rgb | 0.458 | 0.208 | 0.283 | 0.442 | 0.033 | 0.417 | 0.492 | 0.342 to 0.533 | 0.158 |
+| 7 | rgb (faint) | 0.292 | 0.167 | 0.175 | 0.408 | 0.067 | 0.383 | 0.367 | 0.350 to 0.417 | 0.092 |
+| 8 | depth (faint) | 0.408 | 0.217 | 0.192 | 0.492 | 0.442 | 0.442 | 0.458 | 0.458 to 0.525 | 0.525 |
+| 9 | thermal (faint) | 0.267 | 0.142 | 0.125 | 0.342 | 0.058 | 0.242 | 0.342 | 0.275 to 0.392 | 0.050 |
+| 10 | all faint | 0.508 | 0.308 | 0.225 | 0.642 | 0.467 | 0.517 | 0.583 | 0.542 to 0.650 | 0.483 |
+| macro average |  | 0.468 | 0.260 | 0.210 | 0.557 | 0.305 | 0.458 | 0.532 | 0.458 to 0.588 | 0.414 |
+
+## 2. Every run against P9 of seed 42, same episodes (the seeds of P9: macro average 0.458 to 0.588)
+
+| run | run | P9 | only the run succeeds / only P9 | p | verdict |
+|---|---|---|---|---|---|
+| warm (P3 on P9) | 0.468 | 0.532 | 169 / 253 | 5.1e-05 | not separated from P9 |
+| anchor (P4 on P9) | 0.260 | 0.532 | 77 / 436 | 7.3e-62 | below P9 |
+| gatesup (P6 on P9) | 0.210 | 0.532 | 77 / 502 | 2.2e-77 | below P9 |
+| aug (P7 on P9) | 0.557 | 0.532 | 201 / 168 | 0.096 | not separated from P9 |
+| global (P8) | 0.305 | 0.532 | 114 / 414 | 5.6e-41 | below P9 |
+| stx (P11 on P9) | 0.458 | 0.532 | 194 / 291 | 1.2e-05 | not separated from P9 |
+
+warm against P9, all cells: 0.468 against 0.532, only warm succeeds 169, only P9 253, p = 5.1e-05 (below)
+  cells that differ with p < 0.05: cell 3 0.500 against 0.667 (p = 0.0029)
+anchor against P9, all cells: 0.260 against 0.532, only anchor succeeds 77, only P9 436, p = 7.3e-62 (below)
+  cells that differ with p < 0.05: cell 0 0.400 against 0.692 (p = 6.9e-07); cell 1 0.258 against 0.625 (p = 3.6e-08); cell 2 0.308 against 0.550 (p = 2.5e-05); cell 3 0.367 against 0.667 (p = 1e-07); cell 4 0.142 against 0.492 (p = 5.1e-12); cell 5 0.342 against 0.583 (p = 2.5e-05); cell 6 0.208 against 0.492 (p = 1.2e-06); cell 7 0.167 against 0.367 (p = 3.9e-05); cell 8 0.217 against 0.458 (p = 3.8e-05); cell 9 0.142 against 0.342 (p = 1.9e-05); cell 10 0.308 against 0.583 (p = 5.4e-07)
+gatesup against P9, all cells: 0.210 against 0.532, only gatesup succeeds 77, only P9 502, p = 2.2e-77 (below)
+  cells that differ with p < 0.05: cell 0 0.258 against 0.692 (p = 9e-12); cell 1 0.108 against 0.625 (p = 1.7e-15); cell 2 0.333 against 0.550 (p = 0.00011); cell 3 0.258 against 0.667 (p = 5.4e-11); cell 4 0.217 against 0.492 (p = 5.4e-07); cell 5 0.133 against 0.583 (p = 2.7e-12); cell 6 0.283 against 0.492 (p = 0.00025); cell 7 0.175 against 0.367 (p = 0.00029); cell 8 0.192 against 0.458 (p = 1.4e-05); cell 9 0.125 against 0.342 (p = 6.2e-06); cell 10 0.225 against 0.583 (p = 4.2e-09)
+aug against P9, all cells: 0.557 against 0.532, only aug succeeds 201, only P9 168, p = 0.096
+  cells that differ with p < 0.05: none
+global against P9, all cells: 0.305 against 0.532, only global succeeds 114, only P9 414, p = 5.6e-41 (below)
+  cells that differ with p < 0.05: cell 2 0.075 against 0.550 (p = 1.6e-15); cell 4 0.058 against 0.492 (p = 6.1e-15); cell 5 0.467 against 0.583 (p = 0.049); cell 6 0.033 against 0.492 (p = 5.6e-17); cell 7 0.067 against 0.367 (p = 4.4e-08); cell 9 0.058 against 0.342 (p = 1.9e-08)
+stx against P9, all cells: 0.458 against 0.532, only stx succeeds 194, only P9 291, p = 1.2e-05 (below)
+  cells that differ with p < 0.05: cell 1 0.417 against 0.625 (p = 0.0013); cell 2 0.667 against 0.550 (p = 0.024); cell 4 0.350 against 0.492 (p = 0.016); cell 5 0.425 against 0.583 (p = 0.014)
+
+## 3. Every run against the rgbdt ImageNet baseline of seed 42, same episodes
+
+warm against rgbdt ImageNet, all cells: 0.468 against 0.414, only warm succeeds 274, only rgbdt ImageNet 202, p = 0.0011 (above)
+warm against rgbdt ImageNet, depth shows (0, 1, 3, 5, 8, 10): 0.524 against 0.639, only warm succeeds 90, only rgbdt ImageNet 173, p = 3.4e-07 (below)
+warm against rgbdt ImageNet, depth blind (2, 4, 6, 7, 9): 0.402 against 0.143, only warm succeeds 184, only rgbdt ImageNet 29, p = 9.2e-29 (above)
+  cells that differ with p < 0.05: cell 0 0.633 against 0.775 (p = 0.014); cell 1 0.575 against 0.750 (p = 0.0031); cell 2 0.533 against 0.225 (p = 5.7e-08); cell 3 0.500 against 0.650 (p = 0.0079); cell 4 0.458 against 0.192 (p = 3.3e-06); cell 5 0.517 against 0.650 (p = 0.036); cell 6 0.458 against 0.158 (p = 1.7e-08); cell 7 0.292 against 0.092 (p = 0.00012); cell 8 0.408 against 0.525 (p = 0.034); cell 9 0.267 against 0.050 (p = 6.2e-06)
+anchor against rgbdt ImageNet, all cells: 0.260 against 0.414, only anchor succeeds 137, only rgbdt ImageNet 340, p = 5.7e-21 (below)
+anchor against rgbdt ImageNet, depth shows (0, 1, 3, 5, 8, 10): 0.315 against 0.639, only anchor succeeds 53, only rgbdt ImageNet 286, p = 8.8e-40 (below)
+anchor against rgbdt ImageNet, depth blind (2, 4, 6, 7, 9): 0.193 against 0.143, only anchor succeeds 84, only rgbdt ImageNet 54, p = 0.013 (above)
+  cells that differ with p < 0.05: cell 0 0.400 against 0.775 (p = 7.1e-11); cell 1 0.258 against 0.750 (p = 1.1e-14); cell 3 0.367 against 0.650 (p = 8.2e-06); cell 5 0.342 against 0.650 (p = 7.5e-07); cell 8 0.217 against 0.525 (p = 7.5e-07); cell 9 0.142 against 0.050 (p = 0.019); cell 10 0.308 against 0.483 (p = 0.0031)
+gatesup against rgbdt ImageNet, all cells: 0.210 against 0.414, only gatesup succeeds 143, only rgbdt ImageNet 412, p = 3.4e-31 (below)
+gatesup against rgbdt ImageNet, depth shows (0, 1, 3, 5, 8, 10): 0.196 against 0.639, only gatesup succeeds 42, only rgbdt ImageNet 361, p = 2.3e-64 (below)
+gatesup against rgbdt ImageNet, depth blind (2, 4, 6, 7, 9): 0.227 against 0.143, only gatesup succeeds 101, only rgbdt ImageNet 51, p = 6.1e-05 (above)
+  cells that differ with p < 0.05: cell 0 0.258 against 0.775 (p = 2.1e-14); cell 1 0.108 against 0.750 (p = 5.1e-19); cell 3 0.258 against 0.650 (p = 5.5e-12); cell 5 0.133 against 0.650 (p = 6.4e-15); cell 6 0.283 against 0.158 (p = 0.011); cell 8 0.192 against 0.525 (p = 4.6e-07); cell 9 0.125 against 0.050 (p = 0.049); cell 10 0.225 against 0.483 (p = 2.2e-05)
+aug against rgbdt ImageNet, all cells: 0.557 against 0.414, only aug succeeds 337, only rgbdt ImageNet 148, p = 5.2e-18 (above)
+aug against rgbdt ImageNet, depth shows (0, 1, 3, 5, 8, 10): 0.637 against 0.639, only aug succeeds 120, only rgbdt ImageNet 121, p = 1
+aug against rgbdt ImageNet, depth blind (2, 4, 6, 7, 9): 0.460 against 0.143, only aug succeeds 217, only rgbdt ImageNet 27, p = 4.8e-38 (above)
+  cells that differ with p < 0.05: cell 2 0.592 against 0.225 (p = 2.4e-09); cell 4 0.517 against 0.192 (p = 4e-08); cell 6 0.442 against 0.158 (p = 1.4e-07); cell 7 0.408 against 0.092 (p = 1.4e-08); cell 9 0.342 against 0.050 (p = 1e-08); cell 10 0.642 against 0.483 (p = 0.0043)
+global against rgbdt ImageNet, all cells: 0.305 against 0.414, only global succeeds 129, only rgbdt ImageNet 273, p = 5.6e-13 (below)
+global against rgbdt ImageNet, depth shows (0, 1, 3, 5, 8, 10): 0.510 against 0.639, only global succeeds 104, only rgbdt ImageNet 197, p = 9.1e-08 (below)
+global against rgbdt ImageNet, depth blind (2, 4, 6, 7, 9): 0.058 against 0.143, only global succeeds 25, only rgbdt ImageNet 76, p = 3.7e-07 (below)
+  cells that differ with p < 0.05: cell 0 0.583 against 0.775 (p = 0.0011); cell 1 0.517 against 0.750 (p = 9e-05); cell 2 0.075 against 0.225 (p = 0.0021); cell 4 0.058 against 0.192 (p = 0.0015); cell 5 0.467 against 0.650 (p = 0.0038); cell 6 0.033 against 0.158 (p = 0.00073)
+stx against rgbdt ImageNet, all cells: 0.458 against 0.414, only stx succeeds 294, only rgbdt ImageNet 235, p = 0.012 (above)
+stx against rgbdt ImageNet, depth shows (0, 1, 3, 5, 8, 10): 0.497 against 0.639, only stx succeeds 103, only rgbdt ImageNet 205, p = 6.4e-09 (below)
+stx against rgbdt ImageNet, depth blind (2, 4, 6, 7, 9): 0.412 against 0.143, only stx succeeds 191, only rgbdt ImageNet 30, p = 7.2e-30 (above)
+  cells that differ with p < 0.05: cell 0 0.608 against 0.775 (p = 0.0045); cell 1 0.417 against 0.750 (p = 4.7e-08); cell 2 0.667 against 0.225 (p = 1.7e-12); cell 4 0.350 against 0.192 (p = 0.0054); cell 5 0.425 against 0.650 (p = 0.00058); cell 6 0.417 against 0.158 (p = 1.6e-06); cell 7 0.383 against 0.092 (p = 3.1e-08); cell 9 0.242 against 0.050 (p = 1.5e-05)
+
+## 4. Where the gripper closes (last close of the episode)
+
+| cells | policy | success | closes within 4 cm of the glass | within 1.5 cm | success when within 1.5 cm | median distance, cm |
+|---|---|---|---|---|---|---|
+| all cells | warm | 0.468 | 0.884 | 0.539 | 0.765 | 1.37 |
+| all cells | anchor | 0.260 | 0.683 | 0.295 | 0.644 | 2.57 |
+| all cells | gatesup | 0.210 | 0.573 | 0.197 | 0.719 | 3.50 |
+| all cells | aug | 0.557 | 0.886 | 0.633 | 0.800 | 1.10 |
+| all cells | global | 0.305 | 0.603 | 0.345 | 0.726 | 2.59 |
+| all cells | stx | 0.458 | 0.896 | 0.528 | 0.732 | 1.41 |
+| all cells | P9 | 0.532 | 0.889 | 0.623 | 0.785 | 1.11 |
+| all cells | rgbdt ImageNet | 0.414 | 0.575 | 0.364 | 0.940 | 2.98 |
+
+## 5. The sensor weights: mean weight in the cells in which the sensor shows the glass / in the others, AUC; a weight follows what its sensor shows from AUC 0.8
+
+| run | rgb | depth | thermal | sensors whose weight follows |
+|---|---|---|---|---|
+| warm | 0.334 / 0.334, 0.52 | 0.334 / 0.334, 0.53 | 0.332 / 0.331, 0.66 | none |
+| anchor | 0.436 / 0.424, 0.55 | 0.436 / 0.424, 0.57 | 0.237 / 0.020, 0.97 | thermal |
+| gatesup | 0.333 / 0.333, 0.59 | 0.333 / 0.333, 0.44 | 0.333 / 0.333, 0.56 | none |
+| aug | 0.340 / 0.340, 0.53 | 0.340 / 0.340, 0.53 | 0.320 / 0.318, 0.61 | none |
+| global | 0.493 / 0.491, 0.54 | 0.463 / 0.433, 0.92 | 0.055 / 0.063, 0.41 | depth |
+| stx | 0.345 / 0.345, 0.52 | 0.345 / 0.345, 0.53 | 0.312 / 0.308, 0.65 | none |
+| P9 | 0.336 / 0.336, 0.51 | 0.336 / 0.336, 0.52 | 0.328 / 0.328, 0.56 | none |
+
+## 6. Next to it, not a criterion: hindsight cue gating (hcg_full, seed 42) on the same episodes
+
+| run | run | hcg_full | only the run succeeds / only hcg_full | p | cells with the run above / below hcg_full (p < 0.05) |
+|---|---|---|---|---|---|
+| warm | 0.468 | 0.789 | 75 / 498 | 1.4e-77 (below) | none / [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] |
+| anchor | 0.260 | 0.789 | 40 / 738 | 2.6e-167 (below) | none / [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] |
+| gatesup | 0.210 | 0.789 | 35 / 799 | 1.5e-189 (below) | none / [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] |
+| aug | 0.557 | 0.789 | 108 / 414 | 3.2e-43 (below) | none / [0, 1, 2, 3, 5, 6, 7, 9, 10] |
+| global | 0.305 | 0.789 | 49 / 688 | 3.1e-145 (below) | none / [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] |
+| stx | 0.458 | 0.789 | 82 / 518 | 2.3e-78 (below) | none / [0, 1, 2, 3, 4, 5, 6, 7, 9, 10] |
+| P9 | 0.532 | 0.789 | 98 / 437 | 4.4e-52 (below) | none / [0, 1, 2, 3, 5, 6, 7, 9, 10] |
