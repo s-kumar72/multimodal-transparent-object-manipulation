@@ -449,6 +449,26 @@ has used a cue of `V2_place`: the method's pilot lines have not started. The cac
 itself. The code is not changed while runs execute from this worktree; until then a cue folder is removed whenever
 its demo set is collected again, and the preparation checks the dates.
 
+*11/26 21:01 KST: the cues of `V2_place` are fitted again* (maps of 20:17 and 20:54 KST, demos of 10:36; the
+preparation wrote "V2_place ready" at 20:59). From the current demos, the rule `consensus`:
+
+- grasp cue: within 1.5 cm of the hindsight grasp point in 0.82 of the 700 demos. At reset it is within 1.5 cm of the
+  glass in 0.81 of the 660 scenes of `j_cells11` and 0.78 of `k_cells11_heldout`: cells 0 to 3, 5 to 7 and 10 0.82 to
+  1.00, cell 8 (depth faint alone) 0.65 and 0.48, cell 4 (thermal alone) 0.60 and 0.60, cell 9 (thermal faint alone)
+  0.05 and 0.03;
+- place cue: within 1.5 cm in 0.97 of the demos;
+- the one network on the five channels (`V2_place_700_early`, fitted 19:28 to 19:40): 0.80 of the demos; at reset
+  0.77 and 0.74, cell 4 0.27 and 0.15, cell 9 0.07 and 0.03, cell 8 0.55 and 0.57;
+- own peak of a sensor within 1.5 px where it shows the glass / faintly / not: colour 0.98 / 0.92 / 0.15, depth 1.00 /
+  0.89 / 0.16, thermal 0.70 / 0.21 / 0.12.
+
+As on T2, neither cue finds the glass in cell 9; the rule of the thermal states decides on that cell from the four
+pilot runs, not from these fits. With the cues there, the two method runs of the pilot on `V2_place` are moved forward
+among the lines that have not started (the commands as listed, no line added or removed): `V2_two` plain,
+`V2_place_rgbdt_700demos_hcg2_cue`, `V2_align` plain, `V2_align_rgbdt_700demos_hcg2a_cue`,
+`V2_place_rgbdt_700demos_hcg2_cue_early`, then the lines of the first version; the four runs on `V2_place_warm`
+(sensitivity only) stay at the end.
+
 **What a blind sensor still shows: the layout (11/26 19:51 KST; looked at when the fits of T2 were read, not a test fixed in
 advance).** In the report of the T2 cue the sensors' own maps are on the grasp pixel also where the sensor does not
 show the glass: within 1.5 px in 0.40 of the colour-blind demos, 0.29 of the depth-blind and 0.23 of the
