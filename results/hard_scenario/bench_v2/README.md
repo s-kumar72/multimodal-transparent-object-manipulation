@@ -385,6 +385,33 @@ the trace of the "blind" glass; the numbers with the real cue and the corrected 
 of twice the angle at the grasp and at the place; `policy/config/task/glass_pick_hcue2a.yaml`, `ANGLE=1` of
 `policy/train_cuegate.sh`).
 
+**Step 4, the runs on T2 and T3 (listed 11/26 14:02 KST, before any of them is started; the demos of T3 are not collected
+yet).** Whether a policy can start on the two tasks. Seed 42, the protocol of the pilot (101 epochs, the last
+checkpoint, ImageNet encoders), through the queue after the pilot's lines; a run that fails is reported and not
+started again.
+
+| run | what | evaluation |
+|---|---|---|
+| `V2_align_rgbdt_700demos_imagenet` | plain rgbdt on T2 | `j_cells11`, `k_cells11_heldout`, 660 episodes each, at most 240 steps |
+| `V2_align_rgbdt_700demos_hcg2a_cue` | the arm `cue` of the method on T2 with the grasp cue, the place cue and the hindsight angle of each (`ANGLE=1 CUES=2 TRAIN="policy/train_cuegate.sh cue"`, the fits of `data/hcue/V2_align_700[_release]` and `data/hang/V2_align_700[_release]`) | the same |
+| `V2_two_rgbdt_700demos_imagenet` | plain rgbdt on T3 | `j_pairs12`, `k_pairs12_heldout`, 360 episodes each (30 per pair), at most 480 steps |
+
+Commands: `GROUP=bench_v2 TOPK=0 NTEST=66 NEVAL=660 TEST_SETS="j_cells11 k_cells11_heldout" TAG=imagenet
+EXTRA="training.seed=42 task.env_runner.test_set=j_cells11 task.env_runner.max_steps=240
+policy.obs_encoder.rgb_model.weights=IMAGENET1K_V1" bash scripts/run_experiment.sh V2_align rgbdt 700`; for T3 the same
+with `NTEST=60 NEVAL=360`, the test sets `j_pairs12 k_pairs12_heldout`, `max_steps=480` and `V2_two`; the method's run
+on T2 as the pilot's `hcg2_cue` line with `ANGLE=1`, `TAG=hcg2a_cue` and the four folders above. The demos of T2 are
+the 700 of 11/26 (after the correction of colour blind); those of T3 are collected by the run. The method's run is
+put into the queue once its fits exist and a start test of a few steps has passed; the two plain runs passed such a
+test before they were queued. The method is not run on T3: its cue for two targets is not written.
+
+Read-out, fixed now (`python policy/readout_v2_tasks.py > readout_tasks.txt`): per task the success per cell (T3: per
+pair) of each run, the share of episodes with the glass picked (T3: with one and with both glasses on a coaster),
+the outcome labels of the failures, for T2 the angle between glass and mat at the end. The stop of step 4 as in
+section 8: a task on which plain rgbdt is below 0.05 and no run reaches 0.30 in any cell is changed with the user
+and its runs are repeated. These runs decide that and, with the pilot, the numbers of demos of T2 and T3 and the
+pairs of T3; nothing of them enters the tables of the frozen benchmark.
+
 **Still open for the freeze.** T2 has three training shapes, so a number of demos that is a multiple of 210 keeps the
 cell weights exact (630 or 840; 700 gives 76 / 70 / 68 demos in cells 1 to 3). T3: the cue of the method for two
 targets. The plain runs of T2 and T3 and the solvability checks.
