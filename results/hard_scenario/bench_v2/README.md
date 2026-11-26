@@ -556,6 +556,72 @@ image the choices are: (a) leave it and state it, as now; (b) before the freeze,
 sensor (the background seen through it shifted as by refraction, highlights, a darker rim) and repeat this check,
 which now exists and takes ten minutes; (c) leave the answer to the real robot. The user decides.
 
+## 12. The colour image of the glass: an optical model in place of alpha
+
+**Decision of the user (11/26): choice (b) of section 11, try a colour model of glass and repeat the check.** The
+preparation of the draft levels (cue and angle fits) is stopped until this is decided: a new colour image of the
+glass means new demos and new cues.
+
+**What is wrong today.** The glass is a solid of colour (0.8, 0.9, 1.0) blended over the scene at alpha 0.5 (shows) or
+0.2 (faint), lit like any other body: a pale grey solid. Real clear glass (the windows of TRansPose, looked at side
+by side with the simulator's) is the background seen through it, slightly dimmed, with bright highlights on rims and
+ridges and a line along its edges; there is no tint over its area.
+
+**Listed 11/26 11:54 KST, before any of it is written or run.**
+
+*The model* (`rgb_glass: optical`, off by default, so every existing level renders as before). The scene is rendered
+without the glass (B); the glass's surface normal n is taken from its depth image; per glass pixel
+`I = (1 - e) * [T0 * (1 - F) * B(p + shift) + F * E] + e * rho * E + 255 * S`, clipped, where
+- `T0 = 0.92`: what two thin walls of clear glass let through (fixed);
+- `F`: reflectance, Schlick with F0 = 0.08 (a wall has two surfaces of 0.04) and the angle between n and the view ray
+  (fixed);
+- `E`: what the glass reflects and refracts from elsewhere, taken as the mean colour of B over the image;
+- `shift`: the background behind the glass moved by up to 0.15 of the glass's radius towards its edges, growing
+  with the square of the sine of the angle (a thin-walled vessel bends light little in its middle; fixed);
+- `e`: the edge, in 0 to 1: where the wall is seen edge-on (sine of the angle above 0.85, rising to 1), on the
+  outline of the glass and on the creases between its faces; there the pixel takes `rho * E`, the dimmed
+  surroundings, times a weight `w_rim`;
+- `S`: highlights of the scene's lights (the camera's headlight, the lamp above, the extra lights of a lighting
+  preset), Blinn-Phong with exponent 30 on the normal, times an intensity `k_s`; they follow the light level of the
+  episode.
+Not modelled: the inner surfaces and the far wall, the thick base, caustics and shadows on the table, liquid.
+A strength s blends it with the scene, `(1 - s) * B + s * I`: s = 1 is "shows", s = 0 is "blind" (the image is B,
+pixel for pixel), and "faint" is s = 0.3 for now (where that lies among real glass is measured below; ranges per
+episode as for the other sensors are set before the freeze).
+
+*Three numbers are set from real images and not from the check*: `k_s`, `w_rim` and `rho`. On 32 x 32 windows (the
+geometry of section 11, with the region's mask), for real regions whose surroundings are plain (standard deviation
+of the luminance outside the mask below 15 grey levels; the simulator's table is plain) and for the simulator's
+"shows": the differences between the glass's pixels and the window's other pixels in the median, the 95th and the 5th
+percentile of the luminance. `k_s`, `w_rim` and `rho` are chosen on a grid (k_s 0.2 to 1.6, w_rim 0 to 1, rho 0.3 to
+1.0) so that the simulator's medians of the three differences are closest to the real medians (squared distance in
+units of the real interquartile range). If fewer than 100 real regions have plain surroundings, the limit is raised
+to 25 and this is said.
+
+*The judges.* Real colour pairs as in section 11, cut from all 252 frames of each TRansPose sequence. The 35
+sequences are split in two halves by their order (even and odd). Judge A is the network of section 11 trained on
+the pairs of the even half, judge B on the odd half; a judge's own AUC is measured on the other half. While the
+model is developed only judge A is looked at, in at most three rounds, each with its change and its reason written
+down; judge B is run once, on the final model.
+
+**Read-out, fixed now** (`python real_data/findability.py readout3`), on 3000 paired windows of `V2_place` with the
+optical model (the same window with and without the glass):
+1. *Floor.* In the colour-blind pairs the two windows are the same image: the simulator's own AUC within 0.45 to
+   0.55.
+2. *Does a network that learned real glass respond?* Per state (shows, faint): judge B's AUC on the simulator's
+   pairs against 0.5 + half of judge B's own margin over 0.5: "yes" or "no". Next to it the share of pairs in which
+   the window with the glass scores higher, and the same per contrast bin as in section 11.
+3. *Does a network that learned the simulator's glass find real glass?* The simulator's network (all pairs of the
+   3000) on all real pairs against 0.5 + half of the real network's own margin (out of fold): "transfers" or "does
+   not transfer".
+4. The alpha model through the same judges, for comparison.
+
+**What is done with it, fixed now.** If rule 2 says "yes" for "shows", the optical model is proposed for the second
+version (the user decides; the draft levels then get `rgb_glass: optical`, and their demos and cues are made again).
+If it says "no" after the three rounds, the result is reported as it is, the colour image stays as it is unless the
+user decides otherwise, and the limit is stated in the paper. Images of the glass under both models are shown with
+the result either way.
+
 ## Files
 
 `real_data/glass_visibility.py` (real sensors), `sim/measure_visibility.py` (the simulator, same functions),
