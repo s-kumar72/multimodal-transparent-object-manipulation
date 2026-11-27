@@ -1,0 +1,55 @@
+## V2_align, seed 42
+
+1320 episodes per run on j_cells11, k_cells11_heldout.
+
+| cell | plain rgbdt | `cue` with the angles |
+|---|---|---|
+| 0: rgb+depth+thermal | 0.775 | 0.908 |
+| 1: depth+thermal | 0.792 | 0.933 |
+| 2: rgb+thermal | 0.492 | 0.900 |
+| 3: rgb+depth | 0.767 | 0.875 |
+| 4: thermal | 0.258 | 0.725 |
+| 5: depth | 0.808 | 0.925 |
+| 6: rgb | 0.367 | 0.917 |
+| 7: rgb (faint) | 0.333 | 0.825 |
+| 8: depth (faint) | 0.683 | 0.750 |
+| 9: thermal (faint) | 0.233 | 0.417 |
+| 10: all three (faint) | 0.700 | 0.933 |
+| macro average | 0.564 | 0.828 |
+| glass picked | 0.792 | 0.965 |
+
+plain rgbdt, outcomes: success 745, place_off 219, missed_grasp 131, other 65, wrong_height 55, place_turned 46, place_fell 31, dropped 23, place_held 4, wrong_object 1
+  angle between the glass and the mat at the end, episodes with the glass picked: median 4.0 degrees, within 15 degrees in 0.92
+`cue` with the angles, outcomes: success 1093, place_off 140, other 21, place_turned 21, place_fell 20, missed_grasp 12, wrong_height 6, dropped 3, wrong_object 3, timeout 1
+  angle between the glass and the mat at the end, episodes with the glass picked: median 3.3 degrees, within 15 degrees in 0.97
+
+Stop of step 4 (the plain baseline below 0.05 and no run at 0.3 in any cell): no (plain rgbdt 0.564, best cell of any run 0.933).
+`cue` with the angles against plain rgbdt on the same episodes: only the first succeeds in 413, only the second in 65, p = 5.6e-63
+
+## V2_two, seed 42
+
+720 episodes per run on j_pairs12, k_pairs12_heldout.
+
+| cell | plain rgbdt |
+|---|---|
+| 0: pair 0 | 0.283 |
+| 1: pair 1 | 0.333 |
+| 2: pair 2 | 0.033 |
+| 3: pair 3 | 0.017 |
+| 4: pair 4 | 0.050 |
+| 5: pair 5 | 0.167 |
+| 6: pair 6 | 0.083 |
+| 7: pair 7 | 0.183 |
+| 8: pair 8 | 0.117 |
+| 9: pair 9 | 0.100 |
+| 10: pair 10 | 0.167 |
+| 11: pair 11 | 0.183 |
+| macro average | 0.143 |
+| glass picked | 0.471 |
+| one glass on a coaster | 0.442 |
+| both glasses on a coaster | 0.143 |
+
+plain rgbdt, outcomes: placed_0 402, placed_1 215, success 103
+
+Stop of step 4 (the plain baseline below 0.05 and no run at 0.3 in any cell): no (plain rgbdt 0.143, best cell of any run 0.333).
+
