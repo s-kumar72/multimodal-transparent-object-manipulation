@@ -566,6 +566,30 @@ Fits only, and nothing is decided from them. With the thermal states of point 3 
 about a fifth of the scenes, where it found it in a twentieth; whether a policy gets over 0.30 there is read from the
 four runs, if the verdict calls for them.
 
+**Step 4, the results on T2 and T3 (11/27 21:42 KST; the three runs have ended: T3 plain 11/27 12:20 KST, T2 plain 16:34, the
+method on T2 21:41).** [`readout_tasks.txt`](readout_tasks.txt), seed 42.
+
+| task | run | macro average | glass picked | lowest and highest cell |
+|---|---|---|---|---|
+| T2 `V2_align`, 1320 episodes | plain rgbdt | 0.564 | 0.792 | 0.233 (cell 9), 0.808 (cell 5) |
+| | `cue` with the angles | 0.828 | 0.965 | 0.417 (cell 9), 0.933 (cells 1, 10) |
+| T3 `V2_two`, 720 episodes | plain rgbdt | 0.143 | 0.471 | 0.017 (pair 3), 0.333 (pair 1) |
+
+- The stop of step 4 applies to neither task (plain rgbdt 0.564 and 0.143, both above 0.05; the best cell of a run
+  0.933 and 0.333). Both tasks can be started on.
+- T2: the method against plain rgbdt on the same episodes: only the first succeeds in 413, only the second in 65
+  (p = 5.6e-63); it is higher in each of the 11 cells. Failures of the plain run: the glass put down off the mat
+  (219), not grasped (131); of the method: off the mat (140). Angle between glass and mat at the end, glass picked:
+  median 4.0 degrees and 3.3 degrees, within 15 degrees in 0.92 and 0.97.
+- T3: one glass on a coaster in 0.442 of the episodes, both in 0.143; no other failure label than "one placed" (402)
+  and "none placed" (215). The method is not run on T3 (no cue for two targets yet).
+
+Next to it, not fixed in advance: (1) on T2 the method is at 0.417 in cell 9 (thermal faint alone) with the thermal
+states of `V2_place`, where on T1 it is at 0.158; plain rgbdt is at 0.233 there (T1: 0.092). (2) Plain rgbdt on T2 is
+at 0.23 to 0.49 in the cells without depth (2, 4, 6, 7, 9), on T1 at 0.06 to 0.13, and lower than on T1 where depth
+shows (0.77 to 0.81 against 0.98 to 0.99). The first is in the direction of what the layout gives on T2 (below, "What
+a blind sensor still shows"); the tasks and the glasses differ, so it is not shown by this. One seed.
+
 **What a blind sensor still shows: the layout (11/26 19:51 KST; looked at when the fits of T2 were read, not a test fixed in
 advance).** In the report of the T2 cue the sensors' own maps are on the grasp pixel also where the sensor does not
 show the glass: within 1.5 px in 0.40 of the colour-blind demos, 0.29 of the depth-blind and 0.23 of the
