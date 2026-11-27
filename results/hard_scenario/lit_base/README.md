@@ -216,3 +216,49 @@ has one seed and is left out of items 1 to 3; the read-out is run again when its
 With three seeds the first reading stands: neither fusion is above plain concatenation, and with both among the
 baselines the method's claim of Stage 6 holds. The settings are the papers' or the stated defaults; none was tuned on
 the benchmark.
+
+## Results with three seeds: MS-Bot (11/28 04:58 KST)
+
+The two runs trained and were evaluated as listed and neither failed (seed 43 11/27 22:13 to 11/28 03:32 KST, seed 44
+11/27 23:46 to 11/28 04:55). [`readout_seeds.txt`](readout_seeds.txt) is the fixed command run again with their
+result folders merged into the results branch; it now holds MS-Bot in items 1 to 4. Every number of the section
+above is unchanged by it.
+
+| run | `L0_vis`, seeds 42 / 43 / 44 | mean (standard deviation) | against plain rgbdt: only the run / only plain, p | `L0_vis_ell`, seeds 42 / 43 / 44 | mean (standard deviation) | against plain rgbdt: only the run / only plain, p | new combinations |
+|---|---|---|---|---|---|---|---|
+| stage-guided fusion (MS-Bot) | 0.161 / 0.257 / 0.051 | 0.156 (0.103) | 190 / 1268, 1e-195 | 0.273 / 0.367 / 0.090 | 0.244 (0.141) | 202 / 1561, 4.8e-260 | 0.205 |
+| plain rgbdt | 0.414 / 0.440 / 0.431 | 0.428 (0.013) | | 0.560 / 0.608 / 0.592 | 0.587 (0.025) | | |
+
+1. **Against plain rgbdt.** Over three seeds MS-Bot is below plain rgbdt in all eleven cells on both levels.
+2. **Stage 6.** It is the best baseline of no cell, so the best baselines, their macro averages (0.470 and 0.639)
+   and the verdicts of the section above stand: "better in nearly every case" **holds** for `hcg_full` and
+   `hcg_cue` on both levels.
+3. **The 15 new combinations.** 0.205 against `hcg_cue` 0.854 (only MS-Bot succeeds in 62 episodes, only `hcg_cue`
+   in 2398).
+
+**Next to it, as fixed on 11/26 (not a criterion): is the flat gate loss an accident of seed 42?** It is not.
+
+| seed | first epoch with a mean training loss below 0.5 | success in the 55 test episodes at epochs 25 / 50 / 75 / 100 | macro average, `L0_vis` |
+|---|---|---|---|
+| 42 | 40 | 0.04 / 0.07 / 0.11 / 0.15 | 0.161 |
+| 43 | 76 | 0.07 / 0.18 / 0.31 / 0.25 | 0.257 |
+| 44 | 55 | 0.05 / 0.04 / 0.04 / 0.04 | 0.051 |
+
+Every seed has the plateau of seed 42: from epoch 5 on the mean training loss of an epoch is about 1.19 (1.14 to
+1.20), until epoch 37 (seed 42), 74 (seed 43) and 39 (seed 44). Seed 42 is below 0.1 from epoch 42. Seed 43 begins
+to fall in the last quarter of epoch 75 and is below 0.1 from epoch 80. Seed 44 leaves the plateau in steps (0.64
+to 0.66 in epochs 41 to 54, 0.45 to 0.48 in epochs 55 to 61) and is below 0.1 from epoch 64, epoch 70 (0.20)
+excepted. The last epoch is at 0.037, 0.048 and 0.038.
+
+*Not fixed in advance.* The success does not follow how early the loss leaves the plateau: the seed that spends
+three quarters of the training on it (43) has the highest success of the three, and its success in the 55 test
+episodes is as high at epoch 75, when the loss has only begun to fall, as at the end. The seed with the lowest
+success (44) is the one whose action error on training batches ends highest (0.0028; seeds 42 and 43: 0.0009 and
+0.0008). So the length of the plateau alone does not account for the low numbers, and the three seeds differ by
+far more than those of the other baselines do (standard deviation 0.10 against 0.01 to 0.02). What the cause is
+was not examined, and no further run was made.
+
+**What this says.** With three seeds MS-Bot stays far below plain concatenation and far below the method, and its
+number is unstable between seeds. It can stand in the table with three seeds, with the remark that the
+implementation follows the paper's four parts but was not tuned, and that its training loss stays on a plateau
+until epoch 37 to 74 of the 101. It changes nothing in the comparison of the method with the baselines.
