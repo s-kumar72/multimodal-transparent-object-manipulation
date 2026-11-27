@@ -1,0 +1,28 @@
+## V2_place (thermal as measured on real glass), seed 42, 1320 episodes per run
+
+| cell | sensors that show the glass | plain rgbdt | plain rgbd | `cue` | one network |
+|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.975 | 0.967 | 0.975 | 1.000 |
+| 1 | depth+thermal | 0.983 | 0.983 | 0.950 | 0.967 |
+| 2 | rgb+thermal | 0.108 | 0.092 | 0.900 | 0.808 |
+| 3 | rgb+depth | 0.992 | 0.975 | 0.967 | 1.000 |
+| 4 | thermal | 0.058 | 0.067 | 0.458 | 0.217 |
+| 5 | depth | 0.983 | 0.992 | 0.950 | 0.983 |
+| 6 | rgb | 0.133 | 0.058 | 0.892 | 0.825 |
+| 7 | rgb (faint) | 0.067 | 0.075 | 0.842 | 0.733 |
+| 8 | depth (faint) | 0.633 | 0.617 | 0.617 | 0.642 |
+| 9 | thermal (faint) | 0.092 | 0.067 | 0.158 | 0.067 |
+| 10 | all three (faint) | 0.633 | 0.658 | 0.917 | 0.892 |
+| macro average | | 0.514 | 0.505 | 0.784 | 0.739 |
+| glass picked | | 0.570 | 0.534 | 0.840 | 0.792 |
+
+Stops: cells in which every run is below 0.3: [9]; every cell of every run above 0.95: no (lowest cell of the best run: 0.158).
+
+`cue` against plain rgbdt: 0.784 against 0.514, only the first succeeds in 417, only the second in 61, p = 3e-66
+`cue` against one network: 0.784 against 0.739, only the first succeeds in 144, only the second in 85, p = 0.00012
+plain rgbdt against plain rgbd: 0.514 against 0.505, only the first succeeds in 71, only the second in 58, p = 0.29
+
+## V2_place_warm (thermal as in the first version), seed 42, 1320 episodes per run
+
+Not finished yet, left out: ['plain rgbdt', 'plain rgbd', '`cue`', 'one network']
+

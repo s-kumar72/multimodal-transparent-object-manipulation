@@ -590,6 +590,62 @@ at 0.23 to 0.49 in the cells without depth (2, 4, 6, 7, 9), on T1 at 0.06 to 0.1
 shows (0.77 to 0.81 against 0.98 to 0.99). The first is in the direction of what the layout gives on T2 (below, "What
 a blind sensor still shows"); the tasks and the glasses differ, so it is not shown by this. One seed.
 
+**The verdict of the rule: cell 9 is not solvable, the pilot is repeated once on `V2b_place` (11/27 23:50 KST; the fourth pilot
+run ended 11/27 23:46 KST; no run on `V2b_place` has started and none is in the queue yet).**
+[`readout_pilot.txt`](readout_pilot.txt) and [`readout_thermal_rule.txt`](readout_thermal_rule.txt), both saved 11/27
+23:47 KST; `V2_place`, seed 42, 1320 episodes per run.
+
+| cell | sensors that show the glass | plain rgbdt | plain rgbd | `cue` | one network | reference (plain rgbt, 430 demos) |
+|---|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.975 | 0.967 | 0.975 | 1.000 | 0.133 |
+| 1 | depth+thermal | 0.983 | 0.983 | 0.950 | 0.967 | 0.158 |
+| 2 | rgb+thermal | 0.108 | 0.092 | 0.900 | 0.808 | 0.167 |
+| 3 | rgb+depth | 0.992 | 0.975 | 0.967 | 1.000 | 0.183 |
+| 4 | thermal | 0.058 | 0.067 | 0.458 | 0.217 | 0.142 |
+| 5 | depth | 0.983 | 0.992 | 0.950 | 0.983 | 0.108 |
+| 6 | rgb | 0.133 | 0.058 | 0.892 | 0.825 | 0.108 |
+| 7 | rgb (faint) | 0.067 | 0.075 | 0.842 | 0.733 | 0.167 |
+| 8 | depth (faint) | 0.633 | 0.617 | 0.617 | 0.642 | 0.083 |
+| 9 | thermal (faint) | 0.092 | 0.067 | 0.158 | 0.067 | 0.108 |
+| 10 | all three (faint) | 0.633 | 0.658 | 0.917 | 0.892 | 0.100 |
+| macro average | | 0.514 | 0.505 | 0.784 | 0.739 | 0.133 |
+| glass picked | | 0.570 | 0.534 | 0.840 | 0.792 | 0.197 |
+
+- The stops of step 3: one cell is below 0.30 in all four runs, cell 9 (thermal faint alone; the best run is `cue`
+  at 0.158). Not everything is above 0.95.
+- Point 2 of the rule: the reference is at 0.108 in cell 9, so the cell counts as not solvable. Cell 4 (thermal alone,
+  shows) stays as it is: `cue` solves it (0.458). What the reference can show was said at 20:00 KST above: it is
+  below 0.30 in every cell, so by itself it says little about the faint state. The rule is applied as written.
+- Point 3: cell 9 is a cell in which thermal is faint. Thermal "faint" becomes 10 to 26 noise units and "shows" 26 to
+  103, which is the level `V2b_place` prepared above, and the four pilot runs are repeated once on it. This is the one
+  change the rule makes; `V2_place` and its runs stay as the record of the first pilot.
+- `cue` against plain rgbdt on the same episodes: 0.784 against 0.514, only the first succeeds in 417, only the
+  second in 61 (p = 3e-66). `cue` against the one network: 0.784 against 0.739, 144 and 85 (p = 0.00012). Plain rgbdt
+  against plain rgbd: 0.514 against 0.505, 71 and 58 (p = 0.29). One seed; by its listing the pilot decides the states
+  and nothing of it enters the tables of the frozen benchmark.
+
+Next to it, not fixed in advance: per cell `cue` is above the one network in six cells (2, 4, 6, 7, 9, 10; the widest
+gap in cell 4, thermal alone, 0.458 against 0.217) and below it in five (0, 1, 3, 5, 8, by 0.017 to 0.033). The five
+are cells in which depth shows the glass (fully in 0, 1, 3 and 5, faintly in 8), and in them all four runs are within
+0.05 of each other. Both runs with a cue trained to the end (epoch 100, training loss 0.0006; plain rgbdt 0.0013).
+
+*The repeated pilot in the queue.* The four runs are put in the queue of the fusion-vis worktree after this commit,
+before the lines of the first version that have not started, with the commands of step 3, the level `V2b_place` and
+its cue folders (`data/hcue/V2b_place_700`, `..._early`, `..._release`), in this order:
+`V2b_place_rgbdt_700demos_hcg2_cue`, `V2b_place_rgbdt_700demos_hcg2_cue_early`, `V2b_place_rgbdt_700demos_imagenet`,
+`V2b_place_rgbd_700demos_imagenet`. The four GPUs hold runs of the first version (the queue started its next line on
+the GPU of the fourth pilot run in the minute that run ended, before the verdict was read). They are not stopped;
+the four runs start as these end, at about 01:40, 03:20, 03:45 and 05:20 KST of 11/28, and end between about 09:30
+and 13:30 KST.
+
+*When the outcome is known, said before any of them starts.* What follows is as fixed at 20:04 KST above and is read
+from `readout_pilot_b.txt` when all four have ended. Both stops can be ruled out by one run alone: if a run has
+every cell at 0.30 or more and one cell at 0.95 or below, then no cell is below 0.30 in all four runs and not
+everything is above 0.95, whatever the other three give. A run can be read this way as soon as it has ended. The
+method's run goes first because on `V2_place` it is the highest run in the cells without depth, so it is the one
+most likely to settle it early. The order changes when the outcome is known, not what it is, and all four runs are
+run and reported in either case. If the first run does not settle it, nothing is said before all four have ended.
+
 **What a blind sensor still shows: the layout (11/26 19:51 KST; looked at when the fits of T2 were read, not a test fixed in
 advance).** In the report of the T2 cue the sensors' own maps are on the grasp pixel also where the sensor does not
 show the glass: within 1.5 px in 0.40 of the colour-blind demos, 0.29 of the depth-blind and 0.23 of the
@@ -966,3 +1022,7 @@ Unseen objects: `sim/assets/gen3_lite/place_unseen_scene.xml`, test set `u_cells
 `on_coaster`), `sim/sensors.py` (the second glass's depth), `sim/teacher.py` (`_plan_two`). `sim/task_check.py`.
 The angle of T2: `policy/hindsight_angle.py`, `policy/config/task/glass_pick_hcue2a.yaml`, `policy/glass_dataset.py` and
 `policy/glass_gym_env.py` (the observation `hang`), `policy/train_cuegate.sh` (`ANGLE=1`).
+Runs of the pilot and of step 4: one folder per run (`curve.json`, `train_logs.json.txt`, per test set `eval_log.json`
+and `episodes.json`); read-outs `readout_pilot.txt`, `readout_thermal_rule.txt`, `readout_tasks.txt`
+(`policy/readout_v2_pilot.py`, `policy/readout_v2_thermal_rule.py`, `policy/readout_v2_tasks.py`); the repeated pilot:
+`sim/configs/V2b_place.yaml`, `policy/readout_v2_pilot_b.py`.
