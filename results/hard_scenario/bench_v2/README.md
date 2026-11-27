@@ -496,7 +496,7 @@ results/data/sim_demos_V2_place_430_thermal.zarr --cells 0 --cells 1 --cells 2 -
 thermal images, no depth), no start test was run because four jobs were running. Not fixed in advance: the time at
 which the run is queued. A run that fails is reported and not started again.
 
-*11/27 20:03 KST: the reference run has ended (19:56 KST); the fourth pilot run has not (about 23:00).*
+*11/27 20:00 KST: the reference run has ended (19:56 KST); the fourth pilot run has not (about 23:00).*
 `V2_place_rgbt_430demos_thermal_imagenet`, 1320 episodes: macro average 0.133, glass picked 0.197; cells 0 to 10: 0.133,
 0.158, 0.167, 0.183, 0.142, 0.108, 0.108, 0.167, 0.083, 0.108, 0.100. In cell 9 it is 0.108, below 0.30. Its training
 ended as that of the plain runs (101 epochs, training loss 0.0013 as plain rgbdt). The verdict is not given yet: by
