@@ -513,6 +513,39 @@ reaches is the same everywhere. So this reference says little about the faint st
 alone, shows) it is at 0.142 where `cue` is at 0.458. By point 2 cell 4 stays as it is, because a run solves it. The
 rule is not changed for this; what the reference can and cannot show is to be said with the verdict.
 
+**The repeated pilot, prepared before the verdict (11/27 20:04 KST; no demo of the new level collected, no cue fitted, no
+policy trained; the fourth pilot run of `V2_place` ends at about 23:30 KST).** Cell 9 is below 0.30 in three of the
+four pilot runs and in the reference. If the one network is below 0.30 there as well, point 3 of the rule follows, and
+what it needs is prepared now so that the runs can start with the verdict. None of it is queued or reported as a
+result unless the verdict is "not solvable"; if the one network solves cell 9, the level below stays unused and is
+taken out of the manifest again.
+
+- Level `V2b_place` ([`sim/configs/V2b_place.yaml`](../../../sim/configs/V2b_place.yaml), id 43, base `V2_place.yaml`):
+  only the two thermal ranges differ, `faint_contrast: [0.36, 0.92]` and `show_contrast: [0.92, 3.66]`.
+  `python sim/measure_visibility.py V2b_place -n 440`
+  ([`measurements/sim_V2b_place_visibility.txt`](measurements/sim_V2b_place_visibility.txt)), p10 / median / p90 in
+  units of the camera noise: thermal shows 32.6 / 66.2 / 94.9 (the range of point 3 is 26 to 103; a uniform draw from
+  it gives 34 / 65 / 95), faint 10.5 / 18.2 / 23.9 (10 to 26; 12 / 18 / 24), blind 0.4 / 1.5 / 3.4 as on `V2_place`.
+  The rows of the colour camera and of depth are identical to those of `V2_place`. `V2_place` itself is not changed,
+  so its runs stay as they are; the manifest has one more entry and is otherwise identical (the parsed files compared).
+- The four runs, seed 42, the protocol and the commands of step 3 with the level `V2b_place`:
+  `V2b_place_rgbdt_700demos_imagenet`, `V2b_place_rgbd_700demos_imagenet`, `V2b_place_rgbdt_700demos_hcg2_cue`,
+  `V2b_place_rgbdt_700demos_hcg2_cue_early`. Before them, as in step 3: 700 demos
+  (`results/data/sim_demos_V2b_place_700.zarr`) and the three cue fits (`data/hcue/V2b_place_700`, `..._early`,
+  `..._release`). The demos and the fits are started now, the fits beside the four jobs that run (small networks on
+  2800 frames; stopped if they need more than 8 GB of memory). Through the queue of the fusion-vis worktree, before
+  the lines of the first version that have not started. A run that fails is reported and not started again.
+- Read-out, fixed now: `python policy/readout_v2_pilot_b.py > readout_pilot_b.txt`, the read-out of the pilot
+  unchanged, on `V2b_place` and next to it on `V2_place`.
+- What follows from it, fixed now: the rule changes the thermal states once. If on `V2b_place` no cell is below 0.30
+  in all four runs and not every cell of every run is above 0.95, the thermal states of `V2b_place` are those of the
+  benchmark for the three tasks and the freeze (step 5) follows. If a cell is again below 0.30 in all four runs, or
+  everything is above 0.95, the stop of step 3 applies with the user; nothing more is changed by rule.
+- Left to the user at the freeze, not fixed here: the levels of T2 and T3 take the same thermal states and their
+  demos are collected again for the full run. Proposed: their plain runs on the earlier states are not repeated
+  before the freeze. They answered whether the task can be learned (the stop of step 4), and a clearer thermal image
+  does not make a task harder to start on.
+
 **What a blind sensor still shows: the layout (11/26 19:51 KST; looked at when the fits of T2 were read, not a test fixed in
 advance).** In the report of the T2 cue the sensors' own maps are on the grasp pixel also where the sensor does not
 show the glass: within 1.5 px in 0.40 of the colour-blind demos, 0.29 of the depth-blind and 0.23 of the
