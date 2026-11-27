@@ -181,3 +181,38 @@ with the three-seed read-out above (MS-Bot enters items 1 to 4 once it has three
 not a criterion: per seed, the first epoch whose mean training loss is below 0.5 (seed 42: epoch 40), and the success
 in the 55 test episodes at epochs 25, 50, 75 and 100. They say whether the flat gate loss of seed 42 is an accident
 of that seed.
+
+## Results with three seeds: self-attention fusion and sensor dropout (11/28 03:09 KST; the seeds of MS-Bot have not ended)
+
+The four runs trained and were evaluated as listed and none failed (self-attention fusion seed 43 11/26 11:15 to
+15:57 KST, seed 44 11/27 16:34 to 22:13; sensor dropout seed 43 11/27 19:56 to 11/28 01:20, seed 44 11/27 21:41 to
+11/28 03:06). The read-out is [`readout_seeds.txt`](readout_seeds.txt): the fixed command, with `--root` at the
+checkout of the results branch, into which the result folders of the grid-bench worktree were merged first. MS-Bot
+has one seed and is left out of items 1 to 3; the read-out is run again when its seeds 43 and 44 have ended.
+
+| run | `L0_vis`, seeds 42 / 43 / 44 | mean | against plain rgbdt: only the run / only plain, p | `L0_vis_ell`, seeds 42 / 43 / 44 | mean | against plain rgbdt: only the run / only plain, p | new combinations |
+|---|---|---|---|---|---|---|---|
+| self-attention fusion (MulSA) | 0.412 / 0.452 / 0.433 | 0.432 | 423 / 407, 0.6 | 0.564 / 0.586 / 0.582 | 0.578 | 359 / 396, 0.19 | 0.574 |
+| sensor dropout | 0.410 / 0.434 / 0.424 | 0.423 | 529 / 551, 0.52 | 0.556 / 0.573 / 0.590 | 0.573 | 497 / 552, 0.095 | 0.539 |
+| plain rgbdt | 0.414 / 0.440 / 0.431 | 0.428 | | 0.560 / 0.608 / 0.592 | 0.587 | | |
+| `hcg_cue` | 0.795 / 0.794 / 0.802 | 0.797 | | 0.914 / 0.914 / 0.917 | 0.915 | | 0.854 |
+
+1. **Against plain rgbdt.** Over three seeds neither is separated from plain rgbdt on either level. Self-attention
+   fusion differs from it in no cell on `L0_vis`; on `L0_vis_ell` it is above in cell 2 and below in cells 1, 3 and
+   10. Sensor dropout is above in cells 2 and 7 and below in cells 0 and 1 on `L0_vis`; on `L0_vis_ell` above in
+   cells 2, 4, 6 and 7 (no depth) and below in cells 0, 1, 3, 5, 8 and 10 (depth shows the glass, fully or
+   faintly). It moves success from the cells with depth to those without, and the sum stays where it was.
+2. **Stage 6 with the two among the baselines.** The best baseline of a cell is one of the two in cells 2, 3, 4, 7,
+   8, 9 and 10 on `L0_vis` and in cells 2, 4 and 9 on `L0_vis_ell` (sensor dropout there); the macro average of the
+   best baseline per cell is 0.470 and 0.639. No cell of `hcg_full` or `hcg_cue` is below its best baseline on either
+   level. `hcg_full` is above in nine cells on both levels (neither in cells 5 and 8); `hcg_cue` is above in all
+   eleven on `L0_vis` and in nine on `L0_vis_ell` (neither in cells 1 and 5). The macro averages are 0.792 and 0.797
+   against 0.432 (the highest baseline on `L0_vis`, self-attention fusion) and 0.904 and 0.915 against 0.587
+   (`L0_vis_ell`, plain rgbdt). "Better in nearly every case" **holds** for both on both levels; the verdict for the
+   paper's table is the one on `L0_vis_ell`.
+3. **The 15 new combinations.** Self-attention fusion 0.574 and sensor dropout 0.539 against `hcg_cue` 0.854 over
+   the three seeds (only the baseline succeeds in 206 and 184 episodes, only `hcg_cue` in 1212 and 1317).
+
+With three seeds the first reading stands: neither fusion is above plain concatenation, and with both among the
+baselines the method's claim of Stage 6 holds. The settings are the papers' or the stated defaults; none was tuned on
+the benchmark.
