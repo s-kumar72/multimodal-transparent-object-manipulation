@@ -546,6 +546,26 @@ taken out of the manifest again.
   before the freeze. They answered whether the task can be learned (the stop of step 4), and a clearer thermal image
   does not make a task harder to start on.
 
+*11/27 21:41 KST: the demos and the cues of `V2b_place` are there; nothing is queued.* 700 demos collected 20:05 to 20:15 KST
+(the teacher succeeds in 140 of 140 for each of the five glasses); the three fits 20:15 to 21:35 (maps later than the
+demos; at most 2.4 GB of memory beside the four jobs), the cue at reset on the two test sets until 21:40
+(`data/runs/v2b_prepare.sh`, log `data/hcue/v2b_prepare.log`). The same numbers as for `V2_place` above, rule
+`consensus`, with those of `V2_place` in brackets:
+
+- grasp cue: within 1.5 cm of the hindsight grasp point in 0.85 of the 700 demos (0.82). At reset within 1.5 cm of
+  the glass in 0.85 of `j_cells11` and 0.81 of `k_cells11_heldout` (0.81, 0.78): cell 4 (thermal alone) 0.82 and 0.68
+  (0.60, 0.60), cell 9 (thermal faint alone) 0.22 and 0.20 (0.05, 0.03), cell 8 (depth faint alone, not changed) 0.63
+  and 0.52 (0.65, 0.48);
+- place cue: within 1.5 cm in 0.96 of the demos (0.97);
+- the one network (`V2b_place_700_early`): 0.79 of the demos (0.80); at reset 0.79 and 0.78 (0.77, 0.74), cell 4 0.28
+  and 0.30 (0.27, 0.15), cell 9 0.13 and 0.08 (0.07, 0.03);
+- own peak of the thermal sensor within 1.5 px where it shows the glass / faintly / not: 0.82 / 0.41 / 0.09 (0.70 /
+  0.21 / 0.12); colour and depth as before (0.96 / 0.91 / 0.15 and 1.00 / 0.90 / 0.16).
+
+Fits only, and nothing is decided from them. With the thermal states of point 3 the cue finds the glass of cell 9 in
+about a fifth of the scenes, where it found it in a twentieth; whether a policy gets over 0.30 there is read from the
+four runs, if the verdict calls for them.
+
 **What a blind sensor still shows: the layout (11/26 19:51 KST; looked at when the fits of T2 were read, not a test fixed in
 advance).** In the report of the T2 cue the sensors' own maps are on the grasp pixel also where the sensor does not
 show the glass: within 1.5 px in 0.40 of the colour-blind demos, 0.29 of the depth-blind and 0.23 of the
