@@ -496,6 +496,23 @@ results/data/sim_demos_V2_place_430_thermal.zarr --cells 0 --cells 1 --cells 2 -
 thermal images, no depth), no start test was run because four jobs were running. Not fixed in advance: the time at
 which the run is queued. A run that fails is reported and not started again.
 
+*11/27 20:03 KST: the reference run has ended (19:56 KST); the fourth pilot run has not (about 23:00).*
+`V2_place_rgbt_430demos_thermal_imagenet`, 1320 episodes: macro average 0.133, glass picked 0.197; cells 0 to 10: 0.133,
+0.158, 0.167, 0.183, 0.142, 0.108, 0.108, 0.167, 0.083, 0.108, 0.100. In cell 9 it is 0.108, below 0.30. Its training
+ended as that of the plain runs (101 epochs, training loss 0.0013 as plain rgbdt). The verdict is not given yet: by
+point 2 it needs all four pilot runs. `python policy/readout_v2_thermal_rule.py` prints the table and applies points
+2 and 3 as written (the script is committed with this note, before the fourth run has ended; its output is saved as
+`readout_thermal_rule.txt` when that run has ended). If the one network is below 0.30 in cell 9, the cell counts as
+not solvable and point 3 follows; if it solves the cell, nothing follows.
+
+Next to it, not fixed in advance: the reference is below 0.30 in every cell, also where thermal shows the glass fully
+(cells 0, 1, 2, 4: 0.133 to 0.167), also where the colour camera shows it too (cells 0 and 2), and it is as high in
+cells it has no demos of and in which neither of its sensors shows the glass (cell 5 0.108, cell 8 0.083). A plain
+policy without depth does not read the glass from the thermal image at the real contrast in either state; what it
+reaches is the same everywhere. So this reference says little about the faint state by itself: in cell 4 (thermal
+alone, shows) it is at 0.142 where `cue` is at 0.458. By point 2 cell 4 stays as it is, because a run solves it. The
+rule is not changed for this; what the reference can and cannot show is to be said with the verdict.
+
 **What a blind sensor still shows: the layout (11/26 19:51 KST; looked at when the fits of T2 were read, not a test fixed in
 advance).** In the report of the T2 cue the sensors' own maps are on the grasp pixel also where the sensor does not
 show the glass: within 1.5 px in 0.40 of the colour-blind demos, 0.29 of the depth-blind and 0.23 of the
