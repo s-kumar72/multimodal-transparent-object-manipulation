@@ -646,6 +646,13 @@ method's run goes first because on `V2_place` it is the highest run in the cells
 most likely to settle it early. The order changes when the outcome is known, not what it is, and all four runs are
 run and reported in either case. If the first run does not settle it, nothing is said before all four have ended.
 
+*11/28 02:16 KST: one GPU goes to another project of the user; the times of the repeated pilot change, nothing else.* The
+method's run started 11/28 01:20 KST on GPU 1 (20 minutes before the time given above). At 02:16 KST the queue is set
+to three runs at once on GPUs 0, 1 and 3; GPU 2 is handed over when the run of the first version on it ends (about
+03:10 KST). The one network starts when GPU 3 is free (about 03:30), plain rgbdt when GPU 0 is (about 05:00), plain
+rgbd when the method's run has ended (about 09:00). Ends: the method about 09:00 to 09:30, the one network and plain
+rgbdt about 11:30 to 13:00, plain rgbd about 16:30 KST. The order, the commands and the read-out are as written.
+
 **What a blind sensor still shows: the layout (11/26 19:51 KST; looked at when the fits of T2 were read, not a test fixed in
 advance).** In the report of the T2 cue the sensors' own maps are on the grasp pixel also where the sensor does not
 show the glass: within 1.5 px in 0.40 of the colour-blind demos, 0.29 of the depth-blind and 0.23 of the
