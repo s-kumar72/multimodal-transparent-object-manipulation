@@ -42,7 +42,8 @@
     "V2_place": "sim/configs/V2_place.yaml",
     "V2_place_warm": "sim/configs/V2_place_warm.yaml",
     "V2_align": "sim/configs/V2_align.yaml",
-    "V2_two": "sim/configs/V2_two.yaml"
+    "V2_two": "sim/configs/V2_two.yaml",
+    "V2b_place": "sim/configs/V2b_place.yaml"
   },
   "test_sets": {
     "a_in_distribution": {

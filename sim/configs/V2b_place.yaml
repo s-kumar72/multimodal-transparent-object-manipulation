@@ -1,0 +1,12 @@
+# V2_place with the thermal states that point 3 of the rule of the thermal states gives
+# (results/hard_scenario/bench_v2/README.md, "The thermal states are fixed by a rule"): faint = the real p10 to p25 of
+# tabletop glass at rest, 10 to 26 units of the camera noise; shows = the real p25 to p90, 26 to 103 units. Blind and
+# everything else as V2_place. The contrasts are those of sensors.matching_temp that give these ranges in the image
+# (sim/measure_visibility.py). A draft level, not frozen. meta/ep_level id 43.
+base: V2_place.yaml
+name: V2b_place
+level: 43
+thermal:
+  show_contrast: [0.92, 3.66]
+  faint_contrast: [0.36, 0.92]
+  blind_contrast: 0.1
