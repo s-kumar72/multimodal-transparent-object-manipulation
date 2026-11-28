@@ -1317,6 +1317,33 @@ and 0.80 (`k_cells11_heldout`) of 660 episodes each, that of the one network in 
 grasp is within 15 degrees in 0.94 of them (cell 8: 0.71, cell 9: 0.67), that of the one network in 0.92, that of the
 place in 1.00. These are descriptions of the fits; no run depends on a threshold on them.
 
+*11/28 18:05 KST: start tests of part B, and the commands of its first twelve runs.* On a copy of 22 of the 700 demos of
+`V2b_place` (two per cell, with the matching rows of the cue files), each variant trained two epochs of three steps with
+a rollout of two episodes (`training.debug=true`), and its checkpoint was evaluated on two episodes of `j_cells11` and
+of `u_cells11_unseen`: self-attention fusion (`policy/train_mulsa.sh`), sensor dropout (`policy/train_dropout.sh`),
+MS-Bot (`policy/train_msbot.sh`), the second policy (`policy/train_act.sh plain`) and the second policy with the two
+cues (`policy/train_act.sh cue` with `task=glass_pick_hcue2 task.hcue_dir=... task.hcue_dir2=...`). All five trained,
+saved and evaluated with the code as it is; no number of it is a result. Listed now, before the tuning has a result:
+
+- *Self-attention fusion and sensor dropout, T1, seeds 42, 43, 44 (6 runs).* `GROUP=v2 TOPK=0 NTEST=55 NEVAL=660
+  TEST_SETS="j_cells11 k_cells11_heldout l_cells15_new m_cells15_new_heldout u_cells11_unseen" TAG=<mulsa |
+  dropout_imagenet>_s<seed> TRAIN=<policy/train_mulsa.sh | policy/train_dropout.sh> EXTRA="training.seed=<seed>
+  task.env_runner.test_set=j_cells11 task.env_runner.max_steps=240 policy.obs_encoder.rgb_model.weights=IMAGENET1K_V1"
+  bash scripts/run_experiment.sh V2b_place rgbdt 700`, with the epochs and the learning rate that the tuning chooses
+  for plain rgbdt (they are baselines on the same policy and optimizer; nothing is tuned for them separately).
+- *The second policy without and with the cue, T1, seeds 42, 43, 44 (6 runs).* The same with `TAG=<act |
+  act_cue>_s<seed> TRAIN="policy/train_act.sh <plain | cue>"`, without the ImageNet override (the script sets it), and
+  for the cue `task=glass_pick_hcue2 task.hcue_dir=data/hcue/V2b_place_700 task.hcue_dir2=data/hcue/V2b_place_700_release`
+  in `EXTRA`. 101 epochs and the learning rate of its config for both arms, as on the first version
+  (`../second_policy/README.md`); it is not tuned, and it is read as a pair (item 4 of the read-out), not as a baseline.
+- *Not listed yet.* MS-Bot runs as it is, but its stage rule (reach, grasp, lift) has no stage for the place: on these
+  demos everything after the grasp is one stage (in the first demo 43, 8 and 63 frames). Its runs are listed when a
+  rule with the stages of the place is written, with the rule of the first version unchanged for the pick levels.
+  The true grasp point as the cue needs the `cue` runs of part A; the left-out cells need the subset and its three cue
+  fits.
+
+These twelve runs go into the queue after the runs of part A on T1.
+
 ## 14. The method's cue for two targets (T3): steps and read-out (listed 11/28 17:42 KST, before anything of it is fitted)
 
 Section 13 leaves the cue of T3 to be designed and listed before its runs. This lists the first step. It uses the 700
