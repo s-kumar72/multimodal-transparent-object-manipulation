@@ -1,0 +1,16 @@
+hindsight angle, event grasp, mode early: 630 demos of results/data/sim_demos_V2b_align_630.zarr, out of fold; error of the tool's angle in degrees (0 to 90)
+
+| cells | demos | all: median / within 15 deg |
+|---|---|---|
+| all | 630 | 2.7 / 0.92 |
+| 0 | 126 | 1.8 / 1.00 |
+| 1 | 63 | 3.2 / 0.90 |
+| 2 | 63 | 2.2 / 1.00 |
+| 3 | 63 | 1.0 / 1.00 |
+| 4 | 45 | 5.5 / 0.87 |
+| 5 | 45 | 5.2 / 0.91 |
+| 6 | 45 | 1.8 / 0.93 |
+| 7 | 45 | 3.5 / 0.98 |
+| 8 | 45 | 6.2 / 0.73 |
+| 9 | 45 | 7.5 / 0.69 |
+| 10 | 45 | 2.8 / 0.96 |
