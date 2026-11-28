@@ -665,6 +665,80 @@ network started 03:32 KST, plain rgbdt 04:55 KST, plain rgbd 09:02 KST on the GP
 benchmark (08:33 KST): the number of cell 9 from the first of the two test sets (0.217, 60 episodes). Nothing was
 decided from it.
 
+**The repeated pilot: cell 9 is again below 0.30 in all four runs; the stop applies, with the user (11/28 14:40 KST; the
+four runs ended 09:02, 11:18, 12:41 and 14:37 KST of 11/28, none failed).**
+[`readout_pilot_b.txt`](readout_pilot_b.txt), the fixed command, saved 11/28 14:39 KST; `V2b_place`, seed 42, 1320
+episodes per run, the numbers of `V2_place` in brackets.
+
+| cell | sensors that show the glass | plain rgbdt | plain rgbd | `cue` | one network |
+|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.975 (0.975) | 0.983 (0.967) | 0.983 (0.975) | 0.992 (1.000) |
+| 1 | depth+thermal | 1.000 (0.983) | 0.975 (0.983) | 0.958 (0.950) | 0.992 (0.967) |
+| 2 | rgb+thermal | 0.175 (0.108) | 0.092 (0.092) | 0.925 (0.900) | 0.833 (0.808) |
+| 3 | rgb+depth | 1.000 (0.992) | 0.983 (0.975) | 0.983 (0.967) | 0.983 (1.000) |
+| 4 | thermal | 0.083 (0.058) | 0.025 (0.067) | 0.683 (0.458) | 0.342 (0.217) |
+| 5 | depth | 0.992 (0.983) | 0.975 (0.992) | 0.967 (0.950) | 0.983 (0.983) |
+| 6 | rgb | 0.108 (0.133) | 0.067 (0.058) | 0.858 (0.892) | 0.858 (0.825) |
+| 7 | rgb (faint) | 0.075 (0.067) | 0.067 (0.075) | 0.850 (0.842) | 0.767 (0.733) |
+| 8 | depth (faint) | 0.625 (0.633) | 0.583 (0.617) | 0.633 (0.617) | 0.675 (0.642) |
+| 9 | thermal (faint) | 0.142 (0.092) | 0.067 (0.067) | 0.217 (0.158) | 0.092 (0.067) |
+| 10 | all three (faint) | 0.575 (0.633) | 0.642 (0.658) | 0.908 (0.917) | 0.908 (0.892) |
+| macro average | | 0.523 (0.514) | 0.496 (0.505) | 0.815 (0.784) | 0.766 (0.739) |
+| glass picked | | 0.571 (0.570) | 0.533 (0.534) | 0.870 (0.840) | 0.814 (0.792) |
+
+- The stops, as fixed at 11/27 20:04 KST: one cell is below 0.30 in all four runs, cell 9 (thermal faint alone; the
+  best run is `cue` at 0.217). Not everything is above 0.95. So the first condition for the freeze is not met:
+  **the stop of step 3 applies with the user, and nothing more is changed by rule.** The thermal states of
+  `V2b_place` are not the benchmark's by this read-out, and nothing is frozen.
+- What the one change of the rule did: cell 4 (thermal alone, shows) went from 0.458 to 0.683 for `cue` and from
+  0.217 to 0.342 for the one network; cell 9 from 0.158 to 0.217 and from 0.067 to 0.092. The cells in which
+  thermal does not show the glass (3, 5, 6, 7, 8) are where they were (within 0.04).
+- `cue` against plain rgbdt on the same episodes: 0.815 against 0.523, only the first succeeds in 443, only the
+  second in 57 (p = 4.3e-75). `cue` against the one network: 0.815 against 0.766, 141 and 76 (p = 1.2e-05). Plain
+  rgbdt against plain rgbd: 0.523 against 0.496, 76 and 41 (p = 0.0016; on `V2_place` 71 and 58, p = 0.29). One
+  seed; a pilot, nothing of it enters the tables of a frozen benchmark.
+
+Next to it, not fixed in advance, for the decision on cell 9 (`cue` run, the cue inside the 120 episodes of a cell;
+"right" is within 1.5 cm of the glass in the table plane):
+
+| cell | grasp cue right | success where it is right | success where it is not |
+|---|---|---|---|
+| 9, thermal faint alone | 0.21 (25 episodes; median error 4.2 cm) | 0.68 | 0.09 |
+| 4, thermal alone | 0.75 (median 0.8 cm) | 0.79 | 0.37 |
+| 8, depth faint alone | 0.58 (median 1.3 cm) | 0.86 | 0.33 |
+| 7, rgb faint alone | 0.93 (median 0.4 cm) | 0.89 | 0.33 |
+
+- In cell 9 the policy does what it does elsewhere once the glass is located (0.68 of 25 episodes); what is missing
+  is the location, in four scenes of five. The same holds for the one network (its map is right in 0.11 of the
+  episodes; success 0.31 there and 0.07 elsewhere).
+- Within cell 9 the success of `cue` rises with the thermal contrast of the scene: 0.15, 0.18 and 0.33 in the
+  thirds of the contrast range (40 episodes each). 47 of the 120 scenes are solved by at least one of the four runs.
+- In cell 9 alone: `cue` against plain rgbdt 20 and 11 (p = 0.15), against the one network 22 and 7 (p = 0.008).
+- All four runs are above 0.95 in the cells in which depth shows the glass fully (0, 1, 3, 5) and nowhere else.
+
+So the evidence on cell 9 is: at the real p10 to p25 of the thermal contrast no run reaches 0.30; the glass is in the
+thermal image (section 11: inside the simulator the window with the glass is told from the one without at 0.93 already
+at 3 to 10 units), a policy that is given its location grasps it, and the networks tried here locate it in a fifth of
+the scenes. Whether a better thermal network locates it more often was not tried. The reference of point 2 was no
+witness either way (below 0.30 in every cell).
+
+*For the user: what is done with cell 9.* Nothing below is started or changed before the decision.
+
+1. **Keep cell 9 at the states of `V2b_place` and freeze, with the cell marked as open** (the proposal). The tables
+   carry all eleven cells and the macro average over eleven; the text says that no policy of the pilot is at 0.30 in
+   cell 9 and gives the table above. For: the state is the measured real range and is not chosen by what policies
+   reach; the cell is not empty of information; it costs no further run. Against: the benchmark is frozen with a
+   cell for which no run shows that it can be solved, which is what the stop of step 3 was written to prevent.
+2. **Take cell 9 out: ten cells.** Thermal "faint" then stands only in cell 10 (all three faint). For: every cell
+   left is solved by a run. Against: a condition that occurs on real glass is dropped because it is hard, and the
+   three sensors are no longer treated alike (colour and depth keep their "faint alone" cells).
+3. **Raise thermal "faint" once more and repeat the four runs** (about 15 hours on three GPUs, 30 GPU hours). The
+   next range would be above the real p25, which is where "shows" begins on `V2b_place`; the states would leave what
+   the rule of 11/26 allowed, and the pilot would have been repeated twice on the cell the method is best in.
+
+In each case `V2b_place` against `V2_place` has to be decided with it: under 1 and 2 the proposal is the thermal
+states of `V2b_place` (cell 4 is solved more clearly there, 0.683 against 0.458, and both lie in the measured range).
+
 **What a blind sensor still shows: the layout (11/26 19:51 KST; looked at when the fits of T2 were read, not a test fixed in
 advance).** In the report of the T2 cue the sensors' own maps are on the grasp pixel also where the sensor does not
 show the glass: within 1.5 px in 0.40 of the colour-blind demos, 0.29 of the depth-blind and 0.23 of the
@@ -1044,4 +1118,4 @@ The angle of T2: `policy/hindsight_angle.py`, `policy/config/task/glass_pick_hcu
 Runs of the pilot and of step 4: one folder per run (`curve.json`, `train_logs.json.txt`, per test set `eval_log.json`
 and `episodes.json`); read-outs `readout_pilot.txt`, `readout_thermal_rule.txt`, `readout_tasks.txt`
 (`policy/readout_v2_pilot.py`, `policy/readout_v2_thermal_rule.py`, `policy/readout_v2_tasks.py`); the repeated pilot:
-`sim/configs/V2b_place.yaml`, `policy/readout_v2_pilot_b.py`.
+`sim/configs/V2b_place.yaml`, `policy/readout_v2_pilot_b.py`, `readout_pilot_b.txt`.
