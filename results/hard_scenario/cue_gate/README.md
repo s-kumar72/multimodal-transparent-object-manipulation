@@ -1022,6 +1022,60 @@ What leaving the cells out costs the cue, in the cells left out (against the sam
   at once for the first time) and is not found in the two new sets; in the one with a signal weaker than any seen it
   is the other way round. These are cues, not policies: step 2 runs as listed and says whether the success follows.
 
+### Results of step 3 of round 5: the 15 new combinations on `L0_vis_ell` (11/28 17:20 KST; nothing trained)
+
+The fourteen evaluations ran 11/28 11:18 to 15:08 KST and the plain baseline of `nosingle` on `L0_vis_ell` ended
+15:22 KST; none failed. Read-outs as fixed above:
+[`../contact_check/readout_round4_ell.txt`](../contact_check/readout_round4_ell.txt) (its setting 2) and
+[`../contact_check/readout_new_cells_ell.txt`](../contact_check/readout_new_cells_ell.txt). 1200 episodes per run
+(`l_cells15_new`, `m_cells15_new_heldout`), 80 per cell.
+
+**`cue` against the one network, three seeds.**
+
+| seed | `cue` | one network | only `cue` succeeds / only the one network | p |
+|---|---|---|---|---|
+| 42 | 0.965 | 0.946 | 54 / 31 | 0.017 |
+| 43 | 0.963 | 0.944 | 51 / 28 | 0.013 |
+| 44 | 0.953 | 0.945 | 55 / 45 | 0.37 |
+| mean (SD) and pooled | 0.961 (0.006) | 0.945 (0.001) | 160 / 104 | 0.00068 |
+
+Verdict by the rule of round 4: **the difference holds over the seeds** (the pooled test is significant and `cue` is
+above in each of the three seeds). Per cell, pooled: `cue` is above in three of the fifteen (1: shows / faint / shows,
+0.988 against 0.958; 4: faint / blind / shows, 0.963 against 0.917; 7: shows / blind / faint, 1.000 against 0.921) and
+below in none; the largest difference the other way is cell 6 (blind / faint / shows), 0.833 against 0.892, 19 / 33,
+p = 0.07.
+
+**The seed-42 runs on the two levels** (against `cue` and against plain rgbdt, same episodes):
+
+| run | `L0_vis` | `L0_vis_ell` | on `L0_vis_ell` against `cue` | on `L0_vis_ell` against plain rgbdt |
+|---|---|---|---|---|
+| `cue` | 0.849 | 0.965 | | above (305 / 25) |
+| `full` | 0.843 | 0.948 | below (13 / 34, p = 0.0031) | above |
+| one network | 0.791 | 0.946 | below (31 / 54, p = 0.017) | above |
+| gate on map numbers | 0.782 | 0.935 | below (29 / 65, p = 0.00026) | above |
+| no gate | 0.702 | 0.860 | below (24 / 150) | above |
+| auxiliary loss | 0.322 | 0.570 | below | below (134 / 328) |
+| plain rgbdt | 0.574 | 0.732 | below (25 / 305) | |
+| self-attention fusion (MulSA) | 0.579 | 0.747 | below | no difference (109 / 91, p = 0.23) |
+| sensor dropout | 0.553 | 0.720 | below | no difference (144 / 158, p = 0.45) |
+| stage-guided fusion (MS-Bot) | 0.220 | 0.326 | below | below (54 / 541) |
+
+- **The order of the runs is the same on both levels**, and every difference of `L0_vis` is there on `L0_vis_ell`
+  with one addition: `full` is below `cue` on `L0_vis_ell` (0.948 against 0.965), where the two did not differ on
+  `L0_vis` (0.843 against 0.849, p = 0.64). The gate on the image features adds nothing on new combinations on either
+  level and costs 1.7 points on this one.
+- **The difference to the one network is small on `L0_vis_ell`: 1.6 points** (0.961 against 0.945), against 7.5 on
+  `L0_vis` (0.854 against 0.779, round 4). With the contact model of this level both solve about 95 of 100 episodes,
+  which leaves little room for a difference.
+- **The qualification of round 6a applies to this verdict as to those of round 4.** The three seeds are seeds of the
+  policy; all of them use the cues of fit 0, the one fit of five in which the method's cue is ahead on the new
+  combinations (0.956 against 0.934 within 1.5 cm; over the five fits 0.941 against 0.955). The verdict therefore
+  holds for that fit of the cues and is not claimed for the two designs.
+- **Where round 5 stands on the statement of item 3** (conditions that are not in the training set, on `L0_vis_ell`):
+  the cells left out of `nosingle` hold over the seeds (0.829 against 0.740, round 4; the cue is ahead there in every
+  fit of 6a); the 15 new combinations hold over the seeds with the qualification above; `nopair` and `nofaint` are
+  not read yet (their fourteen policy runs of step 2 are in the queue, two of them in training).
+
 ## Round 6: three additions for the paper (decision of the user 11/26; listed 11/26 05:34 KST, before anything of it is fitted, trained or evaluated)
 
 Additions only; nothing listed before is changed.

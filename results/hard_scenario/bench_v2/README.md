@@ -1308,12 +1308,136 @@ the table above; the fits of T2 (`data/runs/v2_freeze_fits2.sh`) run beside a ru
 the fourth is back (about 11/29 07:00 KST) the twelve runs end about 11/30 in the morning; `policy/readout_v2_tune.py`
 is run then and part A 2 and 3 are put in the queue with the chosen settings.
 
+*11/28 17:16 KST: the fits of T2 are made* (`data/hcue/V2b_align_630`, `_early`, `_release`; `data/hang/V2b_align_630`,
+`_early`, `_release`; all nine steps exit 0). Their reports and those of T1 are in `fits/<name>/` (`cue_report.txt`:
+out of fold on the training demos; `angle_report.txt`; `env_<test set>.txt`: the cue at reset on the test scenes,
+`policy/check_cue_env.py`). On the test scenes of T2 the grasp cue is within 1.5 cm of the glass in 0.81 (`j_cells11`)
+and 0.80 (`k_cells11_heldout`) of 660 episodes each, that of the one network in 0.81 and 0.81; in cell 9 in 0.25 and
+0.20, and 0.10 and 0.18. The place cue (the saved rule, `consensus`) is within 1.5 px in 1.00 of the training demos out of fold. The angle of the
+grasp is within 15 degrees in 0.94 of them (cell 8: 0.71, cell 9: 0.67), that of the one network in 0.92, that of the
+place in 1.00. These are descriptions of the fits; no run depends on a threshold on them.
+
+*11/28 18:05 KST: start tests of part B, and the commands of its first twelve runs.* On a copy of 22 of the 700 demos of
+`V2b_place` (two per cell, with the matching rows of the cue files), each variant trained two epochs of three steps with
+a rollout of two episodes (`training.debug=true`), and its checkpoint was evaluated on two episodes of `j_cells11` and
+of `u_cells11_unseen`: self-attention fusion (`policy/train_mulsa.sh`), sensor dropout (`policy/train_dropout.sh`),
+MS-Bot (`policy/train_msbot.sh`), the second policy (`policy/train_act.sh plain`) and the second policy with the two
+cues (`policy/train_act.sh cue` with `task=glass_pick_hcue2 task.hcue_dir=... task.hcue_dir2=...`). All five trained,
+saved and evaluated with the code as it is; no number of it is a result. Listed now, before the tuning has a result:
+
+- *Self-attention fusion and sensor dropout, T1, seeds 42, 43, 44 (6 runs).* `GROUP=v2 TOPK=0 NTEST=55 NEVAL=660
+  TEST_SETS="j_cells11 k_cells11_heldout l_cells15_new m_cells15_new_heldout u_cells11_unseen" TAG=<mulsa |
+  dropout_imagenet>_s<seed> TRAIN=<policy/train_mulsa.sh | policy/train_dropout.sh> EXTRA="training.seed=<seed>
+  task.env_runner.test_set=j_cells11 task.env_runner.max_steps=240 policy.obs_encoder.rgb_model.weights=IMAGENET1K_V1"
+  bash scripts/run_experiment.sh V2b_place rgbdt 700`, with the epochs and the learning rate that the tuning chooses
+  for plain rgbdt (they are baselines on the same policy and optimizer; nothing is tuned for them separately).
+- *The second policy without and with the cue, T1, seeds 42, 43, 44 (6 runs).* The same with `TAG=<act |
+  act_cue>_s<seed> TRAIN="policy/train_act.sh <plain | cue>"`, without the ImageNet override (the script sets it), and
+  for the cue `task=glass_pick_hcue2 task.hcue_dir=data/hcue/V2b_place_700 task.hcue_dir2=data/hcue/V2b_place_700_release`
+  in `EXTRA`. 101 epochs and the learning rate of its config for both arms, as on the first version
+  (`../second_policy/README.md`); it is not tuned, and it is read as a pair (item 4 of the read-out), not as a baseline.
+- *Not listed yet.* MS-Bot runs as it is, but its stage rule (reach, grasp, lift) has no stage for the place: on these
+  demos everything after the grasp is one stage (in the first demo 43, 8 and 63 frames). Its runs are listed when a
+  rule with the stages of the place is written, with the rule of the first version unchanged for the pick levels.
+  The true grasp point as the cue needs the `cue` runs of part A; the left-out cells need the subset and its three cue
+  fits.
+
+These twelve runs go into the queue after the runs of part A on T1.
+
+## 14. The method's cue for two targets (T3): steps and read-out (listed 11/28 17:42 KST, before anything of it is fitted)
+
+Section 13 leaves the cue of T3 to be designed and listed before its runs. This lists the first step. It uses the 700
+training demos of `V2b_two` only, out of fold; no policy is trained and no test scene is read.
+
+**What the demos give.** Every demo of T3 has two grasps and two releases (700 of 700), in the order of the scripted
+teacher: the glass nearer to the gripper first. The hindsight labels of the method are the points where the gripper
+closes and where it opens again; on T3 there are four of them per demo.
+
+**Form A, the direct extension.** Four cues, each fitted as the cues of T1 are, on one of the four events:
+`python policy/hindsight_cue_nth.py --nth <0 | 1> <demos> --level V2b_two [--event release] [--mode early] --out
+data/hcue/V2b_two_700_<g1 | r1 | g2 | r2>[_early]`. The script runs `policy/hindsight_cue.py` unchanged with the label
+of the n-th event (`--check`: with `--nth 0` its labels are those of `hindsight_cue.py` on the demos of `V2b_two` and
+of `V2b_place`; the second grasp point is 13 to 30 cm from the first). The policy would get the four cues one after the
+other (36 numbers); the dataset, the env and the encoder take a list of cues as they are. The one network (`--mode
+early`) is fitted for the two grasps and shares the two release cues, as on T1.
+
+**Its weakness, stated before the fit.** In the pair-cells 4 to 9 different sensors show the two glasses. A sensor
+that shows one glass cannot know whether that glass is the first or the second; its map of "the first grasp" has
+nothing else to point at, and the gate, which looks at the image at the sensor's own peak, finds a glass there. The
+fused cues can then both lie on one glass. One network over all sensors sees both glasses at once and has no such
+limit. Whether this happens, and how often, is what step 1 measures.
+
+**Step 1 (now).** The six fits (`data/runs/v2_two_fits.sh`: `g1`, `g1_early`, `r1`, `g2`, `g2_early`, `r2`; about 2.5
+hours on a GPU shared with a run of the queue).
+
+**Read-out, fixed now** (`python policy/readout_cue_two.py > fits/V2b_two_700/readout_cue_two.txt`). A cue is right
+within 1.5 cm of its own hindsight point on the table. Per group of pair-cells (the same sensors show both glasses: 0
+to 3 and 10; different sensors show them: 4 to 9; the first fully and the second faintly: 11) and per pair-cell, for
+form A and for the one network: the share of demos with the first cue right, the second right, both right, both cues
+on the same glass, and the two swapped; the two designs against each other on "both right" (same demos, two-sided
+sign test); the release cues.
+
+**What follows from it is decided with the user**, with these numbers: form A as it is; or a form in which every
+sensor's map marks every glass it shows and the order of the two is a second, learned step (not written; it would be
+fitted and compared on the same demos before any policy run); or the one network as the method's cue on T3. No run of
+T3 with a cue is listed before that decision.
+
+### Results of step 1 (11/28 20:28 KST; 700 training demos, out of fold, no policy)
+
+The six fits ran 11/28 17:42 to 20:25 KST, all with exit 0 (`fits/V2b_two_700/cue_report_<g1 | g1_early | r1 | g2 |
+g2_early | r2>.txt`). Read-out as fixed: [`fits/V2b_two_700/readout_cue_two.txt`](fits/V2b_two_700/readout_cue_two.txt).
+A cue is right within 1.5 cm of its own hindsight point.
+
+| demos | n | form A: first / second / both right | one network: first / second / both right | both right: only form A / only the one network | p |
+|---|---|---|---|---|---|
+| the same sensors show both glasses (pair-cells 0 to 3, 10) | 280 | 0.75 / 0.75 / 0.63 | 0.75 / 0.70 / 0.62 | 37 / 33 | 0.72 |
+| different sensors show them (4 to 9) | 360 | 0.63 / 0.61 / **0.41** | 0.71 / 0.66 / **0.49** | 59 / 91 | 0.011 |
+| the first fully, the second faintly (11) | 60 | 0.85 / 0.85 / 0.77 | 0.95 / 0.83 / 0.83 | 4 / 8 | 0.39 |
+| all | 700 | 0.70 / 0.69 / 0.53 | 0.75 / 0.69 / 0.57 | 100 / 132 | 0.042 |
+
+Both cues on the same glass (both within 1.5 cm of one grasp point): 0.02 for form A (0.03 in pair-cells 4 to 9) and
+0.01 for the one network; swapped: 0.01 and 0.01. The release cues are right in 0.66 (first) and 0.71 (second).
+
+- **The weakness stated before the fit is rare in the form it was stated**: both cues exactly on one glass in 2 to 3
+  of 100 demos, in pair-cells 4 to 9 as elsewhere.
+- **Where different sensors show the two glasses, the one network's cues are both right more often** (0.49 against
+  0.41, p = 0.011); where the same sensors show both, the two designs are level (0.62, 0.63).
+- **Both designs are less accurate than on T1**: a grasp cue is right in 0.70 and 0.69 (form A) and 0.75 and 0.69 (the
+  one network), against 0.85 and 0.79 for the one glass of T1 on its training demos out of fold
+  (`fits/V2b_place_700[_early]/cue_report.txt`).
+
+**Further description, not fixed in advance** (`python policy/readout_cue_two_more.py`, written after the read-out
+above was seen: [`fits/V2b_two_700/readout_cue_two_more.txt`](fits/V2b_two_700/readout_cue_two_more.txt)).
+
+- *Where the cues that are off lie.* More than 5 cm from its own point: 0.16 of the cues of form A and 0.11 to 0.12
+  of the one network's. Of these, within 5 cm of the other glass: 0.10 (form A) and 0.08 to 0.09 (the one network),
+  in pair-cells 4 to 9 (0.11, 0.09) as where the same sensors show both (0.09 to 0.10 for both designs). Near neither
+  glass: 0.06 (form A; 0.08 to 0.09 in pair-cells 4 to 9) against 0.03.
+- *With 5 cm in place of 1.5 cm:* both cues at their own glass 0.76 (form A; 0.68 in pair-cells 4 to 9) against 0.82
+  (0.79); both at the same glass 0.08 against 0.09; swapped 0.05 against 0.04. A cue on the other glass is therefore
+  not particular to the design with a map per sensor: which glass is first is not always read off the first frame by
+  either. What form A loses in pair-cells 4 to 9 are cues near neither glass.
+- *By the state of the glass a cue points at* (within 1.5 cm, form A / the one network): all three sensors show it
+  0.86 / 0.85; all three faintly 0.79 / 0.78; colour only 0.71 / 0.80; depth only 0.70 / 0.77; thermal only **0.41 /
+  0.34**; colour and thermal 0.65 / 0.77; colour and depth 0.87 / 0.85; depth and thermal 0.72 / 0.82. A glass that
+  one sensor shows is found less often by form A when another sensor shows the other glass; a glass that the thermal
+  camera alone shows is the hardest for both.
+- *The release cues* (5 cm): at their own coaster 0.75 and 0.77, at the other coaster 0.22 and 0.19; both at their own
+  0.67, both at the same coaster 0.15. Which coaster the teacher takes first (the nearer one if the way is clear) is
+  often not read off the first frame.
+
+**Open, for the user** (as listed above; no run of T3 with a cue is listed before it): form A as it is, with the one
+network as its control as on T1 and T2; another form; or the one network as the cue on T3. What the numbers say to it:
+the form with an order learned in a second step would address cues on the wrong glass, which both designs have at the
+same rate, so it is not what separates them; form A is the method unchanged, with no part made for T3.
+
 ## Files
 
 `real_data/glass_visibility.py` (real sensors), `sim/measure_visibility.py` (the simulator, same functions),
 `real_data/findability.py` (sections 11 and 12: the checks against real images), `real_check/` (their read-outs).
 `sim/glass_optics.py` (section 12: the optical colour model of the glass, off by default), `sim/configs/V2_place_opt.yaml`.
-`measurements/` (their outputs of 11/26). `sim/configs/V2_place.yaml`, `sim/configs/V2_place_warm.yaml` (draft levels).
+`measurements/` (their outputs of 11/26). `fits/` (the reports of the cue and angle fits of the frozen benchmark). T3's cue:
+`policy/hindsight_cue_nth.py`, `policy/readout_cue_two.py`, `policy/readout_cue_two_more.py`, `fits/V2b_two_700/`. `sim/configs/V2_place.yaml`, `sim/configs/V2_place_warm.yaml` (draft levels).
 T2: `sim/assets/gen3_lite/align_scene.xml`, `sim/configs/V2_align.yaml`, `sim/env.py` (`ALIGN_OBJECTS`, `_mat_target`,
 `placed`), `sim/teacher.py` (`_plan_align`).
 Unseen objects: `sim/assets/gen3_lite/place_unseen_scene.xml`, test set `u_cells11_unseen`. T3:
