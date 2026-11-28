@@ -1,0 +1,57 @@
+# The cue for two targets, further description (not fixed in advance): 700 training demos, out of fold
+
+## 1. Error of each grasp cue, and where the cues more than 5 cm off lie
+
+| design | demos | cue | median, cm | within 1.5 | within 3 | within 5 | off and within 5 cm of the other glass | off and near neither |
+|---|---|---|---|---|---|---|---|---|
+| a map and a gate per sensor | the same sensors show both (0-3, 10) | first | 0.81 | 0.75 | 0.85 | 0.88 | 0.09 | 0.04 |
+| a map and a gate per sensor | the same sensors show both (0-3, 10) | second | 0.78 | 0.75 | 0.85 | 0.87 | 0.10 | 0.04 |
+| a map and a gate per sensor | different sensors show them (4-9) | first | 0.95 | 0.63 | 0.75 | 0.79 | 0.11 | 0.09 |
+| a map and a gate per sensor | different sensors show them (4-9) | second | 1.08 | 0.61 | 0.76 | 0.80 | 0.11 | 0.08 |
+| a map and a gate per sensor | the first fully, the second faintly (11) | first | 0.59 | 0.85 | 0.93 | 0.93 | 0.07 | 0.00 |
+| a map and a gate per sensor | the first fully, the second faintly (11) | second | 0.87 | 0.85 | 0.92 | 0.92 | 0.07 | 0.02 |
+| a map and a gate per sensor | all | first | 0.86 | 0.70 | 0.81 | 0.84 | 0.10 | 0.06 |
+| a map and a gate per sensor | all | second | 0.89 | 0.69 | 0.81 | 0.84 | 0.10 | 0.06 |
+| one network | the same sensors show both (0-3, 10) | first | 0.71 | 0.75 | 0.88 | 0.89 | 0.09 | 0.02 |
+| one network | the same sensors show both (0-3, 10) | second | 0.88 | 0.70 | 0.84 | 0.89 | 0.10 | 0.01 |
+| one network | different sensors show them (4-9) | first | 0.81 | 0.71 | 0.84 | 0.87 | 0.09 | 0.03 |
+| one network | different sensors show them (4-9) | second | 0.98 | 0.66 | 0.82 | 0.87 | 0.09 | 0.04 |
+| one network | the first fully, the second faintly (11) | first | 0.56 | 0.95 | 0.97 | 0.98 | 0.02 | 0.00 |
+| one network | the first fully, the second faintly (11) | second | 0.67 | 0.83 | 0.90 | 0.92 | 0.07 | 0.02 |
+| one network | all | first | 0.75 | 0.75 | 0.86 | 0.89 | 0.08 | 0.03 |
+| one network | all | second | 0.90 | 0.69 | 0.84 | 0.88 | 0.09 | 0.03 |
+
+## 2. With 5 cm in place of 1.5 cm
+
+| design | demos | both at their own glass | both at the same glass | swapped |
+|---|---|---|---|---|
+| a map and a gate per sensor | the same sensors show both (0-3, 10) | 0.82 | 0.05 | 0.06 |
+| a map and a gate per sensor | different sensors show them (4-9) | 0.68 | 0.10 | 0.04 |
+| a map and a gate per sensor | the first fully, the second faintly (11) | 0.88 | 0.08 | 0.02 |
+| a map and a gate per sensor | all | 0.76 | 0.08 | 0.05 |
+| one network | the same sensors show both (0-3, 10) | 0.84 | 0.09 | 0.04 |
+| one network | different sensors show them (4-9) | 0.79 | 0.10 | 0.04 |
+| one network | the first fully, the second faintly (11) | 0.92 | 0.05 | 0.02 |
+| one network | all | 0.82 | 0.09 | 0.04 |
+
+## 3. By the state of the glass the cue points at (the teacher takes the cell's first glass first in 0.62 of the demos)
+
+| the glass is shown by | cues | a map and a gate per sensor: within 1.5 cm / within 3 cm / median | one network: within 1.5 cm / within 3 cm / median |
+|---|---|---|---|
+| thermal only | 260 | 0.41 / 0.61 / 1.89 | 0.34 / 0.63 / 2.25 |
+| colour only | 260 | 0.71 / 0.84 / 0.85 | 0.80 / 0.91 / 0.81 |
+| depth only | 260 | 0.70 / 0.78 / 0.74 | 0.77 / 0.90 / 0.70 |
+| all three show it | 260 | 0.86 / 0.93 / 0.57 | 0.85 / 0.91 / 0.59 |
+| all three faintly | 180 | 0.79 / 0.87 / 0.95 | 0.78 / 0.90 / 0.80 |
+| colour and thermal only | 60 | 0.65 / 0.80 / 0.81 | 0.77 / 0.87 / 0.78 |
+| colour and depth only | 60 | 0.87 / 0.92 / 0.58 | 0.85 / 0.90 / 0.55 |
+| depth and thermal only | 60 | 0.72 / 0.83 / 0.74 | 0.82 / 0.88 / 0.68 |
+
+## 4. The release cues (5 cm)
+
+| demos | first: at its own coaster / at the other | second: at its own / at the other | both at their own | both at the same coaster |
+|---|---|---|---|---|
+| the same sensors show both (0-3, 10) | 0.76 / 0.21 | 0.78 / 0.18 | 0.69 | 0.11 |
+| different sensors show them (4-9) | 0.75 / 0.23 | 0.77 / 0.20 | 0.64 | 0.19 |
+| the first fully, the second faintly (11) | 0.75 / 0.18 | 0.77 / 0.15 | 0.72 | 0.03 |
+| all | 0.75 / 0.22 | 0.77 / 0.19 | 0.67 | 0.15 |
