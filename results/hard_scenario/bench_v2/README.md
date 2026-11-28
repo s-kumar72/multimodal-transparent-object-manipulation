@@ -1149,6 +1149,158 @@ check's support (it is closer to real glass in its image statistics and to the e
 by either judge, and "faint" is harder under it; whether "colour shows" is still enough for a policy at 96 x 96 would
 have to be measured first).
 
+## 13. The frozen benchmark (11/28 15:25 KST; decisions of the user of 11/28: cell 9 kept and marked as open, the thermal states of `V2b_place`, 630 demos for T2 and 700 for T3, a layout reference per task, the full run before the remaining runs of the first version)
+
+From this commit on the levels, the test sets, the protocol, the run list and the read-out below are not changed with
+results in hand. What is found later is reported next to them, labelled as not fixed in advance. Nothing of the pilots
+(sections 8 and 10) enters a table of the benchmark; every run of the tables is trained again.
+
+**Levels and demos.** One level file per task; a file is identified by its SHA-256 at this commit.
+
+| task | level | id | file (SHA-256, first 12) | demos (seeds 0 to n-1, `sim/collect_demos.py`) |
+|---|---|---|---|---|
+| T1 place | `V2b_place` | 43 | `sim/configs/V2b_place.yaml` (53cf3e7eb062) | 700: `results/data/sim_demos_V2b_place_700.zarr` (collected 11/27, teacher 700 of 700) |
+| T2 align | `V2b_align` | 44 | `sim/configs/V2b_align.yaml` (150829143147) | 630, 210 per glass shape: `results/data/sim_demos_V2b_align_630.zarr` (collected 11/28, teacher 210 of 210 for each of slab, bar and block) |
+| T3 two | `V2b_two` | 45 | `sim/configs/V2b_two.yaml` (c5198ca822d9) | 700: `results/data/sim_demos_V2b_two_700.zarr` (collected 11/28, teacher 140 of 140 for each of the five glasses as the first one) |
+
+The level files inherit from `V2_place.yaml`, `V2_align.yaml`, `V2_two.yaml` and `L0_vis_place.yaml` (7dcb1b3addec, e8899a32af87, d84e89d63847, f0cc49f77d92);
+`sim/configs/manifest.json` (d8d7c77c5db3) holds the levels and the test sets. Sensor states as measured with
+`sim/measure_visibility.py` (`measurements/sim_V2b_*_visibility.txt`): depth shows 0.80 to 1.00 of the glass's pixels
+missing, faint 0.10 to 0.35, blind none; thermal shows 26 to 103 units of the camera noise (the real p25 to p90),
+faint 10 to 26 (the real p10 to p25), blind below 3; colour shows alpha 0.5, faint 0.2, blind 0.001. One contact model
+for demos and evaluation (elliptic cones).
+
+**Cells.** T1 and T2: the eleven cells of section 3. T3: the twelve pairs of `V2b_two.yaml`. **Cell 9 (thermal faint
+alone) is the benchmark's open cell on T1:** in the pilot no policy reached 0.30 in it (the best 0.217), and there is
+no run that shows it can be solved. It stays in every table and in the macro average over the eleven cells, and is
+marked in the tables of T1. On T2 it is a cell like the others: the pilot's `cue` run was at 0.417 in it, with the
+earlier and weaker thermal states. What is known about it is in section 10 ("The repeated pilot", "Decision of the user on
+cell 9").
+
+**Test sets** (`sim/configs/manifest.json`; episode k of a set has seed 100000 + k):
+
+| set | what | tasks | episodes |
+|---|---|---|---|
+| `j_cells11`, `k_cells11_heldout` | the training scenes with new seeds; backgrounds, lighting and distractors that are in no training scene | T1, T2 | 660 each, 60 per cell: **the headline** |
+| `j_pairs12`, `k_pairs12_heldout` | the same for the twelve pairs | T3 | 360 each, 30 per pair: **the headline** |
+| `l_cells15_new`, `m_cells15_new_heldout` | the 15 combinations of states that are in no cell | T1, T2 | 660 each, 44 per combination |
+| `u_cells11_unseen` | glass shapes that are in no training set (T1: `tallglass` and `carafe` of `place_unseen_scene.xml`; T2: `tile`) | T1, T2 | 660 |
+| validation | `j_cells11` with the seeds 200000 + k (`policy/eval.py --test_start_seed 200000`) | T1 | 660; used for the choice of the settings below and for nothing else, never in a table |
+| `w_noglass`, `x_noglass_heldout` (T3: `w_noglass_pairs`, `x_noglass_pairs_heldout`) | the scenes of `V2b_<task>_noglass`: the glass in no image | the layout reference | 660 each (T3: 360) |
+
+T3 has no generalisation sets. The left-out cells of section 5 (trained without cells 4 to 9) are a training set of
+T1 and are listed with the runs of part B.
+
+**Protocol.** Diffusion Policy as in the first version; ImageNet encoders; the last checkpoint is the one evaluated
+(`TOPK=0`); at most 240 steps per episode (T3: 480); seeds 42, 43 and 44. The number of epochs and the learning rate
+are the benchmark's (101 epochs, 1e-4) unless the tuning below chooses otherwise. Results go to
+`results/hard_scenario/v2/<run>/`, runs are named `<level>_<sensors>_<n>demos_<tag>_s<seed>`. A run that fails is
+reported and not started again without being listed.
+
+**The cue of the method** is fitted once per task on the task's demos and shared by the three seeds, as in the first
+version (`python policy/hindsight_cue.py <demos> --level <level> --out data/hcue/<level>_<n>`, the same with
+`--mode early` to `..._early` for the one network and with `--event release` to `..._release` for the place cue; T2
+also `python policy/hindsight_angle.py <demos> --level V2b_align --cue data/hcue/V2b_align_630 --out
+data/hang/V2b_align_630`, with `--event release --cue ..._release` to `..._release` and with `--mode early --cue
+..._early` to `..._early`). T1: the fits of 11/27 (`data/hcue/V2b_place_700`, `_early`, `_release`), made on the same
+700 demos. New folder names per demo set, so no cached map of another demo set can be read (section 10, "A cache that
+was out of date"). How much a second fit of the cue changes the comparison with the one network is not part of the
+run list (first version: `../cue_gate/README.md`, round 6a).
+
+**Part A, the runs that are fixed now.**
+
+1. *Tuning, T1, seed 42 (decision of 11/26; 12 runs, about 135 GPU hours).* Plain rgbdt, `cue` and the one network,
+   each with {101, 201} epochs x {1e-4, 3e-4} learning rate, in `results/hard_scenario/v2_tune/`, evaluated on the 660
+   validation episodes only:
+
+   `EPOCHS=<e> GROUP=v2_tune TOPK=0 NTEST=55 NEVAL=660 TEST_SETS="j_cells11" EVAL_EXTRA="--test_start_seed 200000"
+   TAG=<tag>_e<e>_lr<lr>_s42 [CUES=2 TRAIN="policy/train_cuegate.sh cue"] EXTRA="training.seed=42 [optimizer.lr=3e-4]
+   task.env_runner.test_set=j_cells11 task.env_runner.max_steps=240 <policy>" bash scripts/run_experiment.sh V2b_place
+   rgbdt 700`
+
+   with `<tag>`, `<policy>`: `imagenet`, `policy.obs_encoder.rgb_model.weights=IMAGENET1K_V1`; `hcg2_cue`,
+   `task.hcue_dir=data/hcue/V2b_place_700 task.hcue_dir2=data/hcue/V2b_place_700_release`; `hcg2_cue_early`,
+   `task.hcue_dir=data/hcue/V2b_place_700_early task.hcue_dir2=data/hcue/V2b_place_700_release`.
+   *The choice, fixed now:* per policy the setting with the highest macro average over the eleven cells on the
+   validation episodes (`python policy/readout_v2_tune.py`); settings equal to three decimals go to fewer epochs,
+   then to 1e-4. The setting of plain rgbdt is that of the four plain baselines and of the layout reference on every
+   task; that of `cue` and that of the one network are theirs on every task. The success in the 55 episodes during
+   training (seeds of `j_cells11`) is not read for the choice. No run of these twelve enters a table: the runs of seed
+   42 are trained again with the chosen setting like those of the other seeds. If a setting with 201 epochs is chosen
+   for a policy, every run of that policy takes twice as long; the cost below is given for the benchmark's setting.
+2. *The six policies on the three tasks, three seeds (54 runs; T3's two runs with a cue wait for that cue).*
+
+   | policy | tag | T1 `V2b_place` 700 | T2 `V2b_align` 630 | T3 `V2b_two` 700 |
+   |---|---|---|---|---|
+   | plain rgbdt, rgbd, rgbt, rgb | `imagenet` | 12 runs | 12 | 12 |
+   | `cue` | `hcg2_cue` (T2: `hcg2a_cue`, with the angles, `ANGLE=1`) | 3 | 3 | 3, listed when the cue for two targets is written |
+   | the one network | `hcg2_cue_early` (T2: `hcg2a_cue_early`) | 3 | 3 | 3, the same |
+
+   Commands: those of the pilot (section 10, steps 3 and 4) with the level, `GROUP=v2`, the demo number, the tag with
+   `_s<seed>`, `training.seed=<seed>`, the chosen setting, and the test sets of the table above in one evaluation:
+   T1 and T2 `NEVAL=660 TEST_SETS="j_cells11 k_cells11_heldout l_cells15_new m_cells15_new_heldout u_cells11_unseen"`
+   (`NTEST=55`, T2 `NTEST=66`), T3 `NTEST=60 NEVAL=360 TEST_SETS="j_pairs12 k_pairs12_heldout"` and
+   `task.env_runner.test_set=j_pairs12 task.env_runner.max_steps=480`. For T2's one network: `task.hcue_dir=
+   data/hcue/V2b_align_630_early task.hcue_dir2=data/hcue/V2b_align_630_release task.hang_dir=
+   data/hang/V2b_align_630_early task.hang_dir2=data/hang/V2b_align_630_release`.
+3. *The layout reference, one per task, seed 42 (3 runs; decision of 11/28).* Plain rgbdt trained on demos of
+   `V2b_<task>_noglass` (the level's scenes with one cell in which colour, depth and thermal are blind; as many demos as
+   the task has) and tested on that level's two sets: `GROUP=v2 TAG=imagenet_s42 ... bash scripts/run_experiment.sh
+   V2b_<task>_noglass rgbdt <n>` with `TEST_SETS="w_noglass x_noglass_heldout"` (T3: the `_pairs` sets, `NEVAL=360`).
+   It reads the simulator in no way a baseline does not, but it is trained on scenes chosen by their cell, so it is a
+   reference: its success is what a policy reaches from the layout of the scene with the glass in no image ("What a
+   blind sensor still shows", section 10).
+
+**Part B, T1 only, listed with their commands before they start** (each needs a start test of a few steps on
+`V2b_place`, and some need code that is not in this commit; none of them changes anything above): the three baselines
+from the literature (self-attention fusion, sensor dropout, MS-Bot; 9 runs), the second policy with and without the
+cue (6), the true grasp point as the cue (3 evaluations and one training run), the left-out cells (the training set
+without cells 4 to 9: plain rgbdt, `cue`, the one network, 9 runs). The method's cue for two targets (T3) is designed
+and listed in the same way.
+
+**Read-out, fixed now** (`python policy/readout_v2_full.py > results/hard_scenario/v2/readout.txt`; tested on the
+pilot's runs of seed 42 with `--root results/hard_scenario/bench_v2 --seeds 42 --suffix "" --only T1:V2b_place:700`,
+where it gives the numbers of `readout_pilot_b.txt`). Per task, runs paired by seed on the same episodes and pooled,
+two-sided sign test, p < 0.05:
+
+1. the macro average of every run per seed, mean and standard deviation;
+2. success per cell (T3: per pair) over the seeds; per cell the best baseline, which is the one with the highest
+   success over its three seeds among the four plain baselines and, on T1, the baselines from the literature (a tie
+   goes to the first in the order plain rgbdt, rgbd, rgbt, rgb, then the literature);
+3. `cue` against the best baseline of every cell. **"Better in nearly every case" holds** for `cue` on a task when no
+   cell is below its best baseline and its macro average is above that of every baseline, as Stage 6 of the first
+   version (`../grid_bench/README.md`). Cell 9 counts as every other cell;
+4. `cue` against plain rgbdt and against the one network, over all episodes and per cell. "The gate adds to one
+   network" is said for a task only where `cue` is above the one network over all episodes; the cells in which it is
+   above and below are named;
+5. on the two generalisation sets of T1 and T2: the macro average of every run, `cue` against plain rgbdt and against
+   the one network;
+6. the layout reference next to the cells in which a single sensor shows the glass faintly.
+
+The headline claim of the paper is item 3 on the three tasks; a task on which it does not hold is reported as such.
+
+**Order and cost.** The tuning runs first; then part A in the order T1, T2, T3 with seed 42 before 43 and 44, the
+layout references with the runs of seed 42; part B as its runs are listed. With the benchmark's setting: tuning 135
+GPU hours, part A about 640, part B about 200: about 980 GPU hours, about eleven days on four GPUs (measured in the
+pilots: 7.7 hours for a run of T1 or T2 with its two headline sets, 16 for one of T3; about 1.6 hours more for the
+three further test sets of T1 and T2). The runs
+go through the queue of the fusion-vis worktree before the lines of the first version that have not started
+(decision of 11/28); those continue when the queue has no line of this version to start.
+
+**Limits, stated with the benchmark.** The colour image of the glass is an alpha model that a network trained on real
+glass does not take for glass (sections 11 and 12). The layout of a scene gives the glass's position to a few
+centimetres with the glass in no image (section 10; the layout reference measures it). Real thermal contrasts of 3 to
+10 noise units, 6% of the measured regions, are in no state. Cell 9 is open. The cue is fitted once per task.
+
+**Start tests before the freeze (11/28; no number of them is a result).** With checkpoints of the pilot, a few
+episodes each, to see that every test set of the table runs on the frozen levels: T1 `l_cells15_new`,
+`m_cells15_new_heldout`, `u_cells11_unseen` (the shapes `carafe` and `tallglass`) and the validation seeds (200000 to
+200021); T2 on `V2b_align` `j_cells11`, `l_cells15_new` and `u_cells11_unseen` (the shape `tile`). All ran and none
+was degenerate. The levels `V2b_<task>_noglass` (`sim/configs/V2b_place_noglass.yaml`, `V2b_align_noglass.yaml`,
+`V2b_two_noglass.yaml`; ids 46 to 48): `sim/measure_visibility.py` gives every sensor blind in 110 of 110 scenes of
+each, and the teacher succeeds in 20 of 20 and 12 of 12 scenes of the test sets of T1 and T3. The checkpoints of the
+twelve pilot runs were deleted afterwards (approved by the user 11/28; their results and per-episode records stay).
+
 ## Files
 
 `real_data/glass_visibility.py` (real sensors), `sim/measure_visibility.py` (the simulator, same functions),
@@ -1165,4 +1317,6 @@ The angle of T2: `policy/hindsight_angle.py`, `policy/config/task/glass_pick_hcu
 Runs of the pilot and of step 4: one folder per run (`curve.json`, `train_logs.json.txt`, per test set `eval_log.json`
 and `episodes.json`); read-outs `readout_pilot.txt`, `readout_thermal_rule.txt`, `readout_tasks.txt`
 (`policy/readout_v2_pilot.py`, `policy/readout_v2_thermal_rule.py`, `policy/readout_v2_tasks.py`); the repeated pilot:
-`sim/configs/V2b_place.yaml`, `policy/readout_v2_pilot_b.py`, `readout_pilot_b.txt`.
+`sim/configs/V2b_place.yaml`, `policy/readout_v2_pilot_b.py`, `readout_pilot_b.txt`. The frozen benchmark (section 13):
+`sim/configs/V2b_align.yaml`, `V2b_two.yaml`, `V2b_<task>_noglass.yaml`, `policy/readout_v2_tune.py`,
+`policy/readout_v2_full.py`; its runs go to `../v2_tune/` and `../v2/`.
