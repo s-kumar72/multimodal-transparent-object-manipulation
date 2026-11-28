@@ -656,7 +656,7 @@ rgbdt about 11:30 to 13:00, plain rgbd about 16:30 KST. The order, the commands 
 *11/28 09:03 KST: the method's run on `V2b_place` has ended; it does not settle the outcome early.*
 `V2b_place_rgbdt_700demos_hcg2_cue` trained and was evaluated as listed (11/28 01:20 to 09:02 KST). Macro average
 0.815 (0.784 on `V2_place`). Cell 9 is at 0.217 (26 of 120 episodes; 0.158 on `V2_place`), cell 4 (thermal alone)
-at 0.683 (0.458), every other cell at 0.63 or more and four of them at 0.95 or below. A run with a cell below 0.30
+at 0.683 (0.458), every other cell at 0.63 or more and six of them (2, 4, 6, 7, 8, 10) at 0.95 or below. A run with a cell below 0.30
 rules out neither stop by itself, so, as said before the runs started, the outcome is read from
 `readout_pilot_b.txt` when all four have ended. Cell 9 is not "below 0.30 in all four runs" if one of the other
 three is at 0.30 or more in it; on `V2_place` these three were at 0.067 to 0.092 there. The other runs: the one
