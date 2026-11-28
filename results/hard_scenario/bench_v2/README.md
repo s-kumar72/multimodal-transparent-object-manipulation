@@ -1317,6 +1317,44 @@ and 0.80 (`k_cells11_heldout`) of 660 episodes each, that of the one network in 
 grasp is within 15 degrees in 0.94 of them (cell 8: 0.71, cell 9: 0.67), that of the one network in 0.92, that of the
 place in 1.00. These are descriptions of the fits; no run depends on a threshold on them.
 
+## 14. The method's cue for two targets (T3): steps and read-out (listed 11/28 17:42 KST, before anything of it is fitted)
+
+Section 13 leaves the cue of T3 to be designed and listed before its runs. This lists the first step. It uses the 700
+training demos of `V2b_two` only, out of fold; no policy is trained and no test scene is read.
+
+**What the demos give.** Every demo of T3 has two grasps and two releases (700 of 700), in the order of the scripted
+teacher: the glass nearer to the gripper first. The hindsight labels of the method are the points where the gripper
+closes and where it opens again; on T3 there are four of them per demo.
+
+**Form A, the direct extension.** Four cues, each fitted as the cues of T1 are, on one of the four events:
+`python policy/hindsight_cue_nth.py --nth <0 | 1> <demos> --level V2b_two [--event release] [--mode early] --out
+data/hcue/V2b_two_700_<g1 | r1 | g2 | r2>[_early]`. The script runs `policy/hindsight_cue.py` unchanged with the label
+of the n-th event (`--check`: with `--nth 0` its labels are those of `hindsight_cue.py` on the demos of `V2b_two` and
+of `V2b_place`; the second grasp point is 13 to 30 cm from the first). The policy would get the four cues one after the
+other (36 numbers); the dataset, the env and the encoder take a list of cues as they are. The one network (`--mode
+early`) is fitted for the two grasps and shares the two release cues, as on T1.
+
+**Its weakness, stated before the fit.** In the pair-cells 4 to 9 different sensors show the two glasses. A sensor
+that shows one glass cannot know whether that glass is the first or the second; its map of "the first grasp" has
+nothing else to point at, and the gate, which looks at the image at the sensor's own peak, finds a glass there. The
+fused cues can then both lie on one glass. One network over all sensors sees both glasses at once and has no such
+limit. Whether this happens, and how often, is what step 1 measures.
+
+**Step 1 (now).** The six fits (`data/runs/v2_two_fits.sh`: `g1`, `g1_early`, `r1`, `g2`, `g2_early`, `r2`; about 2.5
+hours on a GPU shared with a run of the queue).
+
+**Read-out, fixed now** (`python policy/readout_cue_two.py > fits/V2b_two_700/readout_cue_two.txt`). A cue is right
+within 1.5 cm of its own hindsight point on the table. Per group of pair-cells (the same sensors show both glasses: 0
+to 3 and 10; different sensors show them: 4 to 9; the first fully and the second faintly: 11) and per pair-cell, for
+form A and for the one network: the share of demos with the first cue right, the second right, both right, both cues
+on the same glass, and the two swapped; the two designs against each other on "both right" (same demos, two-sided
+sign test); the release cues.
+
+**What follows from it is decided with the user**, with these numbers: form A as it is; or a form in which every
+sensor's map marks every glass it shows and the order of the two is a second, learned step (not written; it would be
+fitted and compared on the same demos before any policy run); or the one network as the method's cue on T3. No run of
+T3 with a cue is listed before that decision.
+
 ## Files
 
 `real_data/glass_visibility.py` (real sensors), `sim/measure_visibility.py` (the simulator, same functions),
