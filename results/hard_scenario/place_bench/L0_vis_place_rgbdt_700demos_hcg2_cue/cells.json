@@ -1,0 +1,62 @@
+{
+ "runs": [
+  "results/hard_scenario/place_bench/L0_vis_place_rgbdt_700demos_hcg2_cue"
+ ],
+ "test_sets": [
+  "j_cells11",
+  "k_cells11_heldout"
+ ],
+ "macro": 0.8666666666666667,
+ "macro_ci": [
+  0.8484848484848485,
+  0.8833333333333333
+ ],
+ "cells": {
+  "0": {
+   "success": 117,
+   "n": 120
+  },
+  "1": {
+   "success": 109,
+   "n": 120
+  },
+  "2": {
+   "success": 111,
+   "n": 120
+  },
+  "3": {
+   "success": 118,
+   "n": 120
+  },
+  "4": {
+   "success": 88,
+   "n": 120
+  },
+  "5": {
+   "success": 104,
+   "n": 120
+  },
+  "6": {
+   "success": 107,
+   "n": 120
+  },
+  "7": {
+   "success": 105,
+   "n": 120
+  },
+  "8": {
+   "success": 93,
+   "n": 120
+  },
+  "9": {
+   "success": 78,
+   "n": 120
+  },
+  "10": {
+   "success": 114,
+   "n": 120
+  }
+ },
+ "success": 1144,
+ "n": 1320
+}

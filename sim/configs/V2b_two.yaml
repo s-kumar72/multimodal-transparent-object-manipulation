@@ -1,0 +1,11 @@
+# V2_two (task T3) with the thermal states of V2b_place: faint = the real p10 to p25 of tabletop glass at rest, 10 to
+# 26 units of the camera noise; shows = the real p25 to p90, 26 to 103 units; blind and everything else as V2_two
+# (results/hard_scenario/bench_v2/README.md, "Decision of the user on cell 9"). A draft level, not frozen.
+# meta/ep_level id 45.
+base: V2_two.yaml
+name: V2b_two
+level: 45
+thermal:
+  show_contrast: [0.92, 3.66]
+  faint_contrast: [0.36, 0.92]
+  blind_contrast: 0.1

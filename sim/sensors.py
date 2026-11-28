@@ -5,6 +5,7 @@ Author: Sadhana Kumar
 """
 import mujoco
 import numpy as np
+from scipy import ndimage
 
 from config import SceneConfig, factor_rng
 
@@ -67,7 +68,7 @@ class Sensors:
         self.scene = None
 
     def episode(self, seed, target, liquid, extras, data, region=((0.24, 0.56), (-0.24, 0.24)), force_seethrough=None,
-                glass_holes=None):
+                glass_holes=None, second=None):
         """Per-episode sensor effects: liquid in the target, absorber holes and table hole patches (lever C).
         region: (x range, y range) on the table where the hole patches may go."""
         cfg, m = self.cfg, self.model
@@ -100,6 +101,8 @@ class Sensors:
                           seethrough=int(seethrough))
         if glass_holes is not None:          # visibility cells, depth faint: this share of the glass pixels are holes
             self.scene["glass_holes"] = glass_holes
+        if second is not None:               # task "two": dict(geoms, holes, seethrough) of the second glass
+            self.scene["second"] = second
         return self.scene
 
     def _defect_params(self, rng):
@@ -140,6 +143,57 @@ class Sensors:
         R = data.cam_xmat[self.cam_id].reshape(3, 3)
         return pc @ R.T + data.cam_xpos[self.cam_id]
 
+    def _optical_inputs(self, data, depth_true, seg):
+        """For rgb_glass "optical": the colour image without the transparent bodies, and per transparent body in view
+        (body id, its pixels, the lights as glass_optics wants them)."""
+        from glass_optics import _points
+        m, r = self.model, self.r
+        r.update_scene(data, camera=self.camera, scene_option=self.hide_transparent)
+        behind = r.render().copy()
+        rot = data.cam_xmat[self.cam_id].reshape(3, 3)               # camera frame -> world
+        directional = int(mujoco.mjtLightType.mjLIGHT_DIRECTIONAL)
+        points, glasses = None, []
+        for body in np.unique(self.geom_body[self.transparent_geoms]):
+            mask = np.isin(seg, self.transparent_geoms[self.geom_body[self.transparent_geoms] == body])
+            if mask.any():       # the segmentation image has stray single pixels with a wrong id along edges: drop them
+                lab, k = ndimage.label(mask)
+                if k > 1:
+                    mask = np.isin(lab, 1 + np.flatnonzero(ndimage.sum(mask, lab, range(1, k + 1)) >= 6))
+            if not mask.any():
+                continue
+            points = _points(depth_true, self.focal) if points is None else points
+            centre = points[mask].mean(0) @ rot.T + data.cam_xpos[self.cam_id]
+            lights = []
+            if m.vis.headlight.active:
+                lights.append((None, float(np.mean(m.vis.headlight.diffuse))))
+            for i in range(m.nlight):
+                if not m.light_active[i]:
+                    continue
+                if int(m.light_type[i]) == directional:
+                    to_light = -data.light_xdir[i]
+                else:
+                    to_light = data.light_xpos[i] - centre
+                    to_light = to_light / max(np.linalg.norm(to_light), 1e-9)
+                    if np.degrees(np.arccos(np.clip(-to_light @ data.light_xdir[i], -1, 1))) > m.light_cutoff[i]:
+                        continue                                     # outside the lamp's cone
+                lights.append((to_light @ rot, float(np.mean(m.light_diffuse[i]))))
+            glasses.append((int(body), mask, lights))
+        return behind, glasses
+
+    def _optical(self, data, depth_true, seg, scene):
+        """Colour image with rgb_glass "optical": each transparent body drawn into the scene without them by
+        glass_optics, with its strength (scene["rgb_strength"]: body id -> strength; a body it does not name is not
+        drawn, e.g. the parked glasses, whose ids turn up on stray pixels of the segmentation image)."""
+        from glass_optics import PARAMS, optical_rgb
+        behind, glasses = self._optical_inputs(data, depth_true, seg)
+        params = dict(PARAMS, **(self.cfg.optical or {}))
+        strength = scene.get("rgb_strength")       # None: every transparent body in view; else only the bodies it names
+        rgb = behind
+        for body, mask, lights in glasses:
+            s = 1.0 if strength is None else float(strength.get(body, 0.0))
+            rgb = optical_rgb(rgb, depth_true, [(mask, s)], self.focal, lights, params)
+        return rgb
+
     def render(self, data, temps, emissivity, t_env=22.0, rng=None, scene=None):
         """Returns rgb (H, W, 3) uint8, depth (H, W) m, thermal (h, w) in [0, 1] (main's min-max), raw (h, w) counts."""
         rng = rng or np.random.default_rng()
@@ -161,14 +215,25 @@ class Sensors:
         seg = r.render()[..., 0].copy()
         r.disable_segmentation_rendering()
 
+        if cfg.rgb_glass == "optical":       # the glass as an optical effect on the scene behind it (glass_optics.py)
+            rgb = self._optical(data, depth_true, seg, scene)
+
         # Depth on transparent objects: sees through them, glass_holes of the pixels are holes
         on_glass = np.isin(seg, self.transparent_geoms)
         depth = depth_true.copy()
         depth[on_glass] = depth_behind[on_glass]
-        dots = rng.random(depth.shape) < scene.get("glass_holes", cfg.glass_holes)   # drawn in either mode, so the later draws stay the same
+        u = rng.random(depth.shape)                                  # drawn in either mode, so the later draws stay the same
+        dots = u < scene.get("glass_holes", cfg.glass_holes)
         defects = scene.get("defects", {})
         if "glass" in defects:
             self._blob_defects(depth, on_glass, depth_behind, defects["glass"], scene["rng"])
+        elif scene.get("second") is not None:    # task "two": the second glass has its own dropout and see-through
+            second = scene["second"]
+            on_second = np.isin(seg, second["geoms"])
+            if not scene.get("seethrough", 0):
+                depth[on_glass & ~on_second & dots] = 0.0
+            if not second["seethrough"]:
+                depth[on_second & (u < second["holes"])] = 0.0
         elif not scene.get("seethrough", 0):
             depth[on_glass & dots] = 0.0
 

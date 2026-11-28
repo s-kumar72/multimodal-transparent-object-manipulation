@@ -1,0 +1,11 @@
+(the mean of 5 networks, each trained on 1638 real pairs; on the 617 pairs of the other half whose surroundings are plain (std below 25) its AUC is 0.76, on the other 1824 0.64)
+Judge A: its own AUC on the real pairs of the other half 0.67 (0.60 to 0.82); a state passes at 0.59 (0.5 + half of the margin).
+
+| simulator's pairs | state | pairs | judge's AUC, with against without the glass (95%) | share of pairs with the glass scored higher | responds? |
+|---|---|---|---|---|---|
+| simpair_opt | shows | 1413 | 0.71 (0.70 to 0.71) | 1.00 | yes |
+| simpair_opt | faint | 425 | 0.56 (0.55 to 0.56) | 1.00 | no |
+| simpair_opt | blind | 1162 | 0.50 (0.50 to 0.50) | 0.00 | - |
+| simpair | shows | 1413 | 0.33 (0.32 to 0.34) | 0.10 | no |
+| simpair | faint | 425 | 0.38 (0.37 to 0.39) | 0.08 | no |
+| simpair | blind | 1162 | 0.50 (0.50 to 0.50) | 0.00 | - |

@@ -106,7 +106,7 @@ class GlassImageDataset(BaseImageDataset):
         self.has_cue = "cue" in self.obs_meta
         self.roi = cue_roi(self.obs_meta)
         self.cue_opts = cue_opts(self.obs_meta)
-        data_keys = [k for k in self.obs_meta if k not in ("cue", "glass_loc")]
+        data_keys = [k for k in self.obs_meta if k not in ("cue", "glass_loc", "hcue", "hang", "stage")]
         available = zarr_data_keys(zarr_path)
         if self.has_cue and "thermal" in self.obs_meta and "thermal_raw" in available:
             data_keys.append("thermal_raw")
@@ -126,6 +126,30 @@ class GlassImageDataset(BaseImageDataset):
             assert len(loc_masks) == self.replay_buffer.n_steps, (loc_path, len(loc_masks), self.replay_buffer.n_steps)
             self.replay_buffer.root["data"]["glass_loc"] = glass_location(loc_masks)
             data_keys.append("glass_loc")
+        hcue_attr = self.obs_meta.get("hcue")
+        if hcue_attr is not None:      # hindsight cue of every episode (policy/hindsight_cue.py), the same in all its frames
+            files = hcue_attr["file"]      # one file, or a list (pick-and-place: the grasp cue and the place cue)
+            cue_ep = np.concatenate([np.load(f).astype(np.float32)
+                                     for f in ([files] if isinstance(files, str) else list(files))], axis=1)
+            ends = np.asarray(self.replay_buffer.episode_ends[:])
+            assert len(cue_ep) == len(ends), (hcue_attr["file"], len(cue_ep), len(ends))
+            self.replay_buffer.root["data"]["hcue"] = np.repeat(cue_ep, np.diff(np.r_[0, ends]), axis=0)
+            data_keys.append("hcue")
+        hang_attr = self.obs_meta.get("hang")
+        if hang_attr is not None:      # hindsight angle of every episode (policy/hindsight_angle.py), as the cue is read
+            files = hang_attr["file"]
+            ang_ep = np.concatenate([np.load(f).astype(np.float32)
+                                     for f in ([files] if isinstance(files, str) else list(files))], axis=1)
+            ends = np.asarray(self.replay_buffer.episode_ends[:])
+            assert len(ang_ep) == len(ends), (hang_attr["file"], len(ang_ep), len(ends))
+            self.replay_buffer.root["data"]["hang"] = np.repeat(ang_ep, np.diff(np.r_[0, ends]), axis=0)
+            data_keys.append("hang")
+
+        if "stage" in self.obs_meta:   # stage of every frame, by a rule on the actions (policy/msbot_encoder.py): a loss target
+            from policy.msbot_encoder import stage_labels
+            self.replay_buffer.root["data"]["stage"] = stage_labels(
+                np.asarray(self.replay_buffer["action"]), np.asarray(self.replay_buffer.episode_ends[:]))
+            data_keys.append("stage")
 
         val_mask = get_val_mask(n_episodes=self.replay_buffer.n_episodes, val_ratio=val_ratio, seed=seed)
         train_mask = downsample_mask(mask=~val_mask, max_n=max_train_episodes, seed=seed)
@@ -173,6 +197,12 @@ class GlassImageDataset(BaseImageDataset):
         for key, attr in self.obs_meta.items():
             if attr.get("type", "low_dim") == "rgb":
                 normalizer[key] = get_image_range_normalizer()
+        if "hcue" in self.obs_meta:    # the gate entries stay as they are: the encoder switches sensors on them
+            from policy.hindsight_cue import CUE_DIM
+            p = normalizer["hcue"].params_dict
+            for end in range(CUE_DIM, len(p["scale"]) + 1, CUE_DIM):     # r_rgb, r_depth, r_thermal of every cue
+                p["scale"].data[end - 3:end] = 1.0
+                p["offset"].data[end - 3:end] = 0.0
         if self.has_cue:
             # z-scores rather than limits: cues of corrupted / crossover frames must stay in range, and the fit
             # sample includes corrupted copies of the frames so the training distribution is covered

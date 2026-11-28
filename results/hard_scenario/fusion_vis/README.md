@@ -47,3 +47,392 @@ the segmentation network start from ImageNet weights, as those of the strongest 
    cell.
 
 Second seeds, the frozen and anchored encoders (P2, P4) and the other ablations are decided after this round.
+
+## Results (11/23 08:40 KST; seed 42, 1320 test episodes per run, 120 per cell)
+
+The three policy runs and the segmentation run finished without a failed run (segmentation 38 minutes; policies
+5 h 30 min to 5 h 50 min each, three at a time). All numbers below are printed by
+`python fusion/attention/readout_l0_vis.py` ([`readout.txt`](readout.txt)); success per cell of a run is in its
+`cells.json`.
+
+| cell | sensors that show the glass | P0 `fusion` | P9 `fusion_kp` | P5 `fusion_static` | rgbdt ImageNet, seed 42 | best baseline (3 seeds, frozen) | reference |
+|---|---|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.500 (below) | 0.692 | 0.283 (below) | 0.775 | 0.781 | 0.900 |
+| 1 | depth+thermal | 0.333 (below) | 0.625 (below) | 0.225 (below) | 0.750 | 0.758 | 0.875 |
+| 2 | rgb+thermal | 0.058 (below) | 0.550 (above) | 0.092 (below) | 0.225 | 0.397 | 0.642 |
+| 3 | rgb+depth | 0.433 (below) | 0.667 | 0.225 (below) | 0.650 | 0.700 | 0.867 |
+| 4 | thermal | 0.033 (below) | 0.492 (above) | 0.000 (below) | 0.192 | 0.189 | 0.608 |
+| 5 | depth | 0.392 (below) | 0.583 | 0.225 (below) | 0.650 | 0.697 | 0.858 |
+| 6 | rgb | 0.058 (below) | 0.492 (above) | 0.058 (below) | 0.158 | 0.256 | 0.492 |
+| 7 | rgb (faint) | 0.058 | 0.367 (above) | 0.033 | 0.092 | 0.181 | 0.333 |
+| 8 | depth (faint) | 0.342 (below) | 0.458 | 0.225 (below) | 0.525 | 0.486 | 0.742 |
+| 9 | thermal (faint) | 0.050 | 0.342 (above) | 0.092 | 0.050 | 0.094 | 0.383 |
+| 10 | all faint | 0.400 | 0.583 | 0.250 (below) | 0.483 | 0.503 | 0.717 |
+| | **macro average** | 0.242 (below) | 0.532 (above) | 0.155 (below) | 0.414 | 0.458 | 0.674 |
+
+"above" / "below": against the rgbdt baseline of seed 42 on the same episodes, sign test, p < 0.05.
+
+**1. Against the baseline.** P9 is above it: 0.532 against 0.414 (only P9 succeeds in 319 episodes, only the
+baseline in 163, p = 1.1e-12). It is above in the five cells in which depth does not show the glass (2, 4, 6, 7, 9;
++0.28 to +0.33 each) and below in cell 1 (0.625 against 0.750, p = 0.028); in the six cells in which depth shows the
+glass it has 0.601 against 0.639. P0 (0.242, p = 1.6e-28) and P5 (0.155, p = 1.2e-62) are below the baseline, P0 in
+cells 0 to 6 and 8, P5 in cells 0 to 6, 8 and 10. Next to the frozen numbers (three seeds against this one seed, not
+tested): the macro average of P9 is above the mean of the best baseline of each cell (0.458); by cell it is higher in
+2, 4, 6, 7, 9 and 10 and lower in 0, 1, 3, 5 and 8, and it is at the reference in cells 6 and 7.
+
+**2. P9 against P0.** 0.532 against 0.242 (only P9 succeeds in 473 episodes, only P0 in 90, p = 1e-63): by the rule
+above, the precision of the readout was a bottleneck. Where the gripper closes (last close of the episode):
+
+| cells | policy | success | closes within 4 cm of the glass | within 1.5 cm | success when within 1.5 cm | median distance, cm |
+|---|---|---|---|---|---|---|
+| all | P0 | 0.242 | 0.560 | 0.262 | 0.720 | 3.28 |
+| all | P9 | 0.532 | 0.889 | 0.623 | 0.785 | 1.11 |
+| all | P5 | 0.155 | 0.450 | 0.152 | 0.721 | 4.47 |
+| all | rgbdt ImageNet, seed 42 | 0.414 | 0.575 | 0.364 | 0.940 | 2.98 |
+| depth shows (0, 1, 3, 5, 8, 10) | P9 | 0.601 | 0.931 | 0.706 | 0.809 | 0.92 |
+| depth shows (0, 1, 3, 5, 8, 10) | rgbdt ImageNet, seed 42 | 0.639 | 0.814 | 0.599 | 0.961 | 1.03 |
+| depth blind (2, 4, 6, 7, 9) | P9 | 0.448 | 0.838 | 0.523 | 0.745 | 1.44 |
+| depth blind (2, 4, 6, 7, 9) | rgbdt ImageNet, seed 42 | 0.143 | 0.288 | 0.082 | 0.755 | 6.90 |
+
+P9 finds the glass where the baseline does not (within 4 cm in 0.84 of the episodes without depth, baseline 0.29).
+Once within 1.5 cm it lifts the glass less often than the baseline (0.785 against 0.940), which is why it is not
+above the baseline in the cells with depth although it is within 1.5 cm more often there.
+
+**3. P0 against P5.** P0 is above P5 over all cells (0.242 against 0.155, p = 1e-12) and over cells 1 to 9 (0.195
+against 0.131, p = 1.9e-07): by the rule above, the learned weights help. What the weights are is in point 4: those
+of P0 are the same in every cell, so this is one fixed weighting (thermal off) against another (1/3 each), and both
+runs are below the baseline.
+
+**4. Segmentation and weights.** `mix_ws` on the frames of the test sets: IoU 82.1 % (`j_cells11`) and 80.5 %
+(`k_cells11_heldout`), most confident pixel on the glass in 100 % and 99.8 %
+([`../../fusion/summary_fusion_vis.md`](../../fusion/summary_fusion_vis.md)). Its weights before the policy training:
+rgb 0.43, depth 0.43, thermal 0.15; the thermal weight is 0.26 on the frames in which thermal shows the glass and
+0.01 to 0.02 where it does not (AUC 0.93 and 0.96), the depth weight equals the rgb weight and does not separate the
+frames in which depth sees through the glass (AUC 0.58 and 0.57). The weights of the policies during the evaluation
+(rgb / depth / thermal, mean per cell): P0 0.50 / 0.50 / 0.00 in every cell, P9 0.34 / 0.34 / 0.33 in every cell
+(P5 is fixed at 1/3). AUC of a sensor's weight between the cells in which it shows the glass and those in which it
+does not: P0 rgb 0.53, depth 0.88 (a difference of 0.003 in the weight), thermal 0.49; P9 0.51, 0.52, 0.56. After
+the policy training the weights do not follow what the sensors show: in P0 thermal is off everywhere, in P9 the
+three sensors are weighted equally.
+
+**What this round says** (one seed):
+
+- The readout with the position at full resolution and the keypoints (P9) is the first run above the rgbdt baseline
+  on `L0_vis`, by finding the glass in the cells without depth. It uses the simulator's glass masks in the
+  pre-training, so it stays outside the comparison of stage 6
+  ([`../grid_bench/README.md`](../grid_bench/README.md)).
+- Its gain is not from weighting the sensors by what they show: its weights are equal in all cells. A control for
+  that would be P9 with the weights fixed at 1/3; a control for the masks would be P9 without the pre-training.
+  Neither has been run.
+- Not decided: second seeds for P9, these two controls, and the other ablations.
+
+## Round 2: runs around P9 (plan of 11/23 09:00 KST, written before the runs; decision of the user)
+
+The other ablations of `fusion/attention/ablations.MD` change one thing in P0, which is below the baseline (0.242).
+Instead of them, five runs that change one thing in P9 (`fusion_kp`), the run above the baseline. Protocol as in the
+first round (700 demos, 101 epochs, last checkpoint, default settings, 660 episodes on each of `j_cells11` and
+`k_cells11_heldout`, the sensor weights saved per step); the segmentation checkpoint is the `mix_ws` of the first
+round, not retrained.
+
+| run | relation to `ablations.MD` | what differs from P9 (`L0_vis_rgbdt_700demos_fusion_kp`, seed 42) |
+|---|---|---|
+| `L0_vis_rgbdt_700demos_fusion_kp_seed43`, `..._seed44` | P9, more seeds | the seed (43, 44) |
+| `L0_vis_rgbdt_700demos_fusion_kp_scratch` | P1 on P9 | no segmentation pre-training: the same network, built as `mix_ws` was before its training (rgb encoder from ImageNet, depth and thermal encoders random), trained with the policy only. It uses no glass mask |
+| `L0_vis_rgbdt_700demos_fusion_kp_frozen` | P2 on P9 | the pre-trained network is frozen; only the readout and the U-Net learn. The sensor weights stay those of `mix_ws` |
+| `L0_vis_rgbd_700demos_fusion_kp` | P10 on P9 | no thermal image (the encoder treats thermal as missing) |
+
+Overrides (after `training.seed=<seed> task.env_runner.test_set=j_cells11`), with
+`PRE = policy.obs_encoder.pretrained=data/fusion_vis/runs/mix_ws/best.pt` and
+`KP = policy.obs_encoder.readout=[avg,mask,centroid,area,max,gates,keypoint,ssm]`: seeds `PRE KP`; scratch
+`++policy.obs_encoder.model_cfg={fusion_mode:weighted_sum,gate_norm:softmax} KP`; frozen
+`PRE policy.obs_encoder.freeze_segmenter=true KP`; rgbd `PRE KP` with the variant `rgbd` of
+`scripts/train_fusion_policy.sh`. Correction to the plan of the first round: of the encoders of the segmentation
+network only the rgb one starts from ImageNet weights.
+
+The runs are started one at a time as a GPU becomes free, behind the runs of
+[`../cue_gate/README.md`](../cue_gate/README.md), in the order of the table. A run that fails is not started again.
+
+**Read-out, fixed now.** "Same episodes" = the same test set and episode seed; sign test on the episodes in which
+exactly one of the two succeeds; all cells and per cell.
+
+1. *P9 with three seeds.* Macro average of each seed and their mean. The three seeds pooled against the three seeds
+   of the rgbdt ImageNet baseline (seed 42 with 42, 43 with 43, 44 with 44) on the same episodes: P9 counts as above
+   the baseline if the macro average is above with p < 0.05; the cells in which it is below with p < 0.05 are
+   listed. Also listed, cell by cell, against the three seeds of the best baseline of that cell (the table of stage
+   6): the cells in which P9 is below it with p < 0.05. P9 stays outside the comparison of stage 6 whatever the
+   result (it uses the simulator's masks).
+2. *Pre-training.* `fusion_kp_scratch` against P9 of seed 42, same episodes: if P9 is above with p < 0.05, the
+   pre-training on masks contributes; otherwise it is not shown to matter. `fusion_kp_scratch` against the rgbdt
+   ImageNet baseline of seed 42: if it is above with p < 0.05, the readout of P9 is above the baseline without any
+   mask. Its share of episodes with a close within 1.5 cm of the glass is reported.
+3. *Frozen encoder.* `fusion_kp_frozen` against P9 of seed 42, same episodes, in both directions with p < 0.05.
+   Its sensor weights by cell and the AUC of each sensor's weight between the cells in which it shows the glass and
+   those in which it does not are reported. If it is above P9, keeping the pre-trained network helps; this run
+   cannot separate the kept weights from the kept features.
+4. *Thermal.* P9 of seed 42 against `L0_vis_rgbd_700demos_fusion_kp`, same episodes, over all cells, over the cells
+   in which thermal shows the glass and depth does not (2, 4, 9) and over those in which thermal does not show it
+   (3, 5, 6, 7, 8): if P9 is above with p < 0.05 the thermal image contributes there; otherwise it is not shown to.
+
+Points 2 to 4 have one seed each; no claim about the method is made from them alone. More seeds for them and the
+other ablations are decided after this round.
+
+### Results of round 2 (11/24 11:04 KST; 1320 test episodes per run, 120 per cell)
+
+The five runs finished without a failed run (the last one 11/24 11:01 KST). All numbers are printed by
+`python fusion/attention/readout_l0_vis_round2.py` ([`readout_round2.txt`](readout_round2.txt)); success per cell of
+a run is in its `cells.json`.
+
+| cell | sensors that show the glass | P9 seed 42 | seed 43 | seed 44 | no pre-training (`_scratch`) | frozen (`_frozen`) | no thermal (`rgbd`) | rgbdt ImageNet, seed 42 | best baseline (3 seeds, frozen) |
+|---|---|---|---|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.692 | 0.608 | 0.825 | 0.042 | 0.117 | 0.442 | 0.775 | 0.781 |
+| 1 | depth+thermal | 0.625 | 0.517 | 0.608 | 0.033 | 0.167 | 0.400 | 0.750 | 0.758 |
+| 2 | rgb+thermal | 0.550 | 0.442 | 0.567 | 0.033 | 0.167 | 0.067 | 0.225 | 0.397 |
+| 3 | rgb+depth | 0.667 | 0.583 | 0.658 | 0.008 | 0.100 | 0.483 | 0.650 | 0.700 |
+| 4 | thermal | 0.492 | 0.350 | 0.642 | 0.025 | 0.117 | 0.033 | 0.192 | 0.189 |
+| 5 | depth | 0.583 | 0.533 | 0.650 | 0.058 | 0.158 | 0.508 | 0.650 | 0.697 |
+| 6 | rgb | 0.492 | 0.342 | 0.533 | 0.008 | 0.158 | 0.042 | 0.158 | 0.256 |
+| 7 | rgb (faint) | 0.367 | 0.350 | 0.417 | 0.008 | 0.100 | 0.083 | 0.092 | 0.181 |
+| 8 | depth (faint) | 0.458 | 0.492 | 0.525 | 0.000 | 0.125 | 0.392 | 0.525 | 0.486 |
+| 9 | thermal (faint) | 0.342 | 0.275 | 0.392 | 0.008 | 0.117 | 0.058 | 0.050 | 0.094 |
+| 10 | all faint | 0.583 | 0.542 | 0.650 | 0.017 | 0.183 | 0.350 | 0.483 | 0.503 |
+| | **macro average** | 0.532 | 0.458 | 0.588 | 0.022 | 0.137 | 0.260 | 0.414 | 0.458 |
+
+The four runs other than the seeds are seed 42. Their training went through as that of P9 (training loss at the end
+0.001 to 0.003; rollouts during training in line with the final numbers: no pre-training 0.00 to 0.05, frozen 0.02
+to 0.18, no thermal 0.15 to 0.35), so the low numbers are those of the trained policies.
+
+**1. P9 with three seeds.** Macro averages 0.532, 0.458 and 0.588, mean 0.526 (standard deviation 0.065). Pooled
+against the same seeds of the rgbdt ImageNet baseline on the same episodes: 0.526 against 0.428, only P9 succeeds in
+936 episodes, only the baseline in 550, p = 9.8e-24. P9 is above the baseline. It is below it with p < 0.05 in cells
+0, 1 and 5. Against the three seeds of the best baseline of each cell: below in cells 0, 1, 3 and 5 (all cells in
+which depth shows the glass fully), above in cells 2, 4, 6, 7, 9 and 10, no difference in cell 8. The seeds are
+0.13 apart from the lowest to the highest.
+
+**2. Pre-training.** Without the segmentation pre-training the policy does not work: 0.022 against 0.532 of P9 (only
+P9 succeeds in 684 episodes, only this run in 11, p = 5.2e-186), below P9 in every cell. So the pre-training on
+masks contributes; by the size it is what P9 rests on. Against the rgbdt ImageNet baseline of seed 42: 0.022 against
+0.414 (12 / 529, p = 3.3e-139), below in ten of the eleven cells: the readout of P9 is not above the baseline
+without the masks. The gripper closes within 1.5 cm of the glass in 0.015 of the episodes (P9 0.623, the baseline
+0.364), at a median distance of 11.5 cm: without the masks this network does not find the glass at all.
+
+**3. Frozen encoder.** With the pre-trained network frozen: 0.137 against 0.532 (44 / 565, p = 2.6e-116), below P9
+in every cell, and below the baseline of seed 42 (0.137 against 0.414; 85 / 450, p = 5.5e-61) in the six cells in
+which depth shows the glass. It closes within 1.5 cm of the glass in 0.129 of the episodes. Keeping the pre-trained
+network as it is does not help; the features have to be trained with the policy. Its sensor weights are those of
+`mix_ws`: the thermal weight is 0.17 to 0.27 in the cells in which thermal shows the glass and 0.01 to 0.02 in the
+others (AUC 0.97); the rgb and the depth weight are equal in every cell (0.37 to 0.49 each) and do not follow what
+the two sensors show (AUC 0.55 and 0.57). After the training with the policy (P9) the three weights are equal in
+every cell (0.336 / 0.336 / 0.328). So the weighting that follows the thermal image exists only in the run that
+does not work, and the run that works does not weight.
+
+**4. Thermal.** P9 against P9 without the thermal image, seed 42: 0.532 against 0.260 over all cells (only P9
+succeeds in 449 episodes, only the run without thermal in 90, p = 2.5e-58); 0.461 against 0.053 in the cells in
+which thermal shows the glass and depth does not (2, 4, 9; 152 / 5, p = 8.4e-39); 0.513 against 0.302 in the cells
+in which thermal does not show it (3, 5, 6, 7, 8; 172 / 45, p = 1.1e-18). By the rule fixed above the thermal image
+contributes in all three. The third line needs a remark: in those cells the thermal image does not show the glass,
+and the loss is in the two cells with rgb alone (6 and 7: 0.429 with thermal, 0.062 without) and in cell 3 (0.667
+against 0.483); cells 5 and 8 do not differ. Next to the read-out, not fixed before the runs: the run without
+thermal is also below the plain rgbd ImageNet baseline of seed 42 on the same episodes (0.260 against 0.404, only
+the fusion run succeeds in 97, only the baseline in 287, p = 6.4e-23), with depth (0.429 against 0.621) and without
+(0.057 against 0.143). So this run does not isolate what the thermal image adds: without it the method as a whole
+works worse than a plain policy on the same inputs, also where thermal had nothing to show. One seed, and the seeds
+of P9 are 0.13 apart.
+
+**What round 2 says.**
+
+- P9 is above the rgbdt baseline with three seeds (0.526 against 0.428), by the cells without depth; in four of the
+  six cells in which depth shows the glass it is below the best baseline. It is outside the comparison of stage 6
+  (simulator masks); inside it, it would not be "better in nearly every case".
+- The gain needs both the pre-training on the simulator's masks and the training of the pre-trained network with
+  the policy: without the first 0.02, without the second 0.14.
+- Nothing in this round shows that weighting the sensors by what they show is what helps: the weights of P9 are
+  equal in every cell, as in the first round.
+- Points 2 to 4 are one seed each. Not decided: more seeds for them, and the other ablations of `ablations.MD`.
+
+## Round 3: the ablations of `ablations.MD` not run before (decision of the user 11/25; listed 11/25 09:44 KST, before any of them starts)
+
+**Decision of the user (11/25).** The remaining ablations of `fusion/attention/ablations.MD` are run on `L0_vis`
+too. Run so far: P0, P5 and P9 (first round), and P1, P2 and P10 on P9 (round 2). Left: P3, P4, P6, P7, P8 and P11.
+As in round 2, the ones that change the training or the initialisation change one thing in P9 (`fusion_kp`), the run
+above the baseline, and not in P0 (0.242); P8 is a readout of its own and is run as `ablations.MD` defines it. Seed
+42 each; protocol of the earlier rounds (700 demos, 101 epochs, last checkpoint, default settings, 660 episodes on
+each of `j_cells11` and `k_cells11_heldout`, the sensor weights saved per step).
+
+| run | id in `ablations.MD` | what differs from P9 (`L0_vis_rgbdt_700demos_fusion_kp`, seed 42) |
+|---|---|---|
+| `L0_vis_rgbdt_700demos_fusion_kp_warm` | P3 on P9 | the pre-trained network is frozen for the first 10000 training steps (about 17 of the 101 epochs, 574 steps each), then trained with the policy |
+| `L0_vis_rgbdt_700demos_fusion_kp_anchor` | P4 on P9 | trained, but anchored to a frozen copy of `mix_ws` (its glass mask and its sensor weights), weight 1.0 |
+| `L0_vis_rgbdt_700demos_fusion_kp_gatesup` | P6 on P9 | the sensor weights are supervised from the episode flags during the policy training (weight 0.1, faded out over 20000 steps): depth pushed down in see-through episodes, thermal in crossover episodes |
+| `L0_vis_rgbdt_700demos_fusion_kp_aug` | P7 on P9 | the thermal contrast is removed in half of the training samples (depth holes off) |
+| `L0_vis_rgbdt_700demos_fusion_global` | P8 | the readout is the image average and the sensor weights only (no mask features, no keypoints) |
+| `L0_vis_rgbdt_700demos_fusion_kp_stx` | P11 on P9 | the encoder starts from the segmentation run S4 (`mix_ws_stx_supst`) instead of `mix_ws` |
+
+Overrides (after `training.seed=42 task.env_runner.test_set=j_cells11`), with `PRE` and `KP` as in round 2: warm
+`PRE policy.obs_encoder.freeze_steps=10000 KP`; anchor `PRE policy.obs_encoder.anchor=true policy.anchor_weight=1.0
+KP`; gatesup `PRE policy.gate_sup_weight=0.1 KP`; aug
+`PRE ++task.dataset.augment={thermal_contrast_p:0.5,depth_hole_p:0.0} KP`; global
+`PRE policy.obs_encoder.readout=[avg,gates]`; stx
+`policy.obs_encoder.pretrained=data/fusion_vis/runs/mix_ws_stx_supst/best.pt KP`. These are the switches of
+`fusion/attention/run_ablations.sh`; no code is changed.
+
+**The segmentation run S4.** `mix_ws_stx_supst` is trained on the frames `mix_ws` was trained on
+(`data/fusion_vis/sim`, rendered 11/22, and the real datasets; 20000 iterations, about 40 minutes), by the queue
+line of `stx` before its policy training: `DATA=data/fusion_vis SIM_LEVELS=L0_vis STAGES="real seg summary"
+RUNS=mix_ws_stx_supst bash fusion/attention/train.sh`. It differs from `mix_ws` in two things: the depth-hole and
+wrong-depth corruptions are replaced by a see-through corruption (S2), and the gate loss also marks depth as
+unreliable on the glass in see-through frames (S3). Its segmentation numbers are reported next to those of `mix_ws`
+from `results/fusion/summary_fusion_vis.md`; no verdict rests on them. The other segmentation ablations (S1, S2, S3,
+S5, S6) are judged on segmentation alone and are not run.
+
+**What these runs use that P9 does not.** P9 is outside the comparison of stage 6 already (the simulator's glass
+masks and its crossover flag, in the segmentation pre-training). On top of that:
+
+- `gatesup` reads two flags of the simulator during the policy training (`meta/ep_glass_seethrough`,
+  `meta/ep_is_crossover`). In the demos of `L0_vis` they are exactly the cells in which depth does not show the
+  glass (2, 4, 6, 7, 9) and those in which thermal does not (3, 5, 6, 7, 8), without exception (checked on the 700
+  demos). So this run is told for every training episode which sensor is blind; no other run has that.
+- `stx`: the segmentation pre-training also reads the see-through flag of its frames.
+- `warm`, `anchor`, `aug` and `global` use nothing more than P9.
+
+**Trial runs before the listing (11/25).** Each of the six policy runs was started in the debug mode of Diffusion Policy on a subset of 100 demos
+(cells 8 and 9; six training steps, rollouts, the override of the run; `warm` with `freeze_steps=4`), and S4
+for 60 iterations, followed by a policy run from its checkpoint and an evaluation with the weights saved: all
+ran through without an error, and `gatesup` logged its loss on both kinds of episodes. Nothing of these trial
+runs is kept.
+
+**Read-out, fixed now** (`python fusion/attention/readout_l0_vis_round3.py > readout_round3.txt`; the script was
+tested on run folders of round 2 standing in for the new ones). "Same episodes" and the sign test as in round 2.
+
+1. Success per cell of every run, next to P9 of seed 42, the span of P9's three seeds and the rgbdt ImageNet
+   baseline of seed 42.
+2. *Against P9.* Every run against P9 of seed 42 on the same episodes. A run is **above P9** if it is above with
+   p < 0.05 and its macro average is above the highest of P9's three seeds (0.588); **below P9** if it is below with
+   p < 0.05 and its macro average is under the lowest of them (0.458); otherwise it is **not separated from P9**. The
+   second condition is there because the seeds of P9 are 0.13 apart and these runs have one seed. A run above P9 is a
+   candidate, not a result: whether it gets seeds 43 and 44 is decided after this round.
+3. *Against the baseline.* Every run against the rgbdt ImageNet baseline of seed 42, over all cells, over the cells
+   in which depth shows the glass (0, 1, 3, 5, 8, 10) and over the others.
+4. Where the gripper closes: the share of episodes with the last close within 1.5 cm of the glass and the success
+   after it.
+5. *The sensor weights.* For every run the mean weight of each sensor in the cells in which it shows the glass and in
+   the others, and the AUC between the two. A sensor's weight **follows what the sensor shows** from an AUC of 0.8
+   (the level `ablations.MD` names). In P9 no weight does (0.51, 0.52, 0.56). `anchor` and `gatesup` are made for
+   this: if their weights follow and the run is above P9 by item 2, weighting by reliability helps the policy; if
+   the weights follow and the run is not above P9, it does not show; if the weights do not follow, the run does not
+   test it.
+6. Next to it, not a criterion: every run against hindsight cue gating (`hcg_full`, seed 42) on the same episodes.
+   All runs of this round stay outside the comparison of stage 6, whatever the result.
+
+One seed each: no claim about the method is made from a single run of this round.
+
+The runs are started through the queue of this worktree after everything queued before them, in the order of the
+table, one per free GPU. A run that fails is reported and not started again.
+
+### Results of round 3 (11/26 17:49 KST; seed 42, 1320 test episodes per run, 120 per cell)
+
+Read-out as fixed above: [`readout_round3.txt`](readout_round3.txt). All six runs went through the queue without a
+failure and trained the 101 epochs (57973 steps; training loss at the end 0.001 to 0.003). The rollouts during
+training are in line with the final numbers (at epoch 100: `warm` 0.56, `anchor` 0.27, `gatesup` 0.16, `aug` 0.62,
+`global` 0.31, `stx` 0.55; P9 0.62), so the low numbers are those of the trained policies.
+
+| cell | sensors that show the glass | `warm` | `anchor` | `gatesup` | `aug` | `global` | `stx` | P9, seed 42 | P9, three seeds | rgbdt ImageNet, seed 42 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.633 | 0.400 | 0.258 | 0.792 | 0.583 | 0.608 | 0.692 | 0.608 to 0.825 | 0.775 |
+| 1 | depth+thermal | 0.575 | 0.258 | 0.108 | 0.650 | 0.517 | 0.417 | 0.625 | 0.517 to 0.625 | 0.750 |
+| 2 | rgb+thermal | 0.533 | 0.308 | 0.333 | 0.592 | 0.075 | 0.667 | 0.550 | 0.442 to 0.567 | 0.225 |
+| 3 | rgb+depth | 0.500 | 0.367 | 0.258 | 0.642 | 0.583 | 0.575 | 0.667 | 0.583 to 0.667 | 0.650 |
+| 4 | thermal | 0.458 | 0.142 | 0.217 | 0.517 | 0.058 | 0.350 | 0.492 | 0.350 to 0.642 | 0.192 |
+| 5 | depth | 0.517 | 0.342 | 0.133 | 0.608 | 0.467 | 0.425 | 0.583 | 0.533 to 0.650 | 0.650 |
+| 6 | rgb | 0.458 | 0.208 | 0.283 | 0.442 | 0.033 | 0.417 | 0.492 | 0.342 to 0.533 | 0.158 |
+| 7 | rgb (faint) | 0.292 | 0.167 | 0.175 | 0.408 | 0.067 | 0.383 | 0.367 | 0.350 to 0.417 | 0.092 |
+| 8 | depth (faint) | 0.408 | 0.217 | 0.192 | 0.492 | 0.442 | 0.442 | 0.458 | 0.458 to 0.525 | 0.525 |
+| 9 | thermal (faint) | 0.267 | 0.142 | 0.125 | 0.342 | 0.058 | 0.242 | 0.342 | 0.275 to 0.392 | 0.050 |
+| 10 | all faint | 0.508 | 0.308 | 0.225 | 0.642 | 0.467 | 0.517 | 0.583 | 0.542 to 0.650 | 0.483 |
+| | **macro average** | 0.468 | 0.260 | 0.210 | 0.557 | 0.305 | 0.458 | 0.532 | 0.458 to 0.588 | 0.414 |
+
+**2. Against P9.** No run is above P9.
+
+| run | macro average | only the run succeeds / only P9 | p | verdict |
+|---|---|---|---|---|
+| `warm` (P3) | 0.468 | 169 / 253 | 5.1e-05 | not separated from P9 |
+| `anchor` (P4) | 0.260 | 77 / 436 | 7.3e-62 | **below P9** |
+| `gatesup` (P6) | 0.210 | 77 / 502 | 2.2e-77 | **below P9** |
+| `aug` (P7) | 0.557 | 201 / 168 | 0.096 | not separated from P9 |
+| `global` (P8) | 0.305 | 114 / 414 | 5.6e-41 | **below P9** |
+| `stx` (P11) | 0.458 | 194 / 291 | 1.2e-05 | not separated from P9 |
+
+`warm` and `stx` are below P9 of seed 42 on the same episodes with p < 0.05, but their macro averages are inside the
+span of P9's three seeds (`stx` at its lower end), so by the rule they are not separated. `aug` is the only run with
+a macro average above P9 of seed 42; the difference is not significant and it is inside the span too. `anchor` and
+`gatesup` are below P9 in every cell, `global` in the cells in which depth does not show the glass (2, 4, 6, 7, 9)
+and in cell 5. By the rule there is no candidate for seeds 43 and 44.
+
+**3. Against the rgbdt ImageNet baseline of seed 42.**
+
+| run | all cells | depth shows (0, 1, 3, 5, 8, 10) | depth blind (2, 4, 6, 7, 9) |
+|---|---|---|---|
+| `warm` | 0.468 / 0.414, above (p = 0.0011) | 0.524 / 0.639, below | 0.402 / 0.143, above |
+| `anchor` | 0.260 / 0.414, below | 0.315 / 0.639, below | 0.193 / 0.143, above (p = 0.013) |
+| `gatesup` | 0.210 / 0.414, below | 0.196 / 0.639, below | 0.227 / 0.143, above |
+| `aug` | 0.557 / 0.414, above | 0.637 / 0.639, no difference (p = 1) | 0.460 / 0.143, above |
+| `global` | 0.305 / 0.414, below | 0.510 / 0.639, below | 0.058 / 0.143, below |
+| `stx` | 0.458 / 0.414, above (p = 0.012) | 0.497 / 0.639, below | 0.412 / 0.143, above |
+
+The picture of the earlier rounds holds for the runs that are level with P9: above the baseline where depth does not
+show the glass, below it where depth shows it. `aug` is the one run that is not below the baseline in the cells with
+depth (one seed). `global`, the readout without the mask features and the keypoints, is below the baseline in both
+groups: what P9 gains in the cells without depth is gone (0.058 against 0.449 of P9 in those five cells).
+
+**4. Where the gripper closes.** Last close within 1.5 cm of the glass: `aug` 0.633, `warm` 0.539, `stx` 0.528,
+`global` 0.345, `anchor` 0.295, `gatesup` 0.197 (P9 0.623, the baseline 0.364). Success after such a close is 0.64
+to 0.80 in the six runs (P9 0.785, the baseline 0.940). So the runs differ in how often they find the glass, as in
+the earlier rounds, and the three runs below P9 find it less often.
+
+**5. The sensor weights** (mean weight in the cells in which the sensor shows the glass / in the others, AUC).
+
+| run | rgb | depth | thermal | weights that follow what the sensor shows (AUC from 0.8) |
+|---|---|---|---|---|
+| `warm` | 0.334 / 0.334, 0.52 | 0.334 / 0.334, 0.53 | 0.332 / 0.331, 0.66 | none |
+| `anchor` | 0.436 / 0.424, 0.55 | 0.436 / 0.424, 0.57 | 0.237 / 0.020, 0.97 | thermal |
+| `gatesup` | 0.333 / 0.333, 0.59 | 0.333 / 0.333, 0.44 | 0.333 / 0.333, 0.56 | none |
+| `aug` | 0.340 / 0.340, 0.53 | 0.340 / 0.340, 0.53 | 0.320 / 0.318, 0.61 | none |
+| `global` | 0.493 / 0.491, 0.54 | 0.463 / 0.433, 0.92 | 0.055 / 0.063, 0.41 | depth |
+| `stx` | 0.345 / 0.345, 0.52 | 0.345 / 0.345, 0.53 | 0.312 / 0.308, 0.65 | none |
+| P9 | 0.336 / 0.336, 0.51 | 0.336 / 0.336, 0.52 | 0.328 / 0.328, 0.56 | none |
+
+The two runs made for this question, by the rule fixed above:
+
+- `anchor`: the anchor keeps the weights of `mix_ws`, so the thermal weight follows what the thermal image shows
+  (0.237 where it shows the glass, 0.020 where it does not), as in the frozen run of round 2; the rgb and the depth
+  weight do not follow. The run is below P9 (0.260 against 0.532). Weights that follow and a run that is not above
+  P9: **it does not show that weighting by reliability helps the policy.**
+- `gatesup`: the weights are equal in every cell at the end (0.333 each), although the run was told for every
+  training episode which sensor is blind during the first 20000 steps. The weights do not follow: **the run does not
+  test the question**, and it is the lowest run of the round (0.210).
+
+In `global` the depth weight follows by the AUC (0.92), with a small difference between the cells (0.463 against
+0.433) and a thermal weight near zero everywhere; the run is below P9. In the four other runs the weights are equal
+in every cell, as in P9.
+
+**6. Next to it, not a criterion.** All six runs are below hindsight cue gating (`hcg_full`, seed 42: 0.789) on the
+same episodes, in nine to eleven of the eleven cells, and above it in none. All of them stay outside the comparison
+of stage 6.
+
+**The segmentation run S4** (`mix_ws_stx_supst`, IoU % / share of images whose most confident pixel is on the glass
+%, next to `mix_ws`; no verdict rests on it): `j_cells11` 82.8 / 100.0 (82.1 / 100.0), `k_cells11_heldout`
+81.7 / 99.8 (80.5 / 99.8), `mju_glass` 82.1 / 98.0 (82.8 / 97.9), `rgbt_glass` 77.2 / 96.8 (76.9 / 96.4), `transpose`
+69.7 / 94.4 (70.6 / 95.8), `trobi` 43.2 / 62.3 (42.3 / 60.3). The two are level on segmentation.
+
+**What round 3 says.**
+
+- None of the six ablations left in `ablations.MD` is above P9 on `L0_vis`. Three are not separated from it (the
+  warm-up, the thermal augmentation, the other segmentation run), three are below it (the anchor, the supervision of
+  the sensor weights, the readout without mask features and keypoints).
+- Weighting the sensors by what they show is still not shown to help: where the weights follow (the anchor, thermal
+  only) the policy is worse than P9, and the supervision of the weights leaves no weighting behind and makes the
+  policy worse. This is the third round with that result.
+- The gain of P9 over the baseline in the cells without depth needs the readout with the mask features and the
+  keypoints: with the image average and the weights alone it is gone.
+- One seed each, and the seeds of P9 are 0.13 apart. With this round every policy ablation of `ablations.MD` (P0 to
+  P11) has been run on `L0_vis`; P9 stays the best form, above the rgbdt baseline (0.526 against 0.428 with three
+  seeds) and outside the comparison of stage 6.

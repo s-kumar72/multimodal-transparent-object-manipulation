@@ -1,0 +1,62 @@
+{
+ "runs": [
+  "results/hard_scenario/cue_gate/L0_vis_rgbdt_700demos_dp_aux"
+ ],
+ "test_sets": [
+  "j_cells11",
+  "k_cells11_heldout"
+ ],
+ "macro": 0.22575757575757577,
+ "macro_ci": [
+  0.20454545454545459,
+  0.24621212121212122
+ ],
+ "cells": {
+  "0": {
+   "success": 52,
+   "n": 120
+  },
+  "1": {
+   "success": 35,
+   "n": 120
+  },
+  "2": {
+   "success": 48,
+   "n": 120
+  },
+  "3": {
+   "success": 45,
+   "n": 120
+  },
+  "4": {
+   "success": 11,
+   "n": 120
+  },
+  "5": {
+   "success": 25,
+   "n": 120
+  },
+  "6": {
+   "success": 21,
+   "n": 120
+  },
+  "7": {
+   "success": 14,
+   "n": 120
+  },
+  "8": {
+   "success": 18,
+   "n": 120
+  },
+  "9": {
+   "success": 9,
+   "n": 120
+  },
+  "10": {
+   "success": 20,
+   "n": 120
+  }
+ },
+ "success": 298,
+ "n": 1320
+}

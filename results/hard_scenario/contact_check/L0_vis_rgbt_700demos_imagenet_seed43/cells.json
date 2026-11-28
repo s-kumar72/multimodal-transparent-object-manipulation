@@ -1,0 +1,62 @@
+{
+ "runs": [
+  "results/hard_scenario/contact_check/L0_vis_rgbt_700demos_imagenet_seed43"
+ ],
+ "test_sets": [
+  "j_cells11",
+  "k_cells11_heldout"
+ ],
+ "macro": 0.3106060606060606,
+ "macro_ci": [
+  0.2871212121212121,
+  0.33409090909090905
+ ],
+ "cells": {
+  "0": {
+   "success": 65,
+   "n": 120
+  },
+  "1": {
+   "success": 33,
+   "n": 120
+  },
+  "2": {
+   "success": 66,
+   "n": 120
+  },
+  "3": {
+   "success": 50,
+   "n": 120
+  },
+  "4": {
+   "success": 21,
+   "n": 120
+  },
+  "5": {
+   "success": 13,
+   "n": 120
+  },
+  "6": {
+   "success": 48,
+   "n": 120
+  },
+  "7": {
+   "success": 37,
+   "n": 120
+  },
+  "8": {
+   "success": 14,
+   "n": 120
+  },
+  "9": {
+   "success": 22,
+   "n": 120
+  },
+  "10": {
+   "success": 41,
+   "n": 120
+  }
+ },
+ "success": 410,
+ "n": 1320
+}

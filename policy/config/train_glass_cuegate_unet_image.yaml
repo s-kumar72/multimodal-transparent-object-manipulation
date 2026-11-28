@@ -1,0 +1,18 @@
+# Hindsight cue gating on top of train_glass_unet_image: same denoiser, diffusion, optimizer, schedule and image
+# encoders as the plain baselines; the encoder class gates the sensors' features with the cue and the task adds the
+# cue observation. policy/train_cuegate.sh picks the arm with overrides on this file.
+defaults:
+  - train_glass_unet_image
+  - override task: glass_pick_hcue
+  - _self_
+
+name: train_glass_cuegate_unet_image
+exp_name: "cuegate_rgbdt"
+
+policy:
+  obs_encoder:
+    _target_: policy.cue_gate_encoder.CueGateObsEncoder
+    gate: hard               # none | hard | soft | top1
+    gate_thr: 0.5
+    cue: true                # the cue vector in the conditioning
+    images: true             # false: cue and joints only

@@ -1,0 +1,63 @@
+## 1. Success per cell (120 episodes per cell and run; seed 42). Marks: against cue (L0_vis_rgbdt_700demos_hcg_cue) on the same episodes, sign test, p < 0.05
+
+| cell | sensors that show the glass | cue | nogate | mapgate | early | dp_aux | rgbdt ImageNet, seed 42 | best baseline of the cell (3 seeds, frozen) | reference |
+|---|---|---|---|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.950 | 0.858 (below) | 0.950 | 0.883 | 0.433 (below) | 0.775 | 0.781 | 0.900 |
+| 1 | depth+thermal | 0.858 | 0.733 (below) | 0.808 | 0.825 | 0.292 (below) | 0.750 | 0.758 | 0.875 |
+| 2 | rgb+thermal | 0.900 | 0.583 (below) | 0.825 | 0.825 | 0.400 (below) | 0.225 | 0.397 | 0.642 |
+| 3 | rgb+depth | 0.933 | 0.800 (below) | 0.892 | 0.858 (below) | 0.375 (below) | 0.650 | 0.700 | 0.867 |
+| 4 | thermal | 0.642 | 0.267 (below) | 0.442 (below) | 0.700 | 0.092 (below) | 0.192 | 0.189 | 0.608 |
+| 5 | depth | 0.792 | 0.467 (below) | 0.642 (below) | 0.742 | 0.208 (below) | 0.650 | 0.697 | 0.858 |
+| 6 | rgb | 0.883 | 0.267 (below) | 0.683 (below) | 0.742 (below) | 0.175 (below) | 0.158 | 0.256 | 0.492 |
+| 7 | rgb (faint) | 0.842 | 0.292 (below) | 0.675 (below) | 0.708 (below) | 0.117 (below) | 0.092 | 0.181 | 0.333 |
+| 8 | depth (faint) | 0.625 | 0.308 (below) | 0.533 | 0.500 (below) | 0.150 (below) | 0.525 | 0.486 | 0.742 |
+| 9 | thermal (faint) | 0.467 | 0.233 (below) | 0.383 | 0.492 | 0.075 (below) | 0.050 | 0.094 | 0.383 |
+| 10 | all faint | 0.858 | 0.708 (below) | 0.808 | 0.750 (below) | 0.167 (below) | 0.483 | 0.503 | 0.717 |
+| macro average |  | 0.795 | 0.502 (below) | 0.695 (below) | 0.730 (below) | 0.226 (below) | 0.414 | 0.458 | 0.674 |
+
+cue against nogate, all episodes: 0.795 against 0.502, only cue succeeds 446, only nogate 58, p = 3.4e-75 (above)
+  cells that differ with p < 0.05: cell 0 0.950 against 0.858 (p = 0.0034); cell 1 0.858 against 0.733 (p = 0.014); cell 2 0.900 against 0.583 (p = 4.1e-10); cell 3 0.933 against 0.800 (p = 0.0004); cell 4 0.642 against 0.267 (p = 6.1e-09); cell 5 0.792 against 0.467 (p = 1.5e-07); cell 6 0.883 against 0.267 (p = 2e-21); cell 7 0.842 against 0.292 (p = 1.8e-15); cell 8 0.625 against 0.308 (p = 7e-08); cell 9 0.467 against 0.233 (p = 8.4e-06); cell 10 0.858 against 0.708 (p = 0.0014)
+cue against mapgate, all episodes: 0.795 against 0.695, only cue succeeds 230, only mapgate 97, p = 1.3e-13 (above)
+  cells that differ with p < 0.05: cell 4 0.642 against 0.442 (p = 0.00072); cell 5 0.792 against 0.642 (p = 0.0039); cell 6 0.883 against 0.683 (p = 0.00027); cell 7 0.842 against 0.675 (p = 0.0012)
+cue against early, all episodes: 0.795 against 0.730, only cue succeeds 215, only early 128, p = 3.1e-06 (above)
+  cells that differ with p < 0.05: cell 3 0.933 against 0.858 (p = 0.035); cell 6 0.883 against 0.742 (p = 0.0046); cell 7 0.842 against 0.708 (p = 0.011); cell 8 0.625 against 0.500 (p = 0.028); cell 10 0.858 against 0.750 (p = 0.035)
+cue against dp_aux, all episodes: 0.795 against 0.226, only cue succeeds 776, only dp_aux 24, p = 1.7e-195 (above)
+  cells that differ with p < 0.05: cell 0 0.950 against 0.433 (p = 7e-18); cell 1 0.858 against 0.292 (p = 1.1e-18); cell 2 0.900 against 0.400 (p = 5.9e-15); cell 3 0.933 against 0.375 (p = 1.4e-20); cell 4 0.642 against 0.092 (p = 1.3e-16); cell 5 0.792 against 0.208 (p = 1.9e-18); cell 6 0.883 against 0.175 (p = 5.2e-26); cell 7 0.842 against 0.117 (p = 1.3e-26); cell 8 0.625 against 0.150 (p = 3.2e-12); cell 9 0.467 against 0.075 (p = 1.2e-12); cell 10 0.858 against 0.167 (p = 2.1e-25)
+
+## 2. The controls against the baselines, same episodes
+
+nogate against rgbdt ImageNet, all episodes: 0.502 against 0.414, only nogate succeeds 286, only rgbdt ImageNet 170, p = 6.2e-08 (above)
+  cells that differ with p < 0.05: cell 2 0.583 against 0.225 (p = 4.2e-09); cell 3 0.800 against 0.650 (p = 0.0096); cell 5 0.467 against 0.650 (p = 0.0032); cell 6 0.267 against 0.158 (p = 0.029); cell 7 0.292 against 0.092 (p = 0.00012); cell 8 0.308 against 0.525 (p = 0.00054); cell 9 0.233 against 0.050 (p = 0.00011); cell 10 0.708 against 0.483 (p = 9.8e-05)
+  against the seed-42 run of the best baseline of each cell: below with p < 0.05 in [5, 8], above in [2, 7, 9, 10]
+mapgate against rgbdt ImageNet, all episodes: 0.695 against 0.414, only mapgate succeeds 475, only rgbdt ImageNet 104, p = 1.4e-57 (above)
+  cells that differ with p < 0.05: cell 0 0.950 against 0.775 (p = 0.0001); cell 2 0.825 against 0.225 (p = 7.9e-21); cell 3 0.892 against 0.650 (p = 1.5e-05); cell 4 0.442 against 0.192 (p = 7.3e-05); cell 6 0.683 against 0.158 (p = 3.4e-15); cell 7 0.675 against 0.092 (p = 1e-17); cell 9 0.383 against 0.050 (p = 2e-11); cell 10 0.808 against 0.483 (p = 4e-08)
+  against the seed-42 run of the best baseline of each cell: below with p < 0.05 in none, above in [0, 2, 3, 4, 6, 7, 9, 10]
+early against rgbdt ImageNet, all episodes: 0.730 against 0.414, only early succeeds 508, only rgbdt ImageNet 91, p = 3.6e-71 (above)
+  cells that differ with p < 0.05: cell 0 0.883 against 0.775 (p = 0.035); cell 2 0.825 against 0.225 (p = 7.9e-21); cell 3 0.858 against 0.650 (p = 0.00035); cell 4 0.700 against 0.192 (p = 3.9e-14); cell 6 0.742 against 0.158 (p = 2.9e-19); cell 7 0.708 against 0.092 (p = 2e-21); cell 9 0.492 against 0.050 (p = 3.1e-15); cell 10 0.750 against 0.483 (p = 9.1e-06)
+  against the seed-42 run of the best baseline of each cell: below with p < 0.05 in none, above in [0, 2, 3, 4, 6, 7, 9, 10]
+dp_aux against rgbdt ImageNet, all episodes: 0.226 against 0.414, only dp_aux succeeds 120, only rgbdt ImageNet 368, p = 2.5e-30 (below)
+  cells that differ with p < 0.05: cell 0 0.433 against 0.775 (p = 2.8e-07); cell 1 0.292 against 0.750 (p = 1.5e-12); cell 2 0.400 against 0.225 (p = 0.0031); cell 3 0.375 against 0.650 (p = 1.3e-05); cell 4 0.092 against 0.192 (p = 0.029); cell 5 0.208 against 0.650 (p = 1.2e-13); cell 8 0.150 against 0.525 (p = 1.4e-09); cell 10 0.167 against 0.483 (p = 1.6e-09)
+  against the seed-42 run of the best baseline of each cell: below with p < 0.05 in [0, 1, 3, 5, 8, 10], above in none
+
+## Outside the fixed read-out: where the gripper closes (last close of the episode; no close counts as not there)
+
+| cells | policy | success | closes within 4 cm of the glass | within 1.5 cm | success when within 1.5 cm | median distance, cm |
+|---|---|---|---|---|---|---|
+| all cells | cue | 0.795 | 0.950 | 0.871 | 0.897 | 0.56 |
+| all cells | nogate | 0.502 | 0.730 | 0.513 | 0.892 | 1.44 |
+| all cells | mapgate | 0.695 | 0.883 | 0.756 | 0.882 | 0.73 |
+| all cells | early | 0.730 | 0.969 | 0.849 | 0.836 | 0.67 |
+| all cells | dp_aux | 0.226 | 0.529 | 0.198 | 0.760 | 3.72 |
+| all cells | rgbdt ImageNet, seed 42 | 0.414 | 0.575 | 0.364 | 0.940 | 2.98 |
+| depth shows (0, 1, 3, 5, 8, 10) | cue | 0.836 | 0.958 | 0.897 | 0.916 | 0.52 |
+| depth shows (0, 1, 3, 5, 8, 10) | nogate | 0.646 | 0.846 | 0.676 | 0.914 | 0.90 |
+| depth shows (0, 1, 3, 5, 8, 10) | mapgate | 0.772 | 0.928 | 0.829 | 0.903 | 0.67 |
+| depth shows (0, 1, 3, 5, 8, 10) | early | 0.760 | 0.976 | 0.867 | 0.854 | 0.66 |
+| depth shows (0, 1, 3, 5, 8, 10) | dp_aux | 0.271 | 0.599 | 0.239 | 0.791 | 3.19 |
+| depth shows (0, 1, 3, 5, 8, 10) | rgbdt ImageNet, seed 42 | 0.639 | 0.814 | 0.599 | 0.961 | 1.03 |
+| depth blind (2, 4, 6, 7, 9) | cue | 0.747 | 0.940 | 0.840 | 0.871 | 0.62 |
+| depth blind (2, 4, 6, 7, 9) | nogate | 0.328 | 0.592 | 0.317 | 0.837 | 2.98 |
+| depth blind (2, 4, 6, 7, 9) | mapgate | 0.602 | 0.828 | 0.668 | 0.850 | 0.86 |
+| depth blind (2, 4, 6, 7, 9) | early | 0.693 | 0.960 | 0.828 | 0.813 | 0.68 |
+| depth blind (2, 4, 6, 7, 9) | dp_aux | 0.172 | 0.445 | 0.150 | 0.700 | 4.46 |
+| depth blind (2, 4, 6, 7, 9) | rgbdt ImageNet, seed 42 | 0.143 | 0.288 | 0.082 | 0.755 | 6.90 |

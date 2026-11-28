@@ -1,0 +1,37 @@
+<!--Scene of task T2 of the second version of the benchmark (results/hard_scenario/bench_v2/README.md): pick an
+    elongated glass that lies at a random angle and put it down on a rectangular mat in the mat's direction. A
+    separate file, like place_scene.xml, so that every other level loads the model it always did.
+    The glasses are boxes whose long side (body x) is wider than the open gripper, so that only a grasp across the
+    narrow side (body y) holds them; each is at least twice as wide as it is thick to stand safely when let go.
+    They are parked on the floor behind the camera like the other objects (env.py) and one is put on the table.
+    The mat is fixed to the world; env.py sets its position and angle (model.body_pos, body_quat) and temperature on
+    every reset. 17 x 7 cm, 6 mm thick, opaque, a dark rectangle with a light stripe along its long side (the second
+    geom, visual only). Contacts as place_scene.xml: elliptic friction cones with impratio 10.-->
+<mujoco model="gen3_lite transparent scene with distractors, elongated glasses and a mat">
+    <include file="distractor_scene.xml"/>
+
+    <option cone="elliptic" impratio="10"/>
+
+    <worldbody>
+        <body name="slab" pos="3.2 -1.0 0.002">
+            <freejoint/>
+            <geom type="box" size="0.07 0.02 0.04" pos="0 0 0.04" rgba="0.8 0.9 1 0.2" mass="0.15" group="5"/>
+        </body>
+        <body name="bar" pos="3.5 -1.0 0.002">
+            <freejoint/>
+            <geom type="box" size="0.075 0.0175 0.035" pos="0 0 0.035" rgba="0.8 0.9 1 0.2" mass="0.13" group="5"/>
+        </body>
+        <body name="block" pos="3.8 -1.0 0.002">
+            <freejoint/>
+            <geom type="box" size="0.065 0.0225 0.05" pos="0 0 0.05" rgba="0.8 0.9 1 0.2" mass="0.18" group="5"/>
+        </body>
+        <body name="tile" pos="4.1 -1.0 0.002">
+            <freejoint/>
+            <geom type="box" size="0.06 0.02 0.035" pos="0 0 0.035" rgba="0.8 0.9 1 0.2" mass="0.12" group="5"/>
+        </body>
+        <body name="mat" pos="1.6 -3.4 0.02">
+            <geom name="mat" type="box" size="0.085 0.035 0.003" pos="0 0 0.003" rgba="0.12 0.12 0.14 1"/>
+            <geom name="mat_top" type="box" size="0.07 0.022 0.0002" pos="0 0 0.0061" rgba="0.93 0.93 0.9 1" contype="0" conaffinity="0"/>
+        </body>
+    </worldbody>
+</mujoco>

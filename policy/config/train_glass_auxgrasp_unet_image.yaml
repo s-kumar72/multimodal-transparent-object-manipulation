@@ -1,0 +1,21 @@
+# Control for hindsight cue gating: the plain Diffusion Policy of train_glass_unet_image with the hindsight grasp point
+# as an auxiliary target (policy/aux_grasp_policy.py). No cue in the conditioning: the encoder is the plain one
+# (gate none, cue false); the `hcue` key only carries the target to the loss.
+# task.hcue_dir: `python policy/hindsight_cue.py <the same demo set> --out <hcue_dir> --mode label`.
+defaults:
+  - train_glass_cuegate_unet_image
+  - _self_
+
+name: train_glass_auxgrasp_unet_image
+exp_name: "auxgrasp_rgbdt"
+
+task:
+  hcue_dir: data/hcue/L0_vis_700_label
+
+policy:
+  _target_: policy.aux_grasp_policy.AuxGraspDiffusionPolicy
+  aux_weight: 1.0            # weight of the auxiliary loss (mean squared error of the normalized grasp point)
+  aux_hidden: 256
+  obs_encoder:
+    gate: none
+    cue: false

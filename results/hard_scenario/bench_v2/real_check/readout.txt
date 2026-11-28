@@ -1,0 +1,42 @@
+# Check against real sensor images: the glass window against its background window
+
+Real: 3050 pairs, frames {'transpose': 4410, 'trobi': 660}, regions {'transpose': {'pair': 1888, 'nofit': 5397, 'noneg': 1414}, 'trobi': {'pair': 1162, 'nofit': 213, 'noneg': 585}}.
+Simulator: 3000 pairs of 3000 episodes of `V2_place`, regions {'V2_place': {'pair': 3000, 'nofit': 0, 'noneg': 0, 'noregion': 0}}.
+
+## rgb (bins: grey levels)
+
+| bin | real: pairs | real: AUC (95%) | simulator: pairs | simulator: AUC (95%) | simulator - real (95%) | same difficulty? | simulator's network on real | real network on the simulator | does the look transfer? |
+|---|---|---|---|---|---|---|---|---|---|
+| below 3 | 101 | 0.74 (0.69 to 0.89) | 1162 | 0.99 (0.99 to 1.00) | +0.25 (0.10 to 0.30) | easier in the simulator | 0.60 | 0.79 | does not transfer |
+| 3 to 10 | 199 | 0.72 (0.64 to 0.86) | 619 | 1.00 (1.00 to 1.00) | +0.28 (0.14 to 0.36) | easier in the simulator | 0.61 | 0.80 | does not transfer |
+| 10 to 20 | 350 | 0.83 (0.73 to 0.93) | 217 | 1.00 (1.00 to 1.00) | +0.17 (0.07 to 0.27) | easier in the simulator | 0.54 | 0.75 | does not transfer |
+| 20 to 45 | 540 | 0.78 (0.68 to 0.91) | 875 | 1.00 (1.00 to 1.00) | +0.22 (0.09 to 0.32) | easier in the simulator | 0.59 | 0.77 | does not transfer |
+| above 45 | 698 | 0.91 (0.73 to 0.99) | 127 | 1.00 (1.00 to 1.00) | +0.09 (0.01 to 0.27) | easier in the simulator | 0.72 | 0.87 | transfers |
+| all | 1888 | 0.84 (0.74 to 0.93) | 3000 | 1.00 (1.00 to 1.00) | +0.15 (0.07 to 0.25) | - | 0.62 | 0.79 | - |
+
+The floor of the test (the simulator's blind state, bin "below 3"): AUC 0.99 (0.99 to 1.00) on 1162 pairs; 0.5 if the windows give nothing away without the glass.
+
+## depth (bins: share of pixels missing)
+
+| bin | real: pairs | real: AUC (95%) | simulator: pairs | simulator: AUC (95%) | simulator - real (95%) | same difficulty? | simulator's network on real | real network on the simulator | does the look transfer? |
+|---|---|---|---|---|---|---|---|---|---|
+| hole (0.5 or more) | 1175 | 0.99 (0.96 to 1.00) | 1412 | 1.00 (1.00 to 1.00) | +0.01 (-0.00 to 0.04) | the same | 0.91 | 0.81 | transfers |
+| partial (0.05 to 0.5) | 42 | 0.83 (0.72 to 0.99) | 423 | 1.00 (1.00 to 1.00) | +0.17 (0.01 to 0.28) | not judged (fewer than 50 pairs) | 0.54 | 0.39 | not judged |
+| see-through (below 0.05) | 1833 | 0.97 (0.95 to 0.99) | 1165 | 0.99 (0.98 to 0.99) | +0.02 (0.00 to 0.03) | the same | 0.14 | 0.39 | does not transfer |
+| all | 3050 | 0.98 (0.96 to 0.99) | 3000 | 0.99 (0.99 to 1.00) | +0.02 (0.00 to 0.04) | - | 0.44 | 0.59 | - |
+
+The floor of the test (the simulator's blind state, bin "see-through (below 0.05)"): AUC 0.99 (0.98 to 0.99) on 1165 pairs; 0.5 if the windows give nothing away without the glass.
+
+## thermal (bins: noise units)
+
+| bin | real: pairs | real: AUC (95%) | simulator: pairs | simulator: AUC (95%) | simulator - real (95%) | same difficulty? | simulator's network on real | real network on the simulator | does the look transfer? |
+|---|---|---|---|---|---|---|---|---|---|
+| below 3 | 35 | 0.93 (0.83 to 1.00) | 1015 | 0.95 (0.94 to 0.96) | +0.02 (-0.04 to 0.12) | not judged (fewer than 50 pairs) | 0.78 | 0.51 | not judged |
+| 3 to 10 | 79 | 0.93 (0.87 to 0.99) | 548 | 0.98 (0.97 to 0.98) | +0.04 (-0.01 to 0.11) | the same | 0.76 | 0.58 | transfers |
+| 10 to 30 | 239 | 0.98 (0.95 to 1.00) | 380 | 0.99 (0.98 to 0.99) | +0.01 (-0.01 to 0.04) | the same | 0.69 | 0.64 | does not transfer |
+| 30 to 103 | 1361 | 0.99 (0.99 to 1.00) | 1017 | 0.99 (0.99 to 1.00) | +0.00 (-0.01 to 0.01) | the same | 0.68 | 0.85 | does not transfer |
+| above 103 | 128 | 1.00 (0.97 to 1.00) | 40 | 0.98 (0.95 to 1.00) | -0.02 (-0.05 to 0.01) | not judged (fewer than 50 pairs) | 0.12 | 0.82 | does not transfer |
+| all | 1842 | 0.99 (0.97 to 1.00) | 3000 | 0.98 (0.97 to 0.98) | -0.01 (-0.02 to 0.00) | - | 0.63 | 0.66 | - |
+
+The floor of the test (the simulator's blind state, bin "below 3"): AUC 0.95 (0.94 to 0.96) on 1015 pairs; 0.5 if the windows give nothing away without the glass.
+

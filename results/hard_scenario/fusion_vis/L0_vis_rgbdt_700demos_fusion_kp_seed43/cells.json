@@ -1,0 +1,62 @@
+{
+ "runs": [
+  "results/hard_scenario/fusion_vis/L0_vis_rgbdt_700demos_fusion_kp_seed43"
+ ],
+ "test_sets": [
+  "j_cells11",
+  "k_cells11_heldout"
+ ],
+ "macro": 0.4575757575757576,
+ "macro_ci": [
+  0.4318181818181818,
+  0.4840909090909091
+ ],
+ "cells": {
+  "0": {
+   "success": 73,
+   "n": 120
+  },
+  "1": {
+   "success": 62,
+   "n": 120
+  },
+  "2": {
+   "success": 53,
+   "n": 120
+  },
+  "3": {
+   "success": 70,
+   "n": 120
+  },
+  "4": {
+   "success": 42,
+   "n": 120
+  },
+  "5": {
+   "success": 64,
+   "n": 120
+  },
+  "6": {
+   "success": 41,
+   "n": 120
+  },
+  "7": {
+   "success": 42,
+   "n": 120
+  },
+  "8": {
+   "success": 59,
+   "n": 120
+  },
+  "9": {
+   "success": 33,
+   "n": 120
+  },
+  "10": {
+   "success": 65,
+   "n": 120
+  }
+ },
+ "success": 604,
+ "n": 1320
+}

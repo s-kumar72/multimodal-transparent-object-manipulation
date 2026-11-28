@@ -1,0 +1,39 @@
+## 3a, step 1: share of episodes with the cue within 1.5 cm of the glass, cues fitted on the 700 demos, test sets l_cells15_new and m_cells15_new_heldout (80 episodes per cell)
+
+| cell | rgb / depth / thermal | method | one network | no gate | gate on map numbers |
+|---|---|---|---|---|---|
+| 0 | faint / shows / shows | 0.963 | 0.963 | 0.963 | 0.950 |
+| 1 | shows / faint / shows | 0.988 | 0.925 | 0.988 | 0.975 |
+| 2 | shows / shows / faint | 0.988 | 0.963 | 0.975 | 0.975 |
+| 3 | faint / shows / blind | 0.975 | 0.963 | 0.912 | 0.975 |
+| 4 | faint / blind / shows | 0.950 | 0.925 | 0.812 (below) | 0.975 |
+| 5 | shows / faint / blind | 0.975 | 0.925 | 0.912 | 0.963 |
+| 6 | blind / faint / shows | 0.863 | 0.912 | 0.762 | 0.725 (below) |
+| 7 | shows / blind / faint | 0.963 | 0.875 (below) | 0.762 (below) | 0.925 |
+| 8 | blind / shows / faint | 0.963 | 0.900 | 0.863 (below) | 0.900 |
+| 9 | faint / faint / shows | 0.988 | 0.988 | 0.988 | 0.988 |
+| 10 | faint / shows / faint | 0.963 | 0.975 | 0.963 | 1.000 |
+| 11 | shows / faint / faint | 0.988 | 0.950 | 0.975 | 0.975 |
+| 12 | faint / faint / blind | 0.938 | 0.963 | 0.887 | 0.975 |
+| 13 | faint / blind / faint | 0.938 | 0.963 | 0.838 (below) | 0.938 |
+| 14 | blind / faint / faint | 0.900 | 0.825 | 0.762 (below) | 0.750 (below) |
+| all 15 cells |  | 0.956 | 0.934 (below) | 0.891 (below) | 0.932 (below) |
+| a sensor shows the glass fully (0-11) |  | 0.964 | 0.939 (below) | 0.906 (below) | 0.944 (below) |
+| none does (12-14) |  | 0.925 | 0.917 | 0.829 (below) | 0.887 |
+
+Marks: against method on the same episodes, p < 0.05 (cue right).
+
+method against one network, all 15 cells: 0.956 against 0.934, only method is right in 57, only one network 31, p = 0.0073 (above)
+method against one network, a sensor shows the glass fully (0-11): 0.964 against 0.939, only method is right in 42, only one network 18, p = 0.0027 (above)
+method against one network, none does (12-14): 0.925 against 0.917, only method is right in 15, only one network 13, p = 0.85
+  cells that differ with p < 0.05: cell 7 0.963 against 0.875 (p = 0.016)
+method against no gate, all 15 cells: 0.956 against 0.891, only method is right in 90, only no gate 12, p = 6.1e-16 (above)
+method against no gate, a sensor shows the glass fully (0-11): 0.964 against 0.906, only method is right in 61, only no gate 6, p = 1.5e-12 (above)
+method against no gate, none does (12-14): 0.925 against 0.829, only method is right in 29, only no gate 6, p = 0.00012 (above)
+  cells that differ with p < 0.05: cell 4 0.950 against 0.812 (p = 0.0034); cell 7 0.963 against 0.762 (p = 3.1e-05); cell 8 0.963 against 0.863 (p = 0.0078); cell 13 0.938 against 0.838 (p = 0.039); cell 14 0.900 against 0.762 (p = 0.0074)
+method against gate on map numbers, all 15 cells: 0.956 against 0.932, only method is right in 56, only gate on map numbers 28, p = 0.003 (above)
+method against gate on map numbers, a sensor shows the glass fully (0-11): 0.964 against 0.944, only method is right in 36, only gate on map numbers 17, p = 0.013 (above)
+method against gate on map numbers, none does (12-14): 0.925 against 0.887, only method is right in 20, only gate on map numbers 11, p = 0.15
+  cells that differ with p < 0.05: cell 6 0.863 against 0.725 (p = 0.013); cell 14 0.900 against 0.750 (p = 0.0075)
+
+For orientation, the same cues on the eleven training cells (j_cells11 and k_cells11_heldout): method 0.907, one network 0.883, no gate 0.614, gate on map numbers 0.781

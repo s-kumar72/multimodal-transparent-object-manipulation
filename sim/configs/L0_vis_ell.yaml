@@ -1,0 +1,8 @@
+# L0_vis with the contact model of the pick-and-place level (elliptic friction cones, impratio 10; sim/config.py,
+# `contacts`). Everything else is L0_vis, seed for seed. Used to evaluate policies that were trained on L0_vis: a check
+# of how much of the pick's failures is the contact model (results/hard_scenario/contact_check/). No demos are
+# collected on it. meta/ep_level id 37.
+base: L0_vis.yaml
+name: L0_vis_ell
+level: 37
+contacts: elliptic

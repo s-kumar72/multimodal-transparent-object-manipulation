@@ -1,0 +1,14 @@
+# Self-attention fusion of the sensors (the fusion of Li et al., CoRL 2022, MulSA) in front of Diffusion Policy: a
+# baseline from the literature. Everything but the encoder class is train_glass_unet_image (policy/attn_fusion_encoder.py).
+defaults:
+  - train_glass_unet_image
+  - _self_
+
+name: train_glass_mulsa_unet_image
+exp_name: "mulsa_rgbdt"
+
+policy:
+  obs_encoder:
+    _target_: policy.attn_fusion_encoder.SelfAttnFusionObsEncoder
+    n_obs_steps: ${n_obs_steps}
+    num_heads: 8

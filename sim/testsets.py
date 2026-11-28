@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 from config import _load_yaml, _merge, make_config
-from env import OBJECT_NAMES
+from env import glass_names
 
 MANIFEST = Path(__file__).parent / "configs" / "manifest.json"
 
@@ -21,4 +21,5 @@ def test_set(level, name, n=None, seed_start=None):
     d = _merge(_load_yaml(m["levels"][level]), t.get("overrides", {}))
     cfg = make_config(d, split=t["split"], heldout=t["heldout"])
     start = m["seed_start"] if seed_start is None else seed_start
-    return cfg, list(range(start, start + (n or m["n"]))), t.get("objects", OBJECT_NAMES)
+    # the glasses of the config: the five, those of task "align", or the unseen shapes of a test set
+    return cfg, list(range(start, start + (n or m["n"]))), t.get("objects", glass_names(cfg))

@@ -21,7 +21,7 @@ import numpy as np
 import zarr
 
 from config import THERMAL_NAMES, cell_pattern, config_dict, load_config
-from env import BACKGROUNDS, EXTRA_NAMES, LIGHTING_NAMES, LIQUID_KINDS, GlassPickEnv, OBJECT_NAMES
+from env import BACKGROUNDS, EXTRA_NAMES, GLASS_IDS, LIGHTING_NAMES, LIQUID_KINDS, GlassPickEnv, OBJECT_NAMES, glass_names
 from teacher import ScriptedTeacher
 
 KEYS = ["rgb", "depth", "thermal", "thermal_raw", "joints", "action"]
@@ -63,17 +63,20 @@ if __name__ == "__main__":
     p.add_argument("--out", default="data/sim_demos.zarr")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--workers", type=int, default=1)
-    p.add_argument("--obj", choices=OBJECT_NAMES, default=None, help="collect this object only")
+    p.add_argument("--obj", choices=GLASS_IDS, default=None, help="collect this object only")
     p.add_argument("--config", default=None, help="scene YAML (default: main's scene)")
     p.add_argument("--split", default="train", choices=["train", "test"])
     p.add_argument("--cells", type=int, nargs="+", default=None,
                    help="visibility cells to keep (levels with cells): seeds of other cells are skipped, not run")
     args = p.parse_args()
     cfg = load_config(args.config, split=args.split)
+    # the glasses an episode can have / every glass of the scene, as GlassPickEnv has them (task "align" adds its own)
+    NAMES = glass_names(cfg)
+    ALL_NAMES = OBJECT_NAMES if NAMES == OBJECT_NAMES else GLASS_IDS   # ids of the records (the five first)
 
     seeds = itertools.count(args.seed)
     if args.cells is not None:      # the cell of a seed, as GlassPickEnv deals it
-        pat = cell_pattern(cfg.cells, len(OBJECT_NAMES))
+        pat = cell_pattern(cfg.cells, len(NAMES))
         seeds = (s for s in seeds if pat[s % len(pat)] in args.cells)
     # Results come back in seed order, so the saved dataset is the same for any number of workers.
     # macOS cannot fork a process that will open a GL context, so workers are spawned there.
@@ -108,7 +111,7 @@ if __name__ == "__main__":
 
         total += len(ep["action"])
         ends.append(total)
-        objs.append(OBJECT_NAMES.index(obj))
+        objs.append(ALL_NAMES.index(obj))
         infos.append(info)
         saved += 1
         print(f"demo {saved}/{args.n} ({obj}): {len(ep['action'])} steps ({time.time() - t0:.0f}s)", flush=True)
@@ -119,9 +122,9 @@ if __name__ == "__main__":
         print(f"only {saved}/{args.n} demos succeeded")
     meta.array("episode_ends", np.array(ends, dtype=np.int64))
     meta.array("object_id", np.array(objs, dtype=np.int64))
-    meta.attrs["object_names"] = OBJECT_NAMES
+    meta.attrs["object_names"] = ALL_NAMES
     save_meta(meta, infos, cfg)
-    for obj in OBJECT_NAMES:
+    for obj in ALL_NAMES:
         if tried[obj]:
             print(f"teacher success {obj:10s} {tried[obj] - failed[obj]}/{tried[obj]}")
     if pool is not None:

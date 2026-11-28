@@ -1,0 +1,62 @@
+{
+ "runs": [
+  "results/hard_scenario/contact_check/L0_vis_rgbdt_700demos_mulsa"
+ ],
+ "test_sets": [
+  "j_cells11",
+  "k_cells11_heldout"
+ ],
+ "macro": 0.5643939393939394,
+ "macro_ci": [
+  0.5424242424242425,
+  0.5856060606060606
+ ],
+ "cells": {
+  "0": {
+   "success": 108,
+   "n": 120
+  },
+  "1": {
+   "success": 105,
+   "n": 120
+  },
+  "2": {
+   "success": 51,
+   "n": 120
+  },
+  "3": {
+   "success": 103,
+   "n": 120
+  },
+  "4": {
+   "success": 23,
+   "n": 120
+  },
+  "5": {
+   "success": 104,
+   "n": 120
+  },
+  "6": {
+   "success": 29,
+   "n": 120
+  },
+  "7": {
+   "success": 29,
+   "n": 120
+  },
+  "8": {
+   "success": 89,
+   "n": 120
+  },
+  "9": {
+   "success": 20,
+   "n": 120
+  },
+  "10": {
+   "success": 84,
+   "n": 120
+  }
+ },
+ "success": 745,
+ "n": 1320
+}

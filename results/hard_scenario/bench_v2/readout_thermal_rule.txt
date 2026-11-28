@@ -1,0 +1,21 @@
+## V2_place, seed 42, 1320 episodes per run: the rule of the thermal states
+
+| cell | sensors that show the glass | plain rgbdt | plain rgbd | `cue` | one network | reference (plain rgbt, 430 demos) |
+|---|---|---|---|---|---|---|
+| 0 | rgb+depth+thermal | 0.975 | 0.967 | 0.975 | 1.000 | 0.133 |
+| 1 | depth+thermal | 0.983 | 0.983 | 0.950 | 0.967 | 0.158 |
+| 2 | rgb+thermal | 0.108 | 0.092 | 0.900 | 0.808 | 0.167 |
+| 3 | rgb+depth (no demos of this cell in the reference) | 0.992 | 0.975 | 0.967 | 1.000 | 0.183 |
+| 4 | thermal | 0.058 | 0.067 | 0.458 | 0.217 | 0.142 |
+| 5 | depth (no demos of this cell in the reference) | 0.983 | 0.992 | 0.950 | 0.983 | 0.108 |
+| 6 | rgb (no demos of this cell in the reference) | 0.133 | 0.058 | 0.892 | 0.825 | 0.108 |
+| 7 | rgb (faint) (no demos of this cell in the reference) | 0.067 | 0.075 | 0.842 | 0.733 | 0.167 |
+| 8 | depth (faint) (no demos of this cell in the reference) | 0.633 | 0.617 | 0.617 | 0.642 | 0.083 |
+| 9 | thermal (faint) | 0.092 | 0.067 | 0.158 | 0.067 | 0.108 |
+| 10 | all three (faint) | 0.633 | 0.658 | 0.917 | 0.892 | 0.100 |
+| macro average | | 0.514 | 0.505 | 0.784 | 0.739 | 0.133 |
+| glass picked | | 0.570 | 0.534 | 0.840 | 0.792 | 0.197 |
+
+Cells below 0.3 in every finished pilot run (4 of 4): [9]
+  cell 9 (thermal (faint)): best pilot run 0.158, reference 0.108
+Verdict: not solvable: [9], cells in which thermal is faint. Point 3: thermal "faint" becomes the real p10 to p25 (10 to 26 noise units) and "shows" the real p25 to p90 (26 to 103), the level file is fitted to these with sim/measure_visibility.py, and the pilot runs of the level are repeated once.
