@@ -167,6 +167,7 @@ Seed 42, the same episodes; the arm `cue` with one part changed
 | training cells | `L0_vis` | 0.797 | 0.722 | holds over the seeds |
 | training cells | `L0_vis_ell` | 0.915 | 0.909 | does not hold (p = 0.24) |
 | 15 new combinations | `L0_vis` | 0.854 | 0.779 | holds over the seeds |
+| 15 new combinations | `L0_vis_ell` | 0.961 | 0.945 | holds over the seeds (11/28) |
 | trained without cells 4 to 9, the cells left out | `L0_vis` | 0.675 | 0.554 | holds over the seeds |
 | trained without cells 4 to 9, the cells left out | `L0_vis_ell` | 0.829 | 0.740 | holds over the seeds |
 
@@ -183,12 +184,13 @@ What follows from this:
   needed to form that point (0.914 against 0.655 without one), it has to look at the image (0.825 for a gate on map
   numbers), and the same label as an auxiliary loss does not do it.
 - **Not claimed:** that maps per sensor with an explicit gate are better than one network over all sensors on the
-  conditions it was trained on. On the level of the paper's table the two are level, and the differences on `L0_vis`
-  rest on one fit of the cue networks.
+  conditions it was trained on. On the level of the paper's table the two are level there, and the differences on
+  `L0_vis` and on the new combinations (1.6 points on `L0_vis_ell`) rest on one fit of the cue networks.
 - **Where the explicit gate is consistently ahead:** when two sensors are blind at the same time for the first time
   (the cells left out of training), in every cue fit and in the policies on both levels.
-- Gating the image features adds nothing once the cue is in the conditioning (`full` is not above `cue`).
-- Still running: two more training sets with cells left out and the new combinations on `L0_vis_ell` (round 5), the
+- Gating the image features adds nothing once the cue is in the conditioning (`full` is not above `cue`, and below
+  it on the new combinations of `L0_vis_ell`: 0.948 against 0.965).
+- Still running: two more training sets with cells left out (round 5), the
   success against the number of demos (6b), the true grasp point as an upper reference (6c).
 
 ## 6. Baselines from the literature
@@ -345,7 +347,7 @@ episodes, both in 0.143). The method has not been run on T3: its cue for two tar
 
 ## 9. What is running and what comes next
 
-- **Remaining runs of the first version** (in the queue, or finished and waiting for their read-out): the 15 new combinations evaluated on `L0_vis_ell`; two more
+- **Remaining runs of the first version** (in the queue): two more
   training sets with cells left out (`nopair`, `nofaint`); seeds 43 and 44 on the place level; a second policy (ACT
   action head with and without the cue, [`second_policy/README.md`](second_policy/README.md)); the true grasp point
   in the cue as a reference; success against the number of demos (350 and 140).
