@@ -1308,12 +1308,21 @@ the table above; the fits of T2 (`data/runs/v2_freeze_fits2.sh`) run beside a ru
 the fourth is back (about 11/29 07:00 KST) the twelve runs end about 11/30 in the morning; `policy/readout_v2_tune.py`
 is run then and part A 2 and 3 are put in the queue with the chosen settings.
 
+*11/28 17:16 KST: the fits of T2 are made* (`data/hcue/V2b_align_630`, `_early`, `_release`; `data/hang/V2b_align_630`,
+`_early`, `_release`; all nine steps exit 0). Their reports and those of T1 are in `fits/<name>/` (`cue_report.txt`:
+out of fold on the training demos; `angle_report.txt`; `env_<test set>.txt`: the cue at reset on the test scenes,
+`policy/check_cue_env.py`). On the test scenes of T2 the grasp cue is within 1.5 cm of the glass in 0.81 (`j_cells11`)
+and 0.80 (`k_cells11_heldout`) of 660 episodes each, that of the one network in 0.81 and 0.81; in cell 9 in 0.25 and
+0.20, and 0.10 and 0.18. The place cue (the saved rule, `consensus`) is within 1.5 px in 1.00 of the training demos out of fold. The angle of the
+grasp is within 15 degrees in 0.94 of them (cell 8: 0.71, cell 9: 0.67), that of the one network in 0.92, that of the
+place in 1.00. These are descriptions of the fits; no run depends on a threshold on them.
+
 ## Files
 
 `real_data/glass_visibility.py` (real sensors), `sim/measure_visibility.py` (the simulator, same functions),
 `real_data/findability.py` (sections 11 and 12: the checks against real images), `real_check/` (their read-outs).
 `sim/glass_optics.py` (section 12: the optical colour model of the glass, off by default), `sim/configs/V2_place_opt.yaml`.
-`measurements/` (their outputs of 11/26). `sim/configs/V2_place.yaml`, `sim/configs/V2_place_warm.yaml` (draft levels).
+`measurements/` (their outputs of 11/26). `fits/` (the reports of the cue and angle fits of the frozen benchmark). `sim/configs/V2_place.yaml`, `sim/configs/V2_place_warm.yaml` (draft levels).
 T2: `sim/assets/gen3_lite/align_scene.xml`, `sim/configs/V2_align.yaml`, `sim/env.py` (`ALIGN_OBJECTS`, `_mat_target`,
 `placed`), `sim/teacher.py` (`_plan_align`).
 Unseen objects: `sim/assets/gen3_lite/place_unseen_scene.xml`, test set `u_cells11_unseen`. T3:
