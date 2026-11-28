@@ -859,6 +859,44 @@ the same seed of the other on the same episodes):
 Not in this round: seeds of the other controls (gate on map numbers, no gate, auxiliary loss), of `full` on the 400
 demos, and the form `cue` or `full` (decided after the tasks are extended, as before).
 
+### Results of round 4 (11/26 02:30 KST; seeds 42, 43 and 44 of `cue` and of the one network)
+
+The eight runs trained and were evaluated as listed (11/25 13:41 to 11/26 02:28 KST); none failed. The read-out is
+[`readout_round4.txt`](readout_round4.txt) (`python policy/readout_round4.py`); the same runs on `L0_vis_ell` are in
+[`../contact_check/readout_round4_ell.txt`](../contact_check/readout_round4_ell.txt) (`--root
+results/hard_scenario/contact_check`; item 2 of round 3 of [`../contact_check/README.md`](../contact_check/README.md)).
+`cue` / one network, mean over the three seeds (standard deviation), pooled pairs and the verdict of item 4:
+
+| setting | level | `cue` | one network | only `cue` / only the one network | p | the difference |
+|---|---|---|---|---|---|---|
+| 1. training cells | `L0_vis` | 0.797 (0.004) | 0.722 (0.006) | 690 / 393 | 1.4e-19 | holds over the seeds |
+| | `L0_vis_ell` | 0.915 (0.002) | 0.909 (0.006) | 239 / 213 | 0.24 | does not hold |
+| 2. new combinations | `L0_vis` | 0.854 (0.006) | 0.779 (0.011) | 539 / 270 | 1.9e-21 | holds over the seeds |
+| | `L0_vis_ell` | | | | | evaluated in round 5 |
+| 3. trained without cells 4 to 9: the cells left out | `L0_vis` | 0.675 (0.003) | 0.554 (0.004) | 522 / 261 | 6.6e-21 | holds over the seeds |
+| | `L0_vis_ell` | 0.829 (0.004) | 0.740 (0.009) | 384 / 192 | 9.5e-16 | holds over the seeds |
+| 3. the cells of that training set | `L0_vis` | 0.879 (0.004) | 0.872 (0.003) | 146 / 133 | 0.47 | does not hold |
+| | `L0_vis_ell` | 0.956 (0.003) | 0.954 (0.003) | 50 / 46 | 0.76 | does not hold |
+
+- **The seeds agree with seed 42 in every setting.** Each arm varies by 0.002 to 0.011 over the seeds; no verdict of
+  seed 42 changes.
+- **On `L0_vis` the difference holds in the three settings in which it was found.** Per cell on the training cells
+  `cue` is above the one network in nine cells and below in none (not separated: 4 and 9, thermal alone).
+- **On `L0_vis_ell` it holds where the cells were left out of training and not on the training cells.** There the
+  two are 0.915 and 0.909. Per cell `cue` is above in four (0, 3, 7, 8) and the one network in one (4, thermal alone:
+  0.836 against 0.931).
+- So on the level of the paper's table, one network over all sensors forms the cue as well as the maps per sensor
+  with the gate for the visibility conditions it was trained on; the maps per sensor with the gate are ahead (0.83
+  against 0.74) when two sensors are blind at once for the first time. What the two new training sets and the new
+  combinations on `L0_vis_ell` add to this is round 5.
+
+**Next to the read-out: `cue` with three seeds under rules 4 and 5 of Stage 6** (the script of the three-seed read-out
+of [`../lit_base/README.md`](../lit_base/README.md), with the plain baselines only: the seeds of the baselines from the
+literature have not finished). On `L0_vis`: 0.797 (lowest seed 0.794, highest 0.802), above its best baseline in all
+eleven cells. On `L0_vis_ell`: 0.915 (0.914 to 0.917) against 0.587 for the highest baseline; no cell below its best
+baseline, nine above, two not separated (1 and 5). "Better in nearly every case" holds for `cue` on both levels, as
+it does for `full` (0.792 and 0.904).
+
 ## Round 5: two more training sets with cells left out, and the new combinations on `L0_vis_ell` (decision of the user 11/26; listed 11/26 00:53 KST, before anything of it is fitted, trained or evaluated)
 
 **Why.** On `L0_vis_ell`, the level of the paper's table, `cue` and the one-network control are level in the cells
@@ -950,6 +988,154 @@ subset, no cue, no run.
 **Not in this round.** Other left-out sets; the arm `full` and the other controls on the new sets; seeds of the plain
 baselines on the subsets; fitting the cue networks with several seeds (the seeds here change the policy only).
 
+### Results of step 1 of round 5: the cue alone (11/26 02:07 KST; no policy involved)
+
+The two subsets were made and the four cues fitted and checked in the evaluation env (11/26 00:53 to 02:06 KST;
+`data/hcue/round5_prepare.log`). Records: [`perception/round5_cue_leaveout.txt`](perception/round5_cue_leaveout.txt)
+(`python policy/readout_leaveout_cue.py`, which prints `nosingle` again next to them), the fits in
+`perception/<nopair | nofaint>_<verified_gate | one_network>.txt`. Share of episodes with the cue within 1.5 cm of the
+glass, 120 episodes per cell; the method against the one network on the same episodes.
+
+| training set | cells | method | one network | only the method right / only the one network | p | |
+|---|---|---|---|---|---|---|
+| `nosingle` (round 3b) | left out (4 to 9) | 0.768 | 0.640 | 174 / 82 | 9e-09 | the method above |
+| | of the training set | 0.933 | 0.952 | 13 / 24 | 0.099 | |
+| `nopair` | left out (1, 2, 3) | 0.942 | 0.936 | 16 / 14 | 0.86 | |
+| | of the training set | 0.828 | 0.870 | 63 / 103 | 0.0024 | the one network above |
+| `nofaint` | left out (7 to 10) | 0.504 | 0.692 | 37 / 127 | 9.5e-13 | the one network above |
+| | of the training set | 0.931 | 0.954 | 21 / 40 | 0.02 | the one network above |
+
+What leaving the cells out costs the cue, in the cells left out (against the same cue fitted on all 700 demos):
+`nopair` 0.958 to 0.942 (method) and 0.950 to 0.936 (one network), neither significant; `nofaint` 0.840 to 0.504
+(method) and 0.790 to 0.692 (one network).
+
+- **`nopair`: no difference where it was looked for.** With one sensor blind and two showing the glass fully, both
+  cues are as good as when those cells are in the training set. In the cells of the training set the one network is
+  above (cells 4, 5 and 9: one sensor alone).
+- **`nofaint`: the one network is above, in all four cells left out** (7: 0.600 / 0.800, 8: 0.500 / 0.692, 9: 0.225 /
+  0.375, 10: 0.692 / 0.900). The gate of the method still turns to the sensor that shows the glass faintly in cells 7,
+  8 and 10 (median gate 1.00 for it on `j_cells11`) and finds the glass coarsely (within 4 cm in 0.93, 0.90 and 0.98
+  of the episodes) but not within 1.5 cm; in cell 9 the faint thermal image is trusted in few episodes (median gate
+  0.24, against 0.99 when the faint cells are in the training set). The one network, which sees all sensors at once,
+  loses less.
+- So on the cue alone the advantage of the maps per sensor with the gate is that of `nosingle` (two sensors blind
+  at once for the first time) and is not found in the two new sets; in the one with a signal weaker than any seen it
+  is the other way round. These are cues, not policies: step 2 runs as listed and says whether the success follows.
+
+## Round 6: three additions for the paper (decision of the user 11/26; listed 11/26 05:34 KST, before anything of it is fitted, trained or evaluated)
+
+Additions only; nothing listed before is changed.
+
+### 6a. The cue over several seeds of its fit (no policy)
+
+**Why.** The seeds of rounds 4 and 5 change the policy. The cue networks of a training set were fitted once, and the
+fit is the same every time (its functions seed themselves). So "the cue of the method against the cue of one network"
+rests on one fit of each.
+
+**Fits.** For each of the four training sets (all 700 demos, `nosingle`, `nopair`, `nofaint`) and each of the two
+cues (the method; one network), four more fits, k = 1 to 4: `python policy/hindsight_cue_fitseed.py <k> <set> --eval
+results/data/sim_demos_L0_vis_700_seed700.zarr --out data/hcue/<folder>[_early]_fit<k> [--mode early]` (every seed of
+the fit shifted by 1000 k: other initial weights, batch order and augmentation; the folds are those of the default
+fit, which is k = 0 and the fit the policies were trained with). 32 fits. Each is checked in the evaluation env on
+`j_cells11` and `k_cells11_heldout` (`policy/check_cue_env.py --save`), those of the 700 demos also on the 15 new
+combinations.
+
+**Read-out, fixed now** (`python policy/readout_cue_fitseeds.py > perception/round6_cue_fitseeds.txt`; tested on fit
+0). Share of episodes with the cue within 1.5 cm of the glass; the method against the one network of the same fit
+number on the same episodes (sign test); per training set in the cells left out and in the cells of the training set
+(all eleven cells and the new combinations for the 700 demos). The difference **holds over the fits** when one of the
+two is above in each of the five fits and the pooled test is significant (p < 0.05; said with which of the two is
+above), **does not hold** when the pooled test is not significant, and is **mixed** otherwise. No policy is trained
+on fits 1 to 4: this says whether the difference between the cues is that of the two designs; the policies stay those
+of fit 0.
+
+### 6b. Success against the number of demos
+
+**Training sets.** The first half and the first fifth of every cell's demos of the 700 (`python
+policy/subset_demos_frac.py results/data/sim_demos_L0_vis_700.zarr results/data/sim_demos_L0_vis_<350_half |
+140_fifth>.zarr --den <2 | 5>`): 350 demos (70, 3 x 35, 7 x 25) and 140 demos (28, 3 x 14, 7 x 10), the cell weights of
+the level. The cue of the method is fitted on each (the default fit; `data/hcue/L0_vis_350_half`,
+`data/hcue/L0_vis_140_fifth`) and checked in the env, as in round 5.
+
+**Runs** (12; protocol of the benchmark, 101 epochs, last checkpoint, 660 episodes on each of `j_cells11` and
+`k_cells11_heldout`, then `bash policy/eval_contacts.sh <run>`): `L0_vis_rgbdt_<350demos_half | 140demos_fifth>_hcg_cue`
+and `..._imagenet` (the plain rgbdt baseline), each with seeds 42, 43 and 44. Commands as in round 5 with
+`ZARR=results/data/sim_demos_L0_vis_<n>_<set>.zarr TAG=<set>_<hcg_cue | imagenet>[_seed<seed>]` and, for `cue`,
+`task.hcue_dir=data/hcue/L0_vis_<n>_<set>`.
+
+**Read-out, fixed now** (`python policy/readout_demo_curve.py > readout_demo_curve.txt`; tested on the 700 demos). On
+`L0_vis` and `L0_vis_ell`, with the runs on all 700 demos as the third point: the macro average per seed, mean and
+standard deviation per number of demos; `cue` against the plain baseline at each number (same seed, pooled, sign test);
+and `cue` on 140 and on 350 demos against the plain baseline on all 700.
+
+### 6c. The true grasp point in the cue (a reference that reads the simulator)
+
+Not a method and not a baseline under the comparison rules: it reads the glass's position from the simulator. It says
+how much of what the method still fails is the point of its cue.
+
+- *The policies of the method with the true point.* The three seeds of `cue` (`L0_vis_rgbdt_700demos_hcg_cue`,
+  `..._seed43`, `..._seed44`), evaluated again with the first five entries of the cue (point and pixel) replaced by
+  the true grasp point of the scene; confidence and gate entries stay the cue's own (`bash policy/eval_oracle_cue.sh
+  <run>`: `policy/oracle_cue_env.py`, on `L0_vis` and `L0_vis_ell`, 660 episodes on each of the two test sets).
+- *A policy trained on the hindsight labels.* `L0_vis_rgbdt_700demos_hcg_oracle`, seed 42: the arm `cue` with
+  `task.hcue_dir=data/hcue/L0_vis_700_label` (the label of every demo as its cue, confidence and gates 1), evaluated
+  with the true grasp point and confidence and gates 1 (`ORACLE_CUE_ONES=1 bash policy/eval_oracle_cue.sh <run>`). The
+  evaluations that `scripts/run_experiment.sh` makes during and after its training have no cue (the label folder has
+  no network) and are not read; the final one is cut to 55 episodes of `j_cells11`.
+
+**Checks before the listing (11/26).** `python policy/check_oracle_point.py` on the 700 demos: the true grasp point of
+the scene is the hindsight label of the demo within 0.07 cm in the table plane and 0.04 cm in height (the glass's
+position and the grasp height of the object are where the teacher closes the gripper). A trial of
+`eval_oracle_cue.sh` with six episodes on `L0_vis_ell` (results discarded): the cue's error is zero and its other
+entries are the checkpoint's.
+
+**Read-out, fixed now** (`python policy/readout_oracle_cue.py > ../oracle_cue/readout.txt`; tested with other runs
+standing in). On both levels: the three seeds of `cue` with the true point against the same checkpoints with their own
+cue on the same episodes (sign test), over all episodes and per cell, and the share of the failures that is gone with
+the true point; next to them the policy trained on the labels with the true point.
+
+**Known when this is listed.** Fit 0 of every cue (rounds 2, 3 and 5). The runs on the 700 demos. From round 2: with
+its own cue within 0.5 cm, `cue` succeeds in 0.93 (`L0_vis`) and 0.99 (`L0_vis_ell`) of the episodes. Nothing of 6a,
+6b or 6c exists beyond the two checks above.
+
+### Results of 6a (11/26 14:59 KST; 32 fits, no policy involved)
+
+[`perception/round6_cue_fitseeds.txt`](perception/round6_cue_fitseeds.txt). The cue within 1.5 cm of the glass, the
+method (a map and a gate per sensor) against the one network; five fits of each (fit 0 is the one the policies were
+trained with), the same episodes.
+
+| cues fitted on | cells | method / one network, mean over the fits (SD) | the method in the five fits | verdict |
+|---|---|---|---|---|
+| all 700 demos | all eleven cells | 0.888 (0.013) / 0.914 (0.018) | above in fit 0 only (0.907 against 0.883); below in fits 1 to 4 | mixed |
+| all 700 demos | the 15 new combinations | 0.941 (0.011) / 0.955 (0.013) | above in fit 0 only (0.956 against 0.934) | mixed |
+| `nosingle` | the cells left out (4 to 9) | **0.785 (0.021) / 0.643 (0.025)** | above in every fit | **holds over the fits, the method above** |
+| `nosingle` | the cells of the training set | 0.936 / 0.949 | below in every fit | holds, the one network above |
+| `nopair` | the cells left out (1 to 3) | 0.936 / 0.943 | | does not hold |
+| `nopair` | the cells of the training set | 0.817 / 0.870 | below in every fit | holds, the one network above |
+| `nofaint` | the cells left out (7 to 10) | 0.478 (0.044) / 0.671 (0.014) | below in every fit | holds, the one network above |
+| `nofaint` | the cells of the training set | 0.930 / 0.956 | below in every fit | holds, the one network above |
+
+- **The fit the policies were trained with is the one fit of five in which the method's cue is ahead on the cells it
+  was trained on.** In the other four the one network's cue is the more accurate (0.912 to 0.928 against 0.876 to
+  0.895), and so it is on average (0.914 against 0.888) and on the new combinations (0.955 against 0.941).
+- **What this does to round 4.** Its three seeds were seeds of the policy; every one of them used the cues of fit 0.
+  The verdicts "holds over the seeds" for `cue` against the one network on the training cells of `L0_vis` (0.797
+  against 0.722) and on the 15 new combinations (0.854 against 0.779) therefore hold for that fit of the cues and
+  cannot be claimed for the two designs: with another fit the cue of the one network is the better one. No policy was
+  trained on fits 1 to 4 (the listing excludes it), so how much of the policies' difference would remain is not
+  known.
+- **What holds for the design with a map and a gate per sensor: two sensors blind for the first time.** In the cells
+  left out of `nosingle` its cue is ahead in every fit (0.785 against 0.643; only it right in 852 episodes, only the
+  one network in 342), and the policies of round 4 show the same there on both levels (`L0_vis` 0.675 against 0.554,
+  `L0_vis_ell` 0.829 against 0.740).
+- **Everywhere else the one network's cue is as good or better over the fits**: by 0.01 to 0.05 on cells that were
+  in the training set, and by 0.19 on faint cues it never saw (`nofaint`).
+- The method's cue also varies more from fit to fit (SD up to 0.044 against 0.025).
+
+Both cues are far above what a plain policy reaches (the baselines of the level find the glass within 1.5 cm in
+about half of the episodes), so the result of the method against the baselines does not rest on this. What rests on
+it is which of the two is called the method and what is claimed for the gate.
+
 ## Files
 
 - `policy/hindsight_cue.py` (cue, verifier, fusion; fit and report), `policy/check_cue_env.py` (the cue in the env),
@@ -968,3 +1154,6 @@ baselines on the subsets; fitting the cue networks with several seeds (the seeds
 - Round 5: `policy/readout_leaveout_cue.py` (the cues of the left-out sets), `policy/readout_leaveout.py` (the
   policies), `policy/eval_new_cells_ell.sh` and `policy/readout_new_cells_ell.py` (the new combinations on
   `L0_vis_ell`).
+- Round 6: `policy/hindsight_cue_fitseed.py`, `policy/readout_cue_fitseeds.py` (6a); `policy/subset_demos_frac.py`,
+  `policy/readout_demo_curve.py` (6b); `policy/oracle_cue_env.py`, `policy/eval_oracle_cue.py`,
+  `policy/eval_oracle_cue.sh`, `policy/check_oracle_point.py`, `policy/readout_oracle_cue.py` (6c).

@@ -1,0 +1,82 @@
+## 1. Training cells (j_cells11, k_cells11_heldout)
+
+| seed | episodes | `cue` | one network | only `cue` / only the one network | p |
+|---|---|---|---|---|---|
+| 42 | 1320 | 0.914 | 0.911 | 75 / 70 | 0.74 |
+| 43 | 1320 | 0.914 | 0.902 | 86 / 70 | 0.23 |
+| 44 | 1320 | 0.917 | 0.914 | 78 / 73 | 0.74 |
+| mean (SD) and pooled | | 0.915 (0.002) | 0.909 (0.006) | 239 / 213 | 0.24 |
+
+Verdict: the difference does not hold.
+
+Per cell, pooled over the seeds (+ / - : `cue` above / below the one network at p < 0.05):
+
+| cell | `cue` | one network | only `cue` / only the one network | p |
+|---|---|---|---|---|
+| 0 | 0.989 | 0.956 | 15 / 3 | 0.0075 + |
+| 1 | 0.944 | 0.942 | 15 / 14 | 1 |
+| 2 | 0.981 | 0.958 | 15 / 7 | 0.13 |
+| 3 | 0.967 | 0.942 | 12 / 3 | 0.035 + |
+| 4 | 0.836 | 0.931 | 12 / 46 | 8.2e-06 - |
+| 5 | 0.900 | 0.936 | 18 / 31 | 0.085 |
+| 6 | 0.958 | 0.944 | 17 / 12 | 0.46 |
+| 7 | 0.961 | 0.900 | 27 / 5 | 0.00011 + |
+| 8 | 0.872 | 0.803 | 50 / 25 | 0.0052 + |
+| 9 | 0.714 | 0.747 | 45 / 57 | 0.28 |
+| 10 | 0.947 | 0.939 | 13 / 10 | 0.68 |
+
+## 2. New combinations (l_cells15_new, m_cells15_new_heldout)
+
+| seed | episodes | `cue` | one network | only `cue` / only the one network | p |
+|---|---|---|---|---|---|
+| 42 | 1200 | 0.965 | 0.946 | 54 / 31 | 0.017 |
+| 43 | 1200 | 0.963 | 0.944 | 51 / 28 | 0.013 |
+| 44 | 1200 | 0.953 | 0.945 | 55 / 45 | 0.37 |
+| mean (SD) and pooled | | 0.961 (0.006) | 0.945 (0.001) | 160 / 104 | 0.00068 |
+
+Verdict: the difference holds over the seeds.
+
+Per cell, pooled over the seeds (+ / - : `cue` above / below the one network at p < 0.05):
+
+| cell | `cue` | one network | only `cue` / only the one network | p |
+|---|---|---|---|---|
+| 0 | 0.963 | 0.938 | 12 / 6 | 0.24 |
+| 1 | 0.988 | 0.958 | 7 / 0 | 0.016 + |
+| 2 | 0.975 | 0.971 | 4 / 3 | 1 |
+| 3 | 0.988 | 0.975 | 6 / 3 | 0.51 |
+| 4 | 0.963 | 0.917 | 17 / 6 | 0.035 + |
+| 5 | 0.979 | 0.954 | 8 / 2 | 0.11 |
+| 6 | 0.833 | 0.892 | 19 / 33 | 0.07 |
+| 7 | 1.000 | 0.921 | 19 / 0 | 3.8e-06 + |
+| 8 | 0.958 | 0.950 | 12 / 10 | 0.83 |
+| 9 | 0.971 | 0.946 | 8 / 2 | 0.11 |
+| 10 | 0.958 | 0.946 | 9 / 6 | 0.61 |
+| 11 | 0.975 | 0.979 | 5 / 6 | 1 |
+| 12 | 0.963 | 0.946 | 10 / 6 | 0.45 |
+| 13 | 0.967 | 0.975 | 6 / 8 | 0.79 |
+| 14 | 0.929 | 0.908 | 18 / 13 | 0.47 |
+
+## 3. Trained without cells 4 to 9 (j_cells11, k_cells11_heldout)
+
+**the cells left out (4 to 9)**
+
+| seed | episodes | `cue` | one network | only `cue` / only the one network | p |
+|---|---|---|---|---|---|
+| 42 | 720 | 0.831 | 0.749 | 126 / 67 | 2.6e-05 |
+| 43 | 720 | 0.832 | 0.742 | 126 / 61 | 2.3e-06 |
+| 44 | 720 | 0.825 | 0.731 | 132 / 64 | 1.3e-06 |
+| mean (SD) and pooled | | 0.829 (0.004) | 0.740 (0.009) | 384 / 192 | 9.5e-16 |
+
+Verdict: the difference holds over the seeds.
+
+**the cells of the training set (0, 1, 2, 3, 10)**
+
+| seed | episodes | `cue` | one network | only `cue` / only the one network | p |
+|---|---|---|---|---|---|
+| 42 | 600 | 0.958 | 0.955 | 16 / 14 | 0.86 |
+| 43 | 600 | 0.957 | 0.957 | 16 / 16 | 1 |
+| 44 | 600 | 0.953 | 0.950 | 18 / 16 | 0.86 |
+| mean (SD) and pooled | | 0.956 (0.003) | 0.954 (0.003) | 50 / 46 | 0.76 |
+
+Verdict: the difference does not hold.
+

@@ -1,0 +1,62 @@
+{
+ "runs": [
+  "results/hard_scenario/cue_gate/L0_vis_rgbdt_700demos_hcg_cue_seed44"
+ ],
+ "test_sets": [
+  "j_cells11",
+  "k_cells11_heldout"
+ ],
+ "macro": 0.8022727272727274,
+ "macro_ci": [
+  0.7818181818181817,
+  0.8227272727272728
+ ],
+ "cells": {
+  "0": {
+   "success": 111,
+   "n": 120
+  },
+  "1": {
+   "success": 105,
+   "n": 120
+  },
+  "2": {
+   "success": 105,
+   "n": 120
+  },
+  "3": {
+   "success": 110,
+   "n": 120
+  },
+  "4": {
+   "success": 76,
+   "n": 120
+  },
+  "5": {
+   "success": 93,
+   "n": 120
+  },
+  "6": {
+   "success": 105,
+   "n": 120
+  },
+  "7": {
+   "success": 107,
+   "n": 120
+  },
+  "8": {
+   "success": 76,
+   "n": 120
+  },
+  "9": {
+   "success": 65,
+   "n": 120
+  },
+  "10": {
+   "success": 106,
+   "n": 120
+  }
+ },
+ "success": 1059,
+ "n": 1320
+}
