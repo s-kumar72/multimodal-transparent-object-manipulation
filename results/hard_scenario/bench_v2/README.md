@@ -1382,12 +1382,62 @@ sensor's map marks every glass it shows and the order of the two is a second, le
 fitted and compared on the same demos before any policy run); or the one network as the method's cue on T3. No run of
 T3 with a cue is listed before that decision.
 
+### Results of step 1 (11/28 20:28 KST; 700 training demos, out of fold, no policy)
+
+The six fits ran 11/28 17:42 to 20:25 KST, all with exit 0 (`fits/V2b_two_700/cue_report_<g1 | g1_early | r1 | g2 |
+g2_early | r2>.txt`). Read-out as fixed: [`fits/V2b_two_700/readout_cue_two.txt`](fits/V2b_two_700/readout_cue_two.txt).
+A cue is right within 1.5 cm of its own hindsight point.
+
+| demos | n | form A: first / second / both right | one network: first / second / both right | both right: only form A / only the one network | p |
+|---|---|---|---|---|---|
+| the same sensors show both glasses (pair-cells 0 to 3, 10) | 280 | 0.75 / 0.75 / 0.63 | 0.75 / 0.70 / 0.62 | 37 / 33 | 0.72 |
+| different sensors show them (4 to 9) | 360 | 0.63 / 0.61 / **0.41** | 0.71 / 0.66 / **0.49** | 59 / 91 | 0.011 |
+| the first fully, the second faintly (11) | 60 | 0.85 / 0.85 / 0.77 | 0.95 / 0.83 / 0.83 | 4 / 8 | 0.39 |
+| all | 700 | 0.70 / 0.69 / 0.53 | 0.75 / 0.69 / 0.57 | 100 / 132 | 0.042 |
+
+Both cues on the same glass (both within 1.5 cm of one grasp point): 0.02 for form A (0.03 in pair-cells 4 to 9) and
+0.01 for the one network; swapped: 0.01 and 0.01. The release cues are right in 0.66 (first) and 0.71 (second).
+
+- **The weakness stated before the fit is rare in the form it was stated**: both cues exactly on one glass in 2 to 3
+  of 100 demos, in pair-cells 4 to 9 as elsewhere.
+- **Where different sensors show the two glasses, the one network's cues are both right more often** (0.49 against
+  0.41, p = 0.011); where the same sensors show both, the two designs are level (0.62, 0.63).
+- **Both designs are less accurate than on T1**: a grasp cue is right in 0.70 and 0.69 (form A) and 0.75 and 0.69 (the
+  one network), against 0.85 and 0.79 for the one glass of T1 on its training demos out of fold
+  (`fits/V2b_place_700[_early]/cue_report.txt`).
+
+**Further description, not fixed in advance** (`python policy/readout_cue_two_more.py`, written after the read-out
+above was seen: [`fits/V2b_two_700/readout_cue_two_more.txt`](fits/V2b_two_700/readout_cue_two_more.txt)).
+
+- *Where the cues that are off lie.* More than 5 cm from its own point: 0.16 of the cues of form A and 0.11 to 0.12
+  of the one network's. Of these, within 5 cm of the other glass: 0.10 (form A) and 0.08 to 0.09 (the one network),
+  in pair-cells 4 to 9 (0.11, 0.09) as where the same sensors show both (0.09 to 0.10 for both designs). Near neither
+  glass: 0.06 (form A; 0.08 to 0.09 in pair-cells 4 to 9) against 0.03.
+- *With 5 cm in place of 1.5 cm:* both cues at their own glass 0.76 (form A; 0.68 in pair-cells 4 to 9) against 0.82
+  (0.79); both at the same glass 0.08 against 0.09; swapped 0.05 against 0.04. A cue on the other glass is therefore
+  not particular to the design with a map per sensor: which glass is first is not always read off the first frame by
+  either. What form A loses in pair-cells 4 to 9 are cues near neither glass.
+- *By the state of the glass a cue points at* (within 1.5 cm, form A / the one network): all three sensors show it
+  0.86 / 0.85; all three faintly 0.79 / 0.78; colour only 0.71 / 0.80; depth only 0.70 / 0.77; thermal only **0.41 /
+  0.34**; colour and thermal 0.65 / 0.77; colour and depth 0.87 / 0.85; depth and thermal 0.72 / 0.82. A glass that
+  one sensor shows is found less often by form A when another sensor shows the other glass; a glass that the thermal
+  camera alone shows is the hardest for both.
+- *The release cues* (5 cm): at their own coaster 0.75 and 0.77, at the other coaster 0.22 and 0.19; both at their own
+  0.67, both at the same coaster 0.15. Which coaster the teacher takes first (the nearer one if the way is clear) is
+  often not read off the first frame.
+
+**Open, for the user** (as listed above; no run of T3 with a cue is listed before it): form A as it is, with the one
+network as its control as on T1 and T2; another form; or the one network as the cue on T3. What the numbers say to it:
+the form with an order learned in a second step would address cues on the wrong glass, which both designs have at the
+same rate, so it is not what separates them; form A is the method unchanged, with no part made for T3.
+
 ## Files
 
 `real_data/glass_visibility.py` (real sensors), `sim/measure_visibility.py` (the simulator, same functions),
 `real_data/findability.py` (sections 11 and 12: the checks against real images), `real_check/` (their read-outs).
 `sim/glass_optics.py` (section 12: the optical colour model of the glass, off by default), `sim/configs/V2_place_opt.yaml`.
-`measurements/` (their outputs of 11/26). `fits/` (the reports of the cue and angle fits of the frozen benchmark). `sim/configs/V2_place.yaml`, `sim/configs/V2_place_warm.yaml` (draft levels).
+`measurements/` (their outputs of 11/26). `fits/` (the reports of the cue and angle fits of the frozen benchmark). T3's cue:
+`policy/hindsight_cue_nth.py`, `policy/readout_cue_two.py`, `policy/readout_cue_two_more.py`, `fits/V2b_two_700/`. `sim/configs/V2_place.yaml`, `sim/configs/V2_place_warm.yaml` (draft levels).
 T2: `sim/assets/gen3_lite/align_scene.xml`, `sim/configs/V2_align.yaml`, `sim/env.py` (`ALIGN_OBJECTS`, `_mat_target`,
 `placed`), `sim/teacher.py` (`_plan_align`).
 Unseen objects: `sim/assets/gen3_lite/place_unseen_scene.xml`, test set `u_cells11_unseen`. T3:
