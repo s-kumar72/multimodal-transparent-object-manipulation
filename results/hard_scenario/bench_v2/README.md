@@ -1313,7 +1313,7 @@ is run then and part A 2 and 3 are put in the queue with the chosen settings.
 out of fold on the training demos; `angle_report.txt`; `env_<test set>.txt`: the cue at reset on the test scenes,
 `policy/check_cue_env.py`). On the test scenes of T2 the grasp cue is within 1.5 cm of the glass in 0.81 (`j_cells11`)
 and 0.80 (`k_cells11_heldout`) of 660 episodes each, that of the one network in 0.81 and 0.81; in cell 9 in 0.25 and
-0.20, and 0.10 and 0.18. The place cue is within 1.5 px in 0.97 of the training demos out of fold. The angle of the
+0.20, and 0.10 and 0.18. The place cue (the saved rule, `consensus`) is within 1.5 px in 1.00 of the training demos out of fold. The angle of the
 grasp is within 15 degrees in 0.94 of them (cell 8: 0.71, cell 9: 0.67), that of the one network in 0.92, that of the
 place in 1.00. These are descriptions of the fits; no run depends on a threshold on them.
 
