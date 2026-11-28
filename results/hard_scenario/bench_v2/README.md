@@ -739,6 +739,53 @@ witness either way (below 0.30 in every cell).
 In each case `V2b_place` against `V2_place` has to be decided with it: under 1 and 2 the proposal is the thermal
 states of `V2b_place` (cell 4 is solved more clearly there, 0.683 against 0.458, and both lie in the measured range).
 
+**Decision of the user on cell 9 (11/28 14:50 KST): choice 1.** Cell 9 stays and is marked as open; the benchmark
+keeps eleven cells and the macro average over eleven. With it the user asked which thermal states are the better
+ones, those before the change of the rule (`V2_place`) or those after it (`V2b_place`). The answer given, which the
+freeze follows unless the user says otherwise: **those of `V2b_place`.**
+
+| | `V2_place` (before) | `V2b_place` (after) |
+|---|---|---|
+| thermal "faint", noise units | 3 to 10: the tail below the real p10, 6% of the tabletop regions of section 2 | 10 to 26: the real p10 to p25, 15% of the regions |
+| thermal "shows" | 10 to 103: the real p10 to p90, 80% | 26 to 103: the real p25 to p90, 65% |
+| real contrasts that are in no state | above 103 (10%) | above 103 (10%) and 3 to 10 (6%) |
+| a network that learned real glass, on the simulator's glass (section 11) | "faint" (3 to 10): no response (the window with the glass higher in 0.59 of the pairs); "shows" holds the bin 10 to 30 (0.87 of the pairs, the rule's answer: no) and the bin 30 to 103 (0.98, yes) | "faint" is the bin 10 to 30 (0.87, no by the rule); "shows" is about the bin 30 to 103 (0.98, yes) |
+| the cue finds the glass of cell 9 at reset (within 1.5 cm) | 0.03 to 0.05 of the scenes | 0.20 to 0.22 |
+| cell 9, the four runs | 0.067 to 0.158 | 0.067 to 0.217 |
+| cell 4 (thermal alone, shows): `cue`, one network | 0.458, 0.217 | 0.683, 0.342 |
+| macro average: `cue`, plain rgbdt | 0.784, 0.514 | 0.815, 0.523 |
+
+Grounds: (1) Both states of `V2b_place` are quantile ranges of the measured distribution, and "faint" at the lower
+quartile is how the colour states lie (section 2: colour "faint" at the lower quartile of real tabletop glass,
+"blind" below its lowest tenth); "faint" of `V2_place` is the lowest 6%, two to three grey levels of the 8-bit
+thermal image. (2) The check against real images supports the states of `V2b_place` better: its "shows" is the range
+in which a network that learned real glass responds to the simulator's glass, and the faint range of `V2_place` is one
+in which it does not respond at all. (3) With cell 9 kept as an open cell, an open cell in which the glass is located
+in a fifth of the scenes and success rises with the contrast leaves something to measure; on `V2_place` all four runs
+are at the floor there and the cue locates the glass in one scene of twenty. (4) It is where the rule of 11/26, fixed
+before any pilot run, put the states.
+
+Against it, and stated in the paper: real contrasts of 3 to 10 noise units (6% of the regions) are then in no state.
+And `V2b_place` is the level on which the method's lead is larger (0.292 against 0.270 in the macro average, the
+difference being cells 4 and 9); the defence is ground (4), not the numbers.
+
+*Levels of T2 and T3 with these states (draft levels, nothing collected or trained on them).*
+`sim/configs/V2b_align.yaml` (id 44, base `V2_align.yaml`) and `sim/configs/V2b_two.yaml` (id 45, base `V2_two.yaml`):
+only the two thermal ranges differ from their bases, as in `V2b_place.yaml`; the manifest has two more entries and is
+otherwise identical (the parsed files compared). `python sim/measure_visibility.py LEVEL -n 440`
+(`measurements/sim_V2b_align_visibility.txt`, `measurements/sim_V2b_two_visibility.txt`), p10 / median / p90 in noise
+units: T2 thermal shows 36.8 / 70.6 / 106.0, faint 11.8 / 18.3 / 25.9, blind 0.2 / 1.2 / 3.1; T3 shows 31.2 / 59.8 /
+90.7, faint 10.0 / 15.9 / 23.7, blind 0.3 / 1.6 / 3.5 (`V2b_place`: 32.6 / 66.2 / 94.9, 10.5 / 18.2 / 23.9, 0.4 / 1.5 /
+3.4; the ranges asked for are 26 to 103 and 10 to 26). The elongated glasses of T2 are larger in the image (median
+331 pixels against 197) and their contrast is about a tenth higher at the same setting; the level file is not fitted
+again for that. Colour and depth as on the bases.
+
+*Still to be settled with the user before the freeze:* the numbers of demos of T2 and T3; whether a reference without
+the glass in any image is among the runs (the layout, below); the order of the full run and the remaining runs of the
+first version; disk (a run folder is 5.6 GB, 321 GB are free, the 48 training runs of the first version that have not
+started need about 270 GB and the full run of this version about 480 GB; deleting checkpoints needs the user's
+approval).
+
 **What a blind sensor still shows: the layout (11/26 19:51 KST; looked at when the fits of T2 were read, not a test fixed in
 advance).** In the report of the T2 cue the sensors' own maps are on the grasp pixel also where the sensor does not
 show the glass: within 1.5 px in 0.40 of the colour-blind demos, 0.29 of the depth-blind and 0.23 of the

@@ -1,0 +1,10 @@
+V2b_two: 440 episodes with the glass in view; glass region median 197 px of 320x240
+  rgb shows (198 episodes): rgb: p10 8.96, median 26.70, p90 43.47
+  rgb blind (208 episodes): rgb: p10 0.00, median 0.00, p90 0.30
+  rgb faint (34 episodes): rgb: p10 4.70, median 12.82, p90 22.44
+  depth shows (282 episodes): missing: p10 0.80, median 0.88, p90 0.98; behind: p10 0.01, median 0.10, p90 0.17
+  depth blind (124 episodes): missing: p10 0.00, median 0.00, p90 0.00; behind: p10 0.69, median 0.90, p90 0.93
+  depth faint (34 episodes): missing: p10 0.12, median 0.27, p90 0.36; behind: p10 0.49, median 0.64, p90 0.80
+  thermal shows (238 episodes): thermal_std: p10 31.18, median 59.78, p90 90.70; thermal_degc: p10 0.65, median 1.25, p90 1.89
+  thermal blind (168 episodes): thermal_std: p10 0.27, median 1.60, p90 3.52; thermal_degc: p10 0.01, median 0.03, p90 0.07
+  thermal faint (34 episodes): thermal_std: p10 10.04, median 15.87, p90 23.66; thermal_degc: p10 0.21, median 0.33, p90 0.49
