@@ -1301,6 +1301,13 @@ was degenerate. The levels `V2b_<task>_noglass` (`sim/configs/V2b_place_noglass.
 each, and the teacher succeeds in 20 of 20 and 12 of 12 scenes of the test sets of T1 and T3. The checkpoints of the
 twelve pilot runs were deleted afterwards (approved by the user 11/28; their results and per-episode records stay).
 
+*11/28 15:27 KST, after the commit of this section: the twelve tuning lines are in the queue* (the 201-epoch runs first),
+before the lines of the first version that have not started; two training runs of the first version that had started
+at 14:54 and 15:22 KST are left to end. The first tuning run started 15:27 KST. The demos of T2 and T3 are those of
+the table above; the fits of T2 (`data/runs/v2_freeze_fits2.sh`) run beside a run of the queue. With three GPUs until
+the fourth is back (about 11/29 07:00 KST) the twelve runs end about 11/30 in the morning; `policy/readout_v2_tune.py`
+is run then and part A 2 and 3 are put in the queue with the chosen settings.
+
 ## Files
 
 `real_data/glass_visibility.py` (real sensors), `sim/measure_visibility.py` (the simulator, same functions),
