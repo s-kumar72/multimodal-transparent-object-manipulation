@@ -45,7 +45,10 @@
     "V2_two": "sim/configs/V2_two.yaml",
     "V2b_place": "sim/configs/V2b_place.yaml",
     "V2b_align": "sim/configs/V2b_align.yaml",
-    "V2b_two": "sim/configs/V2b_two.yaml"
+    "V2b_two": "sim/configs/V2b_two.yaml",
+    "V2b_place_noglass": "sim/configs/V2b_place_noglass.yaml",
+    "V2b_align_noglass": "sim/configs/V2b_align_noglass.yaml",
+    "V2b_two_noglass": "sim/configs/V2b_two_noglass.yaml"
   },
   "test_sets": {
     "a_in_distribution": {
@@ -568,6 +571,10 @@
           ]
         ]
       }
-    }
+    },
+    "w_noglass": {"split": "test", "heldout": [], "overrides": {"cells": [[1, 1, 1, 1]]}},
+    "x_noglass_heldout": {"split": "test", "heldout": ["background", "lighting", "distractors"], "overrides": {"cells": [[1, 1, 1, 1]]}},
+    "w_noglass_pairs": {"split": "test", "heldout": [], "overrides": {"cells": [[1, 1, 1, 1, 1, 1, 1]]}},
+    "x_noglass_pairs_heldout": {"split": "test", "heldout": ["background", "lighting", "distractors"], "overrides": {"cells": [[1, 1, 1, 1, 1, 1, 1]]}}
   }
 }

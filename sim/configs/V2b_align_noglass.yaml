@@ -1,0 +1,9 @@
+# V2b_align with one cell in which no sensor shows the glass (colour blind, depth blind, thermal blind): the scenes of
+# the level without the glass in any image. For the layout reference of results/hard_scenario/bench_v2/README.md
+# (section 13): what a policy reaches from the layout of the scene alone. Not a level of the benchmark's tables.
+# meta/ep_level id 47.
+base: V2b_align.yaml
+name: V2b_align_noglass
+level: 47
+cells:
+  - [1, 1, 1, 1]
